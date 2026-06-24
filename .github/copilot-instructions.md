@@ -39,6 +39,7 @@ invoice/
 - `src/environments/environment.mock.ts` — mock mode (`useMock: true`)
 
 ## Architecture decisions
+- **Tenant onboarding**: no self-service signup — tenants are created via a backend CLI command (`uv run python -m app.cli create-tenant`); the UI only exposes login
 - **Multi-tenant**: every table has `tenant_id`; auth guard in `backend/app/api/deps.py`
 - **Invoice entity**: single entity, statuses `draft → issued → paid → cancelled`
 - **InvoiceLines are immutable** once `status = issued`
