@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.env
+*.egg-info/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+*.js.map
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.env.local
+
+# Uploads / generated files
+backend/uploads/
+backend/generated/
+
+# Angular build output
+frontend/dist/
+frontend/.angular/
+
+# Root-level accidental installs
+node_modules/
+package.json
+package-lock.json
