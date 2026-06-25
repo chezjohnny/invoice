@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer } from './customer.model';
 import { CustomerFormComponent } from './customer-form.component';
@@ -7,7 +8,7 @@ import { CustomerStore } from './customer.store';
 @Component({
   selector: 'app-customers',
   providers: [CustomerStore],
-  imports: [CustomerFormComponent],
+  imports: [CustomerFormComponent, RouterLink],
   template: `
     <div class="p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -46,7 +47,11 @@ import { CustomerStore } from './customer.store';
             <tbody>
               @for (customer of store.items(); track customer.id) {
                 <tr>
-                  <td class="font-medium">{{ customer.lastName }}, {{ customer.firstName }}</td>
+                  <td class="font-medium">
+                    <a [routerLink]="['/customers', customer.id]" class="hover:underline">
+                      {{ customer.lastName }}, {{ customer.firstName }}
+                    </a>
+                  </td>
                   <td class="text-base-content/60 text-sm">{{ customer.email ?? '—' }}</td>
                   <td class="text-sm">{{ customer.postalCode }} {{ customer.city }}</td>
                   <td class="flex gap-1">

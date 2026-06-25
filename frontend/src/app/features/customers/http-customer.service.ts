@@ -52,6 +52,12 @@ export class HttpCustomerService implements ICustomerService {
     }));
   }
 
+  getById(id: string): Promise<Customer> {
+    return firstValueFrom(
+      this.http.get<CustomerDto>(`/api/customers/${id}`)
+    ).then(this.toCustomer);
+  }
+
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer> {
     return firstValueFrom(
       this.http.post<CustomerDto>('/api/customers', this.toDto(data))

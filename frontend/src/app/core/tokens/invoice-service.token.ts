@@ -5,6 +5,7 @@ import type { Page } from '../models/page.model';
 export interface InvoiceListParams {
   search?: string;
   status?: string;
+  customerId?: string;
   page?: number;
   perPage?: number;
 }

@@ -10,6 +10,7 @@ export interface CustomerListParams {
 
 export interface ICustomerService {
   list(params: CustomerListParams): Promise<Page<Customer>>;
+  getById(id: string): Promise<Customer>;
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer>;
   update(id: string, data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer>;
   archive(id: string): Promise<void>;

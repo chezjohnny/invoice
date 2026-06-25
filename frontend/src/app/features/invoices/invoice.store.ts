@@ -51,23 +51,41 @@ export const InvoiceStore = signalStore(
         patchState(store, { statusFilter: value, page: 1 });
         return load();
       },
-      async createInvoice(data: InvoiceCreate): Promise<void> {
-        await service.create(data);
+      async createInvoice(data: InvoiceCreate): Promise<Invoice> {
+        patchState(store, { loading: true });
+        const invoice = await service.create(data);
+        await load();
+        return invoice;
+      },
+      async issueAndPrint(id: string): Promise<void> {
+        patchState(store, { loading: true });
+        await service.issue(id);
+        const blob = await service.downloadPdf(id);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'invoice.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
         await load();
       },
       async updateInvoice(id: string, data: InvoiceUpdate): Promise<void> {
+        patchState(store, { loading: true });
         await service.update(id, data);
         await load();
       },
       async issue(id: string): Promise<void> {
+        patchState(store, { loading: true });
         await service.issue(id);
         await load();
       },
       async pay(id: string): Promise<void> {
+        patchState(store, { loading: true });
         await service.pay(id);
         await load();
       },
       async cancel(id: string): Promise<void> {
+        patchState(store, { loading: true });
         await service.cancel(id);
         await load();
       },

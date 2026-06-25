@@ -26,6 +26,12 @@ export const routes: Routes = [
       import('./features/customers/customers.component').then((m) => m.CustomersComponent),
   },
   {
+    path: 'customers/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/customers/customer-detail.component').then((m) => m.CustomerDetailComponent),
+  },
+  {
     path: 'invoices',
     canActivate: [authGuard],
     loadComponent: () =>

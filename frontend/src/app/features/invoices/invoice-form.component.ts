@@ -1,10 +1,11 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
+import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Customer } from '../customers/customer.model';
 import { Article } from '../articles/article.model';
-import { InvoiceCreate } from './invoice.model';
+import { Invoice, InvoiceCreate } from './invoice.model';
 
 interface LineForm {
   id: string | null;
@@ -13,6 +14,13 @@ interface LineForm {
   quantity: string;
   unitPriceSnapshot: string;
   vatRateSnapshot: string;
+}
+
+interface Recommendation {
+  articleId: string | null;
+  description: string;
+  unitPrice: number;
+  vatRate: number | null;
 }
 
 @Component({
@@ -25,30 +33,58 @@ interface LineForm {
       </h3>
 
       <fieldset class="fieldset gap-3">
-        <!-- Customer combobox -->
-        <div class="relative">
-          <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
-          <input type="text" class="input input-bordered w-full"
-            [class.input-error]="submitted() && errors().customerId"
-            [value]="customerSearch()"
-            (input)="onCustomerSearch(asStr($event))"
-            (blur)="onCustomerBlur()"
-            [placeholder]="t().common.searchCustomer" />
-          @if (showDropdown() && customerResults().length > 0) {
-            <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
-              @for (c of customerResults(); track c.id) {
-                <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm"
-                  (mousedown)="selectCustomer(c)">
-                  {{ c.lastName }}, {{ c.firstName }}
-                  @if (c.city) { <span class="text-base-content/50 text-xs ml-1">— {{ c.city }}</span> }
-                </li>
+        <!-- Customer section -->
+        @if (externalCustomer()) {
+          <div>
+            <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
+            <p class="py-2 font-medium">{{ externalCustomer()!.lastName }}, {{ externalCustomer()!.firstName }}</p>
+          </div>
+        } @else {
+          <div class="relative">
+            <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
+            <input type="text" class="input input-bordered w-full"
+              [class.input-error]="submitted() && errors().customerId"
+              [value]="customerSearch()"
+              (input)="onCustomerSearch(asStr($event))"
+              (blur)="onCustomerBlur()"
+              [placeholder]="t().common.searchCustomer" />
+            @if (showDropdown()) {
+              @if (customerResults().length > 0) {
+                <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  @for (c of customerResults(); track c.id) {
+                    <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm"
+                      (mousedown)="selectCustomer(c)">
+                      {{ c.lastName }}, {{ c.firstName }}
+                      @if (c.city) { <span class="text-base-content/50 text-xs ml-1">— {{ c.city }}</span> }
+                    </li>
+                  }
+                </ul>
+              } @else if (customerSearch().trim()) {
+                <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1">
+                  <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm text-primary font-medium"
+                    (mousedown)="createCustomerRequested.emit()">
+                    + {{ t().invoices.createCustomer }}
+                  </li>
+                </ul>
               }
-            </ul>
-          }
-          @if (submitted() && errors().customerId) {
-            <p class="fieldset-label text-error">{{ errors().customerId }}</p>
-          }
-        </div>
+            }
+            @if (submitted() && errors().customerId) {
+              <p class="fieldset-label text-error">{{ errors().customerId }}</p>
+            }
+          </div>
+        }
+        @if (articleRecommendations().length > 0) {
+          <div class="rounded border border-base-200 p-2">
+            <p class="text-xs text-base-content/50 mb-1.5">{{ t().invoices.recommendations }}</p>
+            <div class="flex flex-wrap gap-1">
+              @for (rec of articleRecommendations(); track rec.description) {
+                <button type="button" class="btn btn-outline btn-xs" (click)="addRecommendation(rec)">
+                  + {{ rec.description }}
+                </button>
+              }
+            </div>
+          </div>
+        }
 
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -137,6 +173,9 @@ interface LineForm {
         <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
           {{ t().common.cancel }}
         </button>
+        <button type="button" class="btn btn-outline" (click)="submitAndIssue()">
+          {{ t().invoices.issueAndPrint }}
+        </button>
         <button type="submit" class="btn btn-primary">{{ t().invoices.saveDraft }}</button>
       </div>
     </form>
@@ -145,23 +184,55 @@ interface LineForm {
 export class InvoiceFormComponent {
   readonly invoice = input<InvoiceType | null>(null);
   readonly articles = input<Article[]>([]);
+  readonly externalCustomer = input<Customer | null>(null);
   readonly saved = output<InvoiceCreate>();
   readonly cancelled = output<void>();
+  readonly createCustomerRequested = output<void>();
+  readonly issuedAndPrinted = output<InvoiceCreate>();
 
   protected readonly t = inject(I18nService).T;
   private readonly customerService = inject(CUSTOMER_SERVICE);
+  private readonly invoiceService = inject(INVOICE_SERVICE);
 
-  protected readonly customerId = linkedSignal(() => this.invoice()?.customerId ?? '');
+  protected readonly customerId = linkedSignal(() =>
+    this.invoice()?.customerId ?? this.externalCustomer()?.id ?? ''
+  );
   protected readonly discountPercent = linkedSignal(() =>
     this.invoice() != null ? String(this.invoice()!.discountPercent) : '0'
   );
   protected readonly notes = linkedSignal(() => this.invoice()?.notes ?? '');
   protected readonly submitted = linkedSignal(() => { this.invoice(); return false; });
 
-  protected readonly customerSearch = linkedSignal(() => this.invoice()?.customerName ?? '');
+  protected readonly customerSearch = linkedSignal(() => {
+    const ext = this.externalCustomer();
+    if (ext) return `${ext.lastName}, ${ext.firstName}`;
+    return this.invoice()?.customerName ?? '';
+  });
   protected readonly customerResults = signal<Customer[]>([]);
   protected readonly showDropdown = signal(false);
+  protected readonly recentInvoices = signal<Invoice[]>([]);
   private searchTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly articleRecommendations = computed<Recommendation[]>(() => {
+    const seen = new Set<string>();
+    const recs: Recommendation[] = [];
+    for (const inv of this.recentInvoices()) {
+      for (const line of inv.lines) {
+        const key = line.articleId ?? line.descriptionSnapshot;
+        if (!seen.has(key)) {
+          seen.add(key);
+          recs.push({
+            articleId: line.articleId,
+            description: line.descriptionSnapshot,
+            unitPrice: line.unitPriceSnapshot,
+            vatRate: line.vatRateSnapshot,
+          });
+          if (recs.length >= 5) return recs;
+        }
+      }
+    }
+    return recs;
+  });
 
   protected readonly lines = linkedSignal<LineForm[]>(() =>
     this.invoice()?.lines.map((l) => ({
@@ -191,19 +262,31 @@ export class InvoiceFormComponent {
     return { subtotal, discountAmount, total: subtotal - discountAmount };
   });
 
+  constructor() {
+    effect(() => {
+      const customer = this.externalCustomer();
+      if (customer) {
+        this.invoiceService
+          .list({ customerId: customer.id, perPage: 5 })
+          .then((page) => this.recentInvoices.set(page.items));
+      }
+    });
+  }
+
   protected onCustomerSearch(value: string): void {
     this.customerSearch.set(value);
     this.customerId.set('');
     clearTimeout(this.searchTimer);
     if (!value.trim()) {
       this.customerResults.set([]);
+      this.recentInvoices.set([]);
       this.showDropdown.set(false);
       return;
     }
     this.searchTimer = setTimeout(async () => {
       const page = await this.customerService.list({ search: value, perPage: 10 });
       this.customerResults.set(page.items);
-      this.showDropdown.set(page.items.length > 0);
+      this.showDropdown.set(true);
     }, 300);
   }
 
@@ -212,10 +295,27 @@ export class InvoiceFormComponent {
     this.customerSearch.set(`${customer.lastName}, ${customer.firstName}`);
     this.showDropdown.set(false);
     this.customerResults.set([]);
+    this.invoiceService
+      .list({ customerId: customer.id, perPage: 5 })
+      .then((page) => this.recentInvoices.set(page.items));
   }
 
   protected onCustomerBlur(): void {
     setTimeout(() => this.showDropdown.set(false), 200);
+  }
+
+  protected addRecommendation(rec: Recommendation): void {
+    this.lines.update((ls) => [
+      ...ls,
+      {
+        id: null,
+        articleId: rec.articleId,
+        descriptionSnapshot: rec.description,
+        quantity: '1',
+        unitPriceSnapshot: String(rec.unitPrice),
+        vatRateSnapshot: rec.vatRate != null ? String(rec.vatRate * 100) : '',
+      },
+    ]);
   }
 
   protected addLine(): void {
@@ -258,11 +358,21 @@ export class InvoiceFormComponent {
     return (event.target as HTMLInputElement).value;
   }
 
+  protected submitAndIssue(): void {
+    this.submitted.set(true);
+    if (!this.isValid()) return;
+    this.issuedAndPrinted.emit(this._buildPayload());
+  }
+
   submit(event: Event): void {
     event.preventDefault();
     this.submitted.set(true);
     if (!this.isValid()) return;
-    this.saved.emit({
+    this.saved.emit(this._buildPayload());
+  }
+
+  private _buildPayload(): InvoiceCreate {
+    return {
       customerId: this.customerId(),
       discountPercent: parseFloat(this.discountPercent()) || 0,
       notes: this.notes().trim(),
@@ -274,7 +384,7 @@ export class InvoiceFormComponent {
         vatRateSnapshot:
           l.vatRateSnapshot.trim() !== '' ? parseFloat(l.vatRateSnapshot) / 100 : null,
       })),
-    });
+    };
   }
 }
 

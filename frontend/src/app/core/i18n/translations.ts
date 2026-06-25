@@ -30,6 +30,9 @@ const EN = {
     firstNameRequired: 'First name is required', lastNameRequired: 'Last name is required',
     invalidEmail: 'Invalid email',
     editTitle: 'Edit customer', newTitle: 'New customer',
+    backToList: 'Back to customers',
+    invoiceHistory: 'Invoice history',
+    noInvoices: 'No invoices yet.',
   },
   invoices: {
     title: 'Invoices', new: 'New invoice', number: 'Number', customer: 'Customer',
@@ -43,6 +46,11 @@ const EN = {
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qty',
     priceLabel: 'Price', vatLabel: 'VAT %',
     editTitle: 'Edit invoice', newTitle: 'New invoice',
+    customerHistory: 'Recent invoices for this customer',
+    noHistory: 'No previous invoices.',
+    recommendations: 'Previously ordered — click to add',
+    createCustomer: 'Create as new customer',
+    issueAndPrint: 'Issue & Print',
   },
   status: {
     all: 'All', draft: 'Draft', issued: 'Issued', paid: 'Paid', cancelled: 'Cancelled',
@@ -87,6 +95,9 @@ const FR: typeof EN = {
     firstNameRequired: 'Le prénom est requis', lastNameRequired: 'Le nom est requis',
     invalidEmail: 'E-mail invalide',
     editTitle: 'Modifier le client', newTitle: 'Nouveau client',
+    backToList: 'Retour aux clients',
+    invoiceHistory: 'Historique des commandes',
+    noInvoices: 'Aucune commande.',
   },
   invoices: {
     title: 'Factures', new: 'Nouvelle facture', number: 'Numéro', customer: 'Client',
@@ -100,6 +111,11 @@ const FR: typeof EN = {
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qté',
     priceLabel: 'Prix', vatLabel: 'TVA %',
     editTitle: 'Modifier la facture', newTitle: 'Nouvelle facture',
+    customerHistory: 'Factures récentes pour ce client',
+    noHistory: 'Aucune facture précédente.',
+    recommendations: 'Commandés précédemment — cliquer pour ajouter',
+    createCustomer: 'Créer comme nouveau client',
+    issueAndPrint: 'Émettre & Imprimer',
   },
   status: {
     all: 'Tout', draft: 'Brouillon', issued: 'Émise', paid: 'Payée', cancelled: 'Annulée',

@@ -50,6 +50,9 @@ export class HttpInvoiceService implements IInvoiceService {
     if (params.status) {
       httpParams = httpParams.set('status', params.status);
     }
+    if (params.customerId) {
+      httpParams = httpParams.set('customer_id', params.customerId);
+    }
     return firstValueFrom(
       this.http.get<PageDto<InvoiceDto>>('/api/invoices', { params: httpParams })
     ).then((dto) => ({

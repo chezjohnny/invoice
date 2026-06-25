@@ -85,6 +85,15 @@ async def export_customers_csv(
     )
 
 
+@router.get("/{customer_id}", response_model=CustomerResponse)
+async def get_customer(
+    customer_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Customer:
+    return await _get_customer(customer_id, current_user.tenant_id, db)
+
+
 @router.post("", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
 async def create_customer(
     body: CustomerCreate,

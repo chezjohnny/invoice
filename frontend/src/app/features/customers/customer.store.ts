@@ -44,14 +44,17 @@ export const CustomerStore = signalStore(
         return load();
       },
       async createCustomer(data: Omit<Customer, 'id' | 'isArchived'>): Promise<void> {
+        patchState(store, { loading: true });
         await service.create(data);
         await load();
       },
       async updateCustomer(id: string, data: Omit<Customer, 'id' | 'isArchived'>): Promise<void> {
+        patchState(store, { loading: true });
         await service.update(id, data);
         await load();
       },
       async archive(id: string): Promise<void> {
+        patchState(store, { loading: true });
         await service.archive(id);
         await load();
       },

@@ -2,7 +2,10 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
+import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Article } from '../articles/article.model';
+import { Customer } from '../customers/customer.model';
+import { CustomerFormComponent } from '../customers/customer-form.component';
 import { InvoiceFormComponent } from './invoice-form.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
@@ -16,7 +19,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, DecimalPipe],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe],
   template: `
     <div class="p-6 max-w-6xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -140,11 +143,26 @@ const STATUS_BADGE: Record<string, string> = {
           <app-invoice-form
             [invoice]="editingInvoice()"
             [articles]="articles()"
+            [externalCustomer]="pendingCustomer()"
             (saved)="onSaved($event)"
             (cancelled)="closeForm()"
+            (createCustomerRequested)="onCreateCustomerRequested()"
+            (issuedAndPrinted)="onIssuedAndPrinted($event)"
           />
         </div>
         <div class="modal-backdrop" (click)="closeForm()"></div>
+      </dialog>
+    }
+
+    @if (showCustomerForm()) {
+      <dialog class="modal modal-open">
+        <div class="modal-box">
+          <app-customer-form
+            (saved)="onCustomerSaved($event)"
+            (cancelled)="showCustomerForm.set(false)"
+          />
+        </div>
+        <div class="modal-backdrop" (click)="showCustomerForm.set(false)"></div>
       </dialog>
     }
   `,
@@ -154,10 +172,13 @@ export class InvoicesComponent {
   protected readonly t = inject(I18nService).T;
 
   private readonly articleService = inject(ARTICLE_SERVICE);
+  private readonly customerService = inject(CUSTOMER_SERVICE);
 
   protected readonly articles = signal<Article[]>([]);
   protected readonly showForm = signal(false);
+  protected readonly showCustomerForm = signal(false);
   protected readonly editingInvoice = signal<Invoice | null>(null);
+  protected readonly pendingCustomer = signal<Customer | null>(null);
   protected readonly statusTabs = STATUS_TABS;
 
   private searchTimer?: ReturnType<typeof setTimeout>;
@@ -215,6 +236,7 @@ export class InvoicesComponent {
 
   closeForm(): void {
     this.showForm.set(false);
+    this.pendingCustomer.set(null);
   }
 
   async onSaved(data: InvoiceCreate): Promise<void> {
@@ -225,5 +247,21 @@ export class InvoicesComponent {
       await this.store.createInvoice(data);
     }
     this.closeForm();
+  }
+
+  async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
+    const invoice = await this.store.createInvoice(data);
+    await this.store.issueAndPrint(invoice.id);
+    this.closeForm();
+  }
+
+  onCreateCustomerRequested(): void {
+    this.showCustomerForm.set(true);
+  }
+
+  async onCustomerSaved(data: Omit<Customer, 'id' | 'isArchived'>): Promise<void> {
+    const customer = await this.customerService.create(data);
+    this.pendingCustomer.set(customer);
+    this.showCustomerForm.set(false);
   }
 }

@@ -54,6 +54,12 @@ export class MockCustomerService implements ICustomerService {
     return Promise.resolve({ items, total, page, perPage, pages });
   }
 
+  getById(id: string): Promise<Customer> {
+    const customer = this.customers.find((c) => c.id === id);
+    if (!customer) return Promise.reject(new Error(`Customer ${id} not found`));
+    return Promise.resolve(customer);
+  }
+
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer> {
     const customer: Customer = { ...data, id: String(this.nextId++), isArchived: false };
     this.customers.push(customer);

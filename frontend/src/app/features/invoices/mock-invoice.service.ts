@@ -14,6 +14,9 @@ export class MockInvoiceService implements IInvoiceService {
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
     let filtered = [...this.invoices];
+    if (params.customerId) {
+      filtered = filtered.filter((i) => i.customerId === params.customerId);
+    }
     if (statusFilter && statusFilter !== 'all') {
       filtered = filtered.filter((i) => i.status === statusFilter);
     }
