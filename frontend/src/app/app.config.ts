@@ -4,14 +4,17 @@ import {
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { ARTICLE_SERVICE } from './core/tokens/article-service.token';
+import { CUSTOMER_SERVICE } from './core/tokens/customer-service.token';
 import { HttpArticleService } from './features/articles/http-article.service';
 import { MockArticleService } from './features/articles/mock-article.service';
+import { HttpCustomerService } from './features/customers/http-customer.service';
+import { MockCustomerService } from './features/customers/mock-customer.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,5 +23,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideRouter(routes),
     { provide: ARTICLE_SERVICE, useClass: environment.useMock ? MockArticleService : HttpArticleService },
+    { provide: CUSTOMER_SERVICE, useClass: environment.useMock ? MockCustomerService : HttpCustomerService },
   ],
 };
