@@ -1,0 +1,154 @@
+{
+  "tenant": {
+    "name": "Cave du Lac",
+    "subdomain": "cave-du-lac",
+    "admin_email": "admin@cave.ch",
+    "admin_password": "secret123",
+    "profile": {
+      "company_name": "Cave du Lac Sàrl",
+      "address_line1": "Route du Vignoble 12",
+      "postal_code": "1400",
+      "city": "Yverdon-les-Bains",
+      "country": "CH",
+      "iban": "CH56 0483 5012 3456 7800 9",
+      "vat_number": "CHE-123.456.789 TVA",
+      "default_vat_rate": 0.081,
+      "invoice_prefix": "FAC",
+      "invoice_next_number": 1,
+      "payment_terms_days": 30
+    }
+  },
+  "articles": [
+    {
+      "name": "Pinot Noir Vieilles Vignes 2021",
+      "description": "Élevé en barrique 12 mois, notes de cerise noire et d'épices",
+      "unit_price": 24.50,
+      "vat_rate_override": null,
+      "stock_quantity": 120
+    },
+    {
+      "name": "Chasselas Tradition 2023",
+      "description": "Fraîcheur et minéralité, idéal à l'apéritif",
+      "unit_price": 12.00,
+      "vat_rate_override": null,
+      "stock_quantity": 240
+    },
+    {
+      "name": "Assemblage Rouge Prestige 2020",
+      "description": "Merlot 60% / Cabernet Franc 40%, garde 5 ans",
+      "unit_price": 38.00,
+      "vat_rate_override": null,
+      "stock_quantity": 60
+    },
+    {
+      "name": "Rosé de Gamay 2023",
+      "description": "Robe saumonée, arômes de fraise et framboise",
+      "unit_price": 14.50,
+      "vat_rate_override": null,
+      "stock_quantity": 180
+    },
+    {
+      "name": "Caisse bois 6 bouteilles",
+      "description": "Caisse en bois avec gravure personnalisable",
+      "unit_price": 18.00,
+      "vat_rate_override": 0.081,
+      "stock_quantity": 50
+    }
+  ],
+  "customers": [
+    {
+      "first_name": "Marc",
+      "last_name": "Dupont",
+      "email": "marc.dupont@example.ch",
+      "address_line1": "Rue de Berne 45",
+      "postal_code": "3000",
+      "city": "Berne",
+      "country": "CH",
+      "phones": [{"label": "Mobile", "number": "+41 79 123 45 67"}]
+    },
+    {
+      "first_name": "Sophie",
+      "last_name": "Müller",
+      "email": "sophie.mueller@example.ch",
+      "address_line1": "Bahnhofstrasse 8",
+      "postal_code": "8001",
+      "city": "Zürich",
+      "country": "CH",
+      "phones": [{"label": "Bureau", "number": "+41 44 234 56 78"}]
+    },
+    {
+      "first_name": "Jean-Pierre",
+      "last_name": "Rochat",
+      "email": "jp.rochat@example.ch",
+      "address_line1": "Grand-Rue 17",
+      "postal_code": "1003",
+      "city": "Lausanne",
+      "country": "CH",
+      "phones": []
+    },
+    {
+      "first_name": "Hôtel",
+      "last_name": "du Château",
+      "email": "cave@hotelduchateau.ch",
+      "address_line1": "Place du Château 1",
+      "postal_code": "2000",
+      "city": "Neuchâtel",
+      "country": "CH",
+      "phones": [{"label": "Réception", "number": "+41 32 345 67 89"}]
+    }
+  ],
+  "invoices": [
+    {
+      "customer_email": "marc.dupont@example.ch",
+      "status": "draft",
+      "currency": "CHF",
+      "discount_percent": 0,
+      "notes": "",
+      "lines": [
+        {"article_name": "Pinot Noir Vieilles Vignes 2021", "quantity": 6},
+        {"article_name": "Chasselas Tradition 2023", "quantity": 12}
+      ]
+    },
+    {
+      "customer_email": "cave@hotelduchateau.ch",
+      "status": "issued",
+      "invoice_number": "FAC-2026-0001",
+      "issue_date": "2026-06-01",
+      "due_date": "2026-07-01",
+      "currency": "CHF",
+      "discount_percent": 10,
+      "notes": "Commande annuelle — remise partenaire 10%",
+      "lines": [
+        {"article_name": "Chasselas Tradition 2023", "quantity": 48},
+        {"article_name": "Pinot Noir Vieilles Vignes 2021", "quantity": 24},
+        {"article_name": "Caisse bois 6 bouteilles", "quantity": 4}
+      ]
+    },
+    {
+      "customer_email": "sophie.mueller@example.ch",
+      "status": "paid",
+      "invoice_number": "FAC-2026-0002",
+      "issue_date": "2026-05-15",
+      "due_date": "2026-06-14",
+      "currency": "CHF",
+      "discount_percent": 0,
+      "notes": "",
+      "lines": [
+        {"article_name": "Assemblage Rouge Prestige 2020", "quantity": 3},
+        {"article_name": "Rosé de Gamay 2023", "quantity": 6}
+      ]
+    },
+    {
+      "customer_email": "jp.rochat@example.ch",
+      "status": "draft",
+      "currency": "CHF",
+      "discount_percent": 5,
+      "notes": "Offre de bienvenue — 5% sur première commande",
+      "lines": [
+        {"article_name": "Pinot Noir Vieilles Vignes 2021", "quantity": 3},
+        {"article_name": "Rosé de Gamay 2023", "quantity": 3},
+        {"article_name": "Caisse bois 6 bouteilles", "quantity": 1}
+      ]
+    }
+  ]
+}
