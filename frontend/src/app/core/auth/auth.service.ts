@@ -20,10 +20,23 @@ export class AuthService {
     const resp = await firstValueFrom(
       this.http.post<TokenResponse>('/api/auth/login', { email, password })
     );
-    localStorage.setItem('access_token', resp.access_token);
-    localStorage.setItem('refresh_token', resp.refresh_token);
-    this.token.set(resp.access_token);
+    this._storeTokens(resp);
     await this.router.navigate(['/articles']);
+  }
+
+  async refresh(): Promise<boolean> {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+    try {
+      const resp = await firstValueFrom(
+        this.http.post<TokenResponse>('/api/auth/refresh', { refresh_token: refreshToken })
+      );
+      this._storeTokens(resp);
+      return true;
+    } catch {
+      this.logout();
+      return false;
+    }
   }
 
   logout(): void {
@@ -31,5 +44,11 @@ export class AuthService {
     localStorage.removeItem('refresh_token');
     this.token.set(null);
     this.router.navigate(['/login']);
+  }
+
+  private _storeTokens(resp: TokenResponse): void {
+    localStorage.setItem('access_token', resp.access_token);
+    localStorage.setItem('refresh_token', resp.refresh_token);
+    this.token.set(resp.access_token);
   }
 }
