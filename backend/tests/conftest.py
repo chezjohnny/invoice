@@ -13,21 +13,15 @@ def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture(scope="session")
-async def db_engine():
+@pytest.fixture
+async def db_session():
     engine = create_async_engine(TEST_DATABASE_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
-
-@pytest.fixture
-async def db_session(db_engine):
-    session_factory = async_sessionmaker(db_engine, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as session:
         yield session
-        await session.rollback()
+    await engine.dispose()
 
 
 @pytest.fixture

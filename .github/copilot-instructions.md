@@ -5,9 +5,13 @@ Multi-tenant SaaS invoice management for Swiss SMEs. One admin user per tenant.
 Swiss QR-bill support. Bilingual UI (EN/FR).
 
 ## Current phase
-**Phase 1 — Skeleton** (complete)
-- Backend: FastAPI + SQLAlchemy + Alembic + JWT auth
-- Frontend: Angular 22 zoneless + Tailwind v4 + DaisyUI + @ngrx/signals
+**Phase 4 — Angular Resources / HTTP** (in progress)
+
+### Completed
+- **Phase 1** — Backend skeleton (FastAPI + SQLAlchemy + Alembic + JWT auth) + frontend skeleton (Angular 22 zoneless + Tailwind v4 + DaisyUI)
+- **Phase 2** — `ArticleStore` with `withEntities` / `withComputed` / `withHooks`; `IArticleService` DI token + `MockArticleService`
+- **Phase 3** — `ArticleFormComponent` with `linkedSignal` fields, `computed()` validation, create/edit modal
+- **Phase 4** — Article CRUD backend endpoints; `HttpArticleService` (`HttpClient` + `firstValueFrom`); `environment.useMock` wiring
 
 ## Repo structure
 ```
