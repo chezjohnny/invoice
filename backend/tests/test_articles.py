@@ -1,19 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
-
-async def _auth_header(client: AsyncClient) -> dict[str, str]:
-    await client.post("/auth/register", json={
-        "tenant_name": "Cave Test",
-        "subdomain": "cave-test",
-        "email": "cave@test.ch",
-        "password": "secret123",
-    })
-    resp = await client.post("/auth/login", json={
-        "email": "cave@test.ch",
-        "password": "secret123",
-    })
-    return {"Authorization": f"Bearer {resp.json()['access_token']}"}
+AUTH = "/auth"
+ARTICLES = "/articles"
 
 
 ARTICLE_PAYLOAD = {
@@ -26,9 +15,8 @@ ARTICLE_PAYLOAD = {
 
 
 @pytest.mark.anyio
-async def test_create_article(client: AsyncClient):
-    headers = await _auth_header(client)
-    resp = await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers)
+async def test_create_article(client: AsyncClient, auth_headers: dict[str, str]):
+    resp = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
     assert resp.status_code == 201
     data = resp.json()
     assert data["name"] == "Pinot Noir"
@@ -37,10 +25,9 @@ async def test_create_article(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_list_articles(client: AsyncClient):
-    headers = await _auth_header(client)
-    await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers)
-    resp = await client.get("/articles", headers=headers)
+async def test_list_articles(client: AsyncClient, auth_headers: dict[str, str]):
+    await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
+    resp = await client.get(ARTICLES, headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
@@ -48,31 +35,32 @@ async def test_list_articles(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_update_article(client: AsyncClient):
-    headers = await _auth_header(client)
-    create = await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers)
+async def test_update_article(client: AsyncClient, auth_headers: dict[str, str]):
+    create = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
     article_id = create.json()["id"]
-    resp = await client.put(f"/articles/{article_id}", json={**ARTICLE_PAYLOAD, "name": "Chardonnay"}, headers=headers)
+    resp = await client.put(
+        f"{ARTICLES}/{article_id}",
+        json={**ARTICLE_PAYLOAD, "name": "Chardonnay"},
+        headers=auth_headers,
+    )
     assert resp.status_code == 200
     assert resp.json()["name"] == "Chardonnay"
 
 
 @pytest.mark.anyio
-async def test_archive_article(client: AsyncClient):
-    headers = await _auth_header(client)
-    create = await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers)
+async def test_archive_article(client: AsyncClient, auth_headers: dict[str, str]):
+    create = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
     article_id = create.json()["id"]
-    await client.patch(f"/articles/{article_id}/archive", headers=headers)
-    resp = await client.get("/articles", headers=headers)
+    await client.patch(f"{ARTICLES}/{article_id}/archive", headers=auth_headers)
+    resp = await client.get(ARTICLES, headers=auth_headers)
     assert all(a["id"] != article_id for a in resp.json()["items"])
 
 
 @pytest.mark.anyio
-async def test_article_search(client: AsyncClient):
-    headers = await _auth_header(client)
-    await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers)
-    await client.post("/articles", json={**ARTICLE_PAYLOAD, "name": "Chardonnay"}, headers=headers)
-    resp = await client.get("/articles?search=pinot", headers=headers)
+async def test_article_search(client: AsyncClient, auth_headers: dict[str, str]):
+    await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
+    await client.post(ARTICLES, json={**ARTICLE_PAYLOAD, "name": "Chardonnay"}, headers=auth_headers)
+    resp = await client.get(f"{ARTICLES}?search=pinot", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
@@ -80,19 +68,15 @@ async def test_article_search(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_article_tenant_isolation(client: AsyncClient):
-    await client.post("/auth/register", json={
-        "tenant_name": "A", "subdomain": "tenant-a", "email": "a@test.ch", "password": "secret",
-    })
-    resp_a = await client.post("/auth/login", json={"email": "a@test.ch", "password": "secret"})
-    headers_a = {"Authorization": f"Bearer {resp_a.json()['access_token']}"}
-    await client.post("/articles", json=ARTICLE_PAYLOAD, headers=headers_a)
+async def test_article_tenant_isolation(client: AsyncClient, auth_headers: dict[str, str]):
+    await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
 
-    await client.post("/auth/register", json={
-        "tenant_name": "B", "subdomain": "tenant-b", "email": "b@test.ch", "password": "secret",
+    await client.post(f"{AUTH}/register", json={
+        "tenant_name": "Other", "subdomain": "other",
+        "email": "other@test.ch", "password": "secret",
     })
-    resp_b = await client.post("/auth/login", json={"email": "b@test.ch", "password": "secret"})
+    resp_b = await client.post(f"{AUTH}/login", json={"email": "other@test.ch", "password": "secret"})
     headers_b = {"Authorization": f"Bearer {resp_b.json()['access_token']}"}
-    resp = await client.get("/articles", headers=headers_b)
+    resp = await client.get(ARTICLES, headers=headers_b)
     assert resp.json()["total"] == 0
     assert resp.json()["items"] == []
