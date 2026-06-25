@@ -54,7 +54,18 @@ import { ArticleStore } from './article.store';
                       <span class="text-base-content/40">—</span>
                     }
                   </td>
-                  <td class="text-right">{{ article.stockQuantity }}</td>
+                  <td class="text-right">
+                    <span [class.text-error]="article.stockQuantity < 0"
+                          [class.text-warning]="article.stockQuantity === 0"
+                          [class.font-semibold]="article.stockQuantity <= 0">
+                      {{ article.stockQuantity }}
+                    </span>
+                    @if (article.stockQuantity < 0) {
+                      <span class="badge badge-error badge-xs ml-1" [title]="t().articles.negativeStock">!</span>
+                    } @else if (article.stockQuantity === 0) {
+                      <span class="badge badge-warning badge-xs ml-1" [title]="t().articles.outOfStock">0</span>
+                    }
+                  </td>
                   <td class="flex gap-1">
                     <button class="btn btn-ghost btn-xs" (click)="openEdit(article)">
                       {{ t().common.edit }}

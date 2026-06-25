@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.models.article import Article
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import TenantProfile, User
@@ -154,6 +155,17 @@ async def issue_invoice(
     invoice.status = InvoiceStatus.ISSUED
     profile.invoice_next_number += 1
 
+    lines_result = await db.execute(
+        select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id)
+    )
+    for line in lines_result.scalars().all():
+        if line.article_id is not None:
+            art = (await db.execute(
+                select(Article).where(Article.id == line.article_id)
+            )).scalar_one_or_none()
+            if art is not None:
+                art.stock_quantity -= line.quantity
+
     await db.commit()
     return await _load_invoice(invoice.id, current_user.tenant_id, db)
 
@@ -184,6 +196,19 @@ async def cancel_invoice(
             status.HTTP_409_CONFLICT,
             "Only draft or issued invoices can be cancelled",
         )
+
+    if invoice.status == InvoiceStatus.ISSUED:
+        lines_result = await db.execute(
+            select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id)
+        )
+        for line in lines_result.scalars().all():
+            if line.article_id is not None:
+                art = (await db.execute(
+                    select(Article).where(Article.id == line.article_id)
+                )).scalar_one_or_none()
+                if art is not None:
+                    art.stock_quantity += line.quantity
+
     invoice.status = InvoiceStatus.CANCELLED
     await db.commit()
     return await _load_invoice(invoice.id, current_user.tenant_id, db)

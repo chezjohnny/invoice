@@ -137,7 +137,10 @@ interface Recommendation {
                   [value]="line.vatRateSnapshot"
                   (input)="updateLine(i, 'vatRateSnapshot', asStr($event))" />
               </div>
-              <div class="col-span-1 flex justify-end">
+              <div class="col-span-1 flex flex-col items-end gap-1">
+                @if (lineStockWarning(line)) {
+                  <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
+                }
                 <button type="button" class="btn btn-ghost btn-xs text-error"
                   (click)="removeLine(i)">✕</button>
               </div>
@@ -352,6 +355,12 @@ export class InvoiceFormComponent {
           : l
       )
     );
+  }
+
+  protected lineStockWarning(line: LineForm): boolean {
+    if (!line.articleId) return false;
+    const article = this.articles().find((a) => a.id === line.articleId);
+    return article != null && article.stockQuantity <= 0;
   }
 
   protected asStr(event: Event): string {

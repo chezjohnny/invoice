@@ -48,7 +48,7 @@ type ArticleData = Omit<Article, 'id' | 'isArchived'>;
 
         <div>
           <label class="fieldset-label">{{ t().articles.stockLabel }}</label>
-          <input class="input w-full" type="number" min="0" step="1"
+          <input class="input w-full" type="number" step="1"
             [value]="stockQuantity()" (input)="stockQuantity.set(asStr($event))" />
         </div>
       </fieldset>

@@ -19,6 +19,7 @@ const EN = {
     vatLabel: 'VAT override (%)', stockLabel: 'Stock quantity',
     nameRequired: 'Name is required', priceRequired: 'Required', pricePositive: 'Must be positive',
     editTitle: 'Edit article', newTitle: 'New article',
+    outOfStock: 'Out of stock', negativeStock: 'Negative stock', lowStockWarning: 'Low stock in cart',
   },
   customers: {
     title: 'Customers', new: 'New customer', search: 'Search customers…',
@@ -84,6 +85,7 @@ const FR: typeof EN = {
     vatLabel: 'TVA spécifique (%)', stockLabel: 'Quantité en stock',
     nameRequired: 'Le nom est requis', priceRequired: 'Requis', pricePositive: 'Doit être positif',
     editTitle: 'Modifier l\'article', newTitle: 'Nouvel article',
+    outOfStock: 'Rupture de stock', negativeStock: 'Stock négatif', lowStockWarning: 'Stock insuffisant dans le panier',
   },
   customers: {
     title: 'Clients', new: 'Nouveau client', search: 'Rechercher des clients…',
