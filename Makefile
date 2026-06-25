@@ -69,21 +69,23 @@ backend-check: backend-lint backend-typecheck backend-test ## Lint + typecheck +
 
 # ── Frontend ─────────────────────────────────────────────────────────────────
 
+NVM := . "$$HOME/.nvm/nvm.sh" && nvm use default
+
 .PHONY: frontend-dev
-frontend-dev: check-node ## Start frontend dev server (connects to backend at localhost:8000)
-	npm --prefix frontend start
+frontend-dev: ## Start frontend dev server (connects to backend at localhost:8000)
+	$(NVM) && npm --prefix frontend start
 
 .PHONY: frontend-mock
-frontend-mock: check-node ## Start frontend dev server with mock services (no backend needed)
-	npm --prefix frontend run start:mock
+frontend-mock: ## Start frontend dev server with mock services (no backend needed)
+	$(NVM) && npm --prefix frontend run start:mock
 
 .PHONY: frontend-test
-frontend-test: check-node ## Run frontend tests (vitest, non-interactive)
-	npm --prefix frontend test -- --watch=false
+frontend-test: ## Run frontend tests (vitest, non-interactive)
+	$(NVM) && cd frontend && npx vitest run
 
 .PHONY: frontend-build
-frontend-build: check-node ## Build frontend for production
-	npm --prefix frontend run build
+frontend-build: ## Build frontend for production
+	$(NVM) && npm --prefix frontend run build
 
 # ── Full stack ────────────────────────────────────────────────────────────────
 

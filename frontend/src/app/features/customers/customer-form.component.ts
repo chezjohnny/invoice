@@ -1,4 +1,5 @@
-import { Component, computed, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer, PhoneEntry } from './customer.model';
 
 type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
@@ -7,12 +8,14 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
   selector: 'app-customer-form',
   template: `
     <form (submit)="submit($event)">
-      <h3 class="text-lg font-bold mb-4">{{ customer() ? 'Edit customer' : 'New customer' }}</h3>
+      <h3 class="text-lg font-bold mb-4">
+        {{ customer() ? t().customers.editTitle : t().customers.newTitle }}
+      </h3>
 
       <fieldset class="fieldset gap-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="fieldset-label">First name *</label>
+            <label class="fieldset-label">{{ t().customers.firstNameLabel }}</label>
             <input class="input w-full" [class.input-error]="submitted() && errors().firstName"
               type="text" [value]="firstName()" (input)="firstName.set(asStr($event))" />
             @if (submitted() && errors().firstName) {
@@ -20,7 +23,7 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
             }
           </div>
           <div>
-            <label class="fieldset-label">Last name *</label>
+            <label class="fieldset-label">{{ t().customers.lastNameLabel }}</label>
             <input class="input w-full" [class.input-error]="submitted() && errors().lastName"
               type="text" [value]="lastName()" (input)="lastName.set(asStr($event))" />
             @if (submitted() && errors().lastName) {
@@ -30,7 +33,7 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
         </div>
 
         <div>
-          <label class="fieldset-label">Email</label>
+          <label class="fieldset-label">{{ t().customers.emailLabel }}</label>
           <input class="input w-full" [class.input-error]="submitted() && errors().email"
             type="email" [value]="email()" (input)="email.set(asStr($event))" />
           @if (submitted() && errors().email) {
@@ -39,32 +42,32 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
         </div>
 
         <div>
-          <label class="fieldset-label">Address</label>
+          <label class="fieldset-label">{{ t().customers.addressLabel }}</label>
           <input class="input w-full" type="text"
             [value]="addressLine1()" (input)="addressLine1.set(asStr($event))" />
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="fieldset-label">Postal code</label>
+            <label class="fieldset-label">{{ t().customers.postalLabel }}</label>
             <input class="input w-full" type="text"
               [value]="postalCode()" (input)="postalCode.set(asStr($event))" />
           </div>
           <div class="col-span-2">
-            <label class="fieldset-label">City</label>
+            <label class="fieldset-label">{{ t().customers.cityLabel }}</label>
             <input class="input w-full" type="text"
               [value]="city()" (input)="city.set(asStr($event))" />
           </div>
         </div>
 
         <div>
-          <label class="fieldset-label">Country</label>
+          <label class="fieldset-label">{{ t().customers.countryLabel }}</label>
           <input class="input w-full" type="text" maxlength="2"
             [value]="country()" (input)="country.set(asStr($event))" />
         </div>
 
         <div>
-          <label class="fieldset-label">Phones</label>
+          <label class="fieldset-label">{{ t().customers.phonesLabel }}</label>
           @for (phone of phones(); track $index) {
             <div class="flex gap-2 mb-2">
               <input type="text" placeholder="Label" class="input input-bordered w-28"
@@ -78,14 +81,16 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
             </div>
           }
           <button type="button" class="btn btn-ghost btn-sm mt-1" (click)="addPhone()">
-            + Add phone
+            {{ t().customers.addPhone }}
           </button>
         </div>
       </fieldset>
 
       <div class="flex justify-end gap-2 mt-6">
-        <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
+          {{ t().common.cancel }}
+        </button>
+        <button type="submit" class="btn btn-primary">{{ t().common.save }}</button>
       </div>
     </form>
   `,
@@ -94,6 +99,8 @@ export class CustomerFormComponent {
   readonly customer = input<Customer | null>(null);
   readonly saved = output<CustomerData>();
   readonly cancelled = output<void>();
+
+  protected readonly t = inject(I18nService).T;
 
   protected readonly firstName = linkedSignal(() => this.customer()?.firstName ?? '');
   protected readonly lastName = linkedSignal(() => this.customer()?.lastName ?? '');
@@ -106,12 +113,12 @@ export class CustomerFormComponent {
   protected readonly submitted = linkedSignal(() => { this.customer(); return false; });
 
   protected readonly errors = computed(() => ({
-    firstName: this.firstName().trim() === '' ? 'First name is required' : null,
-    lastName: this.lastName().trim() === '' ? 'Last name is required' : null,
+    firstName: this.firstName().trim() === '' ? this.t().customers.firstNameRequired : null,
+    lastName: this.lastName().trim() === '' ? this.t().customers.lastNameRequired : null,
     email: (() => {
       const v = this.email().trim();
       if (v === '') return null;
-      return v.includes('@') ? null : 'Invalid email';
+      return v.includes('@') ? null : this.t().customers.invalidEmail;
     })(),
   }));
 

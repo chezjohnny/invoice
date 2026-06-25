@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-login',
@@ -7,8 +8,8 @@ import { AuthService } from '../../core/auth/auth.service';
     <div class="min-h-screen flex items-center justify-center bg-base-200">
       <div class="card w-96 bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title text-2xl justify-center">Invoice</h2>
-          <p class="text-center text-base-content/60 mb-4">Sign in to your account</p>
+          <h2 class="card-title text-2xl justify-center">{{ t().common.app }}</h2>
+          <p class="text-center text-base-content/60 mb-4">{{ t().login.subtitle }}</p>
           @if (error()) {
             <div class="alert alert-error text-sm">{{ error() }}</div>
           }
@@ -16,30 +17,30 @@ import { AuthService } from '../../core/auth/auth.service';
             <label class="floating-label">
               <input
                 type="email"
-                placeholder="Email"
+                [placeholder]="t().login.email"
                 class="input input-bordered w-full"
                 [value]="email()"
                 (input)="email.set($any($event.target).value)"
                 autocomplete="email"
               />
-              <span>Email</span>
+              <span>{{ t().login.email }}</span>
             </label>
             <label class="floating-label">
               <input
                 type="password"
-                placeholder="Password"
+                [placeholder]="t().login.password"
                 class="input input-bordered w-full"
                 [value]="password()"
                 (input)="password.set($any($event.target).value)"
                 autocomplete="current-password"
               />
-              <span>Password</span>
+              <span>{{ t().login.password }}</span>
             </label>
             <button type="submit" class="btn btn-primary w-full" [disabled]="loading()">
               @if (loading()) {
                 <span class="loading loading-spinner loading-sm"></span>
               }
-              Sign in
+              {{ t().login.signIn }}
             </button>
           </form>
         </div>
@@ -50,6 +51,7 @@ import { AuthService } from '../../core/auth/auth.service';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
 
+  protected readonly t = inject(I18nService).T;
   protected readonly email = signal('');
   protected readonly password = signal('');
   protected readonly loading = signal(false);
@@ -61,7 +63,7 @@ export class LoginComponent {
     try {
       await this.auth.login(this.email(), this.password());
     } catch {
-      this.error.set('Invalid email or password.');
+      this.error.set(this.t().login.invalid);
     } finally {
       this.loading.set(false);
     }

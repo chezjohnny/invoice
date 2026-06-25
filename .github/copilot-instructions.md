@@ -5,13 +5,16 @@ Multi-tenant SaaS invoice management for Swiss SMEs. One admin user per tenant.
 Swiss QR-bill support. Bilingual UI (EN/FR).
 
 ## Current phase
-**Phase 4 — Angular Resources / HTTP** (in progress)
+**Phase 7 — Dashboard + i18n + store tests** (complete)
 
 ### Completed
 - **Phase 1** — Backend skeleton (FastAPI + SQLAlchemy + Alembic + JWT auth) + frontend skeleton (Angular 22 zoneless + Tailwind v4 + DaisyUI)
 - **Phase 2** — `ArticleStore` with `withEntities` / `withComputed` / `withHooks`; `IArticleService` DI token + `MockArticleService`
 - **Phase 3** — `ArticleFormComponent` with `linkedSignal` fields, `computed()` validation, create/edit modal
 - **Phase 4** — Article CRUD backend endpoints; `HttpArticleService` (`HttpClient` + `firstValueFrom`); `environment.useMock` wiring
+- **Phase 5** — Customer CRUD (backend + store + form + CSV export); same DI token pattern
+- **Phase 6** — Invoice CRUD + status workflow (`draft → issued → paid → cancelled`); Swiss QR-bill PDF (`fpdf2` + `qrcode[pil]`)
+- **Phase 7** — Dashboard KPIs (DaisyUI `stats`); `I18nService` EN/FR with `computed(T)` reactive translations; all components i18n; `CustomerStore` + `InvoiceStore` vitest specs; `vitest.config.ts` + `test-setup.ts` for direct `npx vitest run`
 
 ## Repo structure
 ```

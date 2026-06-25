@@ -1,5 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { Article } from './article.model';
 import { ArticleFormComponent } from './article-form.component';
 import { ArticleStore } from './article.store';
@@ -11,15 +12,15 @@ import { ArticleStore } from './article.store';
   template: `
     <div class="p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Articles</h1>
-        <button class="btn btn-primary" (click)="openNew()">New article</button>
+        <h1 class="text-2xl font-bold">{{ t().articles.title }}</h1>
+        <button class="btn btn-primary" (click)="openNew()">{{ t().articles.new }}</button>
       </div>
 
       <label class="input mb-4 w-full max-w-sm flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-50" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
         </svg>
-        <input type="text" placeholder="Search articles…"
+        <input type="text" [placeholder]="t().articles.search"
           [value]="store.filter()" (input)="onFilter($event)" />
       </label>
 
@@ -27,11 +28,11 @@ import { ArticleStore } from './article.store';
         <table class="table table-zebra w-full">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th class="text-right">Unit price</th>
-              <th>VAT override</th>
-              <th class="text-right">Stock</th>
+              <th>{{ t().articles.name }}</th>
+              <th>{{ t().articles.description }}</th>
+              <th class="text-right">{{ t().articles.unitPrice }}</th>
+              <th>{{ t().articles.vatOverride }}</th>
+              <th class="text-right">{{ t().articles.stock }}</th>
               <th></th>
             </tr>
           </thead>
@@ -50,13 +51,19 @@ import { ArticleStore } from './article.store';
                 </td>
                 <td class="text-right">{{ article.stockQuantity }}</td>
                 <td class="flex gap-1">
-                  <button class="btn btn-ghost btn-xs" (click)="openEdit(article)">Edit</button>
-                  <button class="btn btn-ghost btn-xs" (click)="store.archive(article.id)">Archive</button>
+                  <button class="btn btn-ghost btn-xs" (click)="openEdit(article)">
+                    {{ t().common.edit }}
+                  </button>
+                  <button class="btn btn-ghost btn-xs" (click)="store.archive(article.id)">
+                    {{ t().common.archive }}
+                  </button>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="text-center text-base-content/40 py-8">No articles found.</td>
+                <td colspan="6" class="text-center text-base-content/40 py-8">
+                  {{ t().articles.noResults }}
+                </td>
               </tr>
             }
           </tbody>
@@ -80,6 +87,7 @@ import { ArticleStore } from './article.store';
 })
 export class ArticlesComponent {
   protected readonly store = inject(ArticleStore);
+  protected readonly t = inject(I18nService).T;
   protected readonly showForm = signal(false);
   protected readonly editingArticle = signal<Article | null>(null);
 

@@ -1,8 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { Article } from '../articles/article.model';
 import { Customer } from '../customers/customer.model';
-import { InvoiceCreate, InvoiceLine } from './invoice.model';
+import { InvoiceCreate } from './invoice.model';
 
 interface LineForm {
   id: string | null;
@@ -18,16 +19,18 @@ interface LineForm {
   imports: [CurrencyPipe],
   template: `
     <form (submit)="submit($event)">
-      <h3 class="text-lg font-bold mb-4">{{ invoice() ? 'Edit invoice' : 'New invoice' }}</h3>
+      <h3 class="text-lg font-bold mb-4">
+        {{ invoice() ? t().invoices.editTitle : t().invoices.newTitle }}
+      </h3>
 
       <fieldset class="fieldset gap-3">
         <div>
-          <label class="fieldset-label">Customer *</label>
+          <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
           <select class="select select-bordered w-full"
             [class.select-error]="submitted() && errors().customerId"
             [value]="customerId()"
             (change)="customerId.set(asStr($event))">
-            <option value="">— Select a customer —</option>
+            <option value="">—</option>
             @for (c of customers(); track c.id) {
               <option [value]="c.id">{{ c.lastName }}, {{ c.firstName }}</option>
             }
@@ -39,56 +42,55 @@ interface LineForm {
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="fieldset-label">Discount (%)</label>
+            <label class="fieldset-label">{{ t().invoices.discountLabel }}</label>
             <input class="input w-full" type="number" min="0" max="100" step="0.1"
               [value]="discountPercent()" (input)="discountPercent.set(asStr($event))" />
           </div>
           <div>
-            <label class="fieldset-label">Currency</label>
+            <label class="fieldset-label">{{ t().invoices.currencyLabel }}</label>
             <input class="input w-full" type="text" maxlength="3"
               [value]="currency()" (input)="currency.set(asStr($event))" />
           </div>
         </div>
 
-        <!-- Lines -->
         <div>
-          <label class="fieldset-label font-semibold">Lines</label>
+          <label class="fieldset-label font-semibold">{{ t().invoices.linesLabel }}</label>
           @if (lines().length === 0) {
-            <p class="text-sm text-base-content/40 mb-2">No lines yet.</p>
+            <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
           }
           @for (line of lines(); track $index; let i = $index) {
             <div class="border border-base-300 rounded p-3 mb-2 grid grid-cols-12 gap-2 items-end">
               <div class="col-span-4">
-                <label class="fieldset-label text-xs">Article</label>
+                <label class="fieldset-label text-xs">{{ t().invoices.articleLabel }}</label>
                 <select class="select select-bordered select-sm w-full"
                   [value]="line.articleId ?? ''"
                   (change)="selectArticle(i, asStr($event))">
-                  <option value="">— Custom —</option>
+                  <option value="">—</option>
                   @for (a of articles(); track a.id) {
                     <option [value]="a.id">{{ a.name }}</option>
                   }
                 </select>
               </div>
               <div class="col-span-4">
-                <label class="fieldset-label text-xs">Description *</label>
+                <label class="fieldset-label text-xs">{{ t().invoices.descLabel }}</label>
                 <input class="input input-sm w-full" type="text"
                   [value]="line.descriptionSnapshot"
                   (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
               </div>
               <div class="col-span-1">
-                <label class="fieldset-label text-xs">Qty</label>
+                <label class="fieldset-label text-xs">{{ t().invoices.qtyLabel }}</label>
                 <input class="input input-sm w-full" type="number" min="1" step="1"
                   [value]="line.quantity"
                   (input)="updateLine(i, 'quantity', asStr($event))" />
               </div>
               <div class="col-span-1">
-                <label class="fieldset-label text-xs">Price</label>
+                <label class="fieldset-label text-xs">{{ t().invoices.priceLabel }}</label>
                 <input class="input input-sm w-full" type="number" min="0" step="0.01"
                   [value]="line.unitPriceSnapshot"
                   (input)="updateLine(i, 'unitPriceSnapshot', asStr($event))" />
               </div>
               <div class="col-span-1">
-                <label class="fieldset-label text-xs">VAT %</label>
+                <label class="fieldset-label text-xs">{{ t().invoices.vatLabel }}</label>
                 <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
                   placeholder="—"
                   [value]="line.vatRateSnapshot"
@@ -101,33 +103,36 @@ interface LineForm {
             </div>
           }
           <button type="button" class="btn btn-ghost btn-sm" (click)="addLine()">
-            + Add line
+            {{ t().invoices.addLine }}
           </button>
         </div>
 
-        <!-- Totals preview -->
         @if (lines().length > 0) {
           <div class="text-sm text-right text-base-content/70 border-t border-base-200 pt-2">
-            <span class="mr-4">Subtotal: {{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}</span>
+            <span class="mr-4">
+              {{ t().dashboard.total }}: {{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}
+            </span>
             @if (totals().discountAmount > 0) {
               <span class="mr-4">
-                Discount: -{{ totals().discountAmount | currency:'CHF':'code':'1.2-2' }}
+                -{{ totals().discountAmount | currency:'CHF':'code':'1.2-2' }}
               </span>
             }
-            <strong>Total: {{ totals().total | currency:'CHF':'code':'1.2-2' }}</strong>
+            <strong>{{ t().invoices.total }}: {{ totals().total | currency:'CHF':'code':'1.2-2' }}</strong>
           </div>
         }
 
         <div>
-          <label class="fieldset-label">Notes</label>
+          <label class="fieldset-label">{{ t().invoices.notesLabel }}</label>
           <textarea class="textarea textarea-bordered w-full" rows="3"
             [value]="notes()" (input)="notes.set(asStr($event))"></textarea>
         </div>
       </fieldset>
 
       <div class="flex justify-end gap-2 mt-6">
-        <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save draft</button>
+        <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
+          {{ t().common.cancel }}
+        </button>
+        <button type="submit" class="btn btn-primary">{{ t().invoices.saveDraft }}</button>
       </div>
     </form>
   `,
@@ -138,6 +143,8 @@ export class InvoiceFormComponent {
   readonly customers = input<Customer[]>([]);
   readonly saved = output<InvoiceCreate>();
   readonly cancelled = output<void>();
+
+  protected readonly t = inject(I18nService).T;
 
   protected readonly customerId = linkedSignal(() => this.invoice()?.customerId ?? '');
   protected readonly currency = linkedSignal(() => this.invoice()?.currency ?? 'CHF');
@@ -159,7 +166,7 @@ export class InvoiceFormComponent {
   );
 
   protected readonly errors = computed(() => ({
-    customerId: this.customerId() === '' ? 'Customer is required' : null,
+    customerId: this.customerId() === '' ? this.t().invoices.customerRequired : null,
   }));
 
   protected readonly isValid = computed(() =>
