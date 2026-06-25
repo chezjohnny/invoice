@@ -1,8 +1,10 @@
 import uuid
 from datetime import date, timedelta
+from math import ceil
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -11,24 +13,69 @@ from app.core.database import get_db
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import TenantProfile, User
+from app.schemas.common import PagedResponse
 from app.schemas.invoice import InvoiceCreate, InvoiceResponse, InvoiceUpdate
 from app.services.pdf import generate_invoice_pdf
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
 
-@router.get("", response_model=list[InvoiceResponse])
+@router.get("", response_model=PagedResponse[InvoiceResponse])
 async def list_invoices(
+    search: str = Query(""),
+    status_filter: str = Query("", alias="status"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[Invoice]:
-    result = await db.execute(
-        select(Invoice)
-        .where(Invoice.tenant_id == current_user.tenant_id)
-        .options(selectinload(Invoice.lines))
-        .order_by(Invoice.created_at.desc())
+) -> Any:
+    conditions = [Invoice.tenant_id == current_user.tenant_id]
+    if status_filter:
+        try:
+            conditions.append(Invoice.status == InvoiceStatus(status_filter))
+        except ValueError:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, f"Invalid status: {status_filter}"
+            ) from None
+    if search:
+        conditions.append(Invoice.invoice_number.ilike(f"%{search}%"))
+
+    total = (await db.scalar(select(func.count(Invoice.id)).where(*conditions))) or 0
+    items = list(
+        (
+            await db.execute(
+                select(Invoice)
+                .where(*conditions)
+                .options(selectinload(Invoice.lines))
+                .order_by(Invoice.created_at.desc())
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+        ).scalars().all()
     )
-    return list(result.scalars().all())
+    pages = max(1, ceil(total / per_page)) if total else 1
+
+    # Batch-load customer names for this page
+    customer_ids = list({i.customer_id for i in items})
+    cust_rows = (
+        await db.execute(
+            select(Customer.id, Customer.first_name, Customer.last_name)
+            .where(Customer.id.in_(customer_ids))
+        )
+    ).all() if customer_ids else []
+    names: dict[uuid.UUID, str] = {
+        r.id: f"{r.last_name}, {r.first_name}" for r in cust_rows
+    }
+
+    response_items = [
+        InvoiceResponse.model_validate(inv).model_copy(
+            update={"customer_name": names.get(inv.customer_id, "")}
+        )
+        for inv in items
+    ]
+    return PagedResponse(
+        items=response_items, total=total, page=page, per_page=per_page, pages=pages
+    )
 
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
@@ -40,7 +87,6 @@ async def create_invoice(
     invoice = Invoice(
         tenant_id=current_user.tenant_id,
         customer_id=body.customer_id,
-        currency=body.currency,
         discount_percent=body.discount_percent,
         notes=body.notes,
     )
@@ -64,7 +110,6 @@ async def update_invoice(
         raise HTTPException(status.HTTP_409_CONFLICT, "Only draft invoices can be edited")
 
     invoice.customer_id = body.customer_id
-    invoice.currency = body.currency
     invoice.discount_percent = body.discount_percent
     invoice.notes = body.notes
 

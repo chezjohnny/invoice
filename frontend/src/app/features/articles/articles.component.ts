@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Article } from './article.model';
 import { ArticleFormComponent } from './article-form.component';
@@ -21,54 +21,75 @@ import { ArticleStore } from './article.store';
           <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
         </svg>
         <input type="text" [placeholder]="t().articles.search"
-          [value]="store.filter()" (input)="onFilter($event)" />
+          [value]="store.search()" (input)="onSearch($event)" />
       </label>
 
-      <div class="overflow-x-auto">
-        <table class="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>{{ t().articles.name }}</th>
-              <th>{{ t().articles.description }}</th>
-              <th class="text-right">{{ t().articles.unitPrice }}</th>
-              <th>{{ t().articles.vatOverride }}</th>
-              <th class="text-right">{{ t().articles.stock }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (article of store.filteredArticles(); track article.id) {
+      @if (store.loading()) {
+        <div class="flex justify-center py-8">
+          <span class="loading loading-spinner loading-md"></span>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
               <tr>
-                <td class="font-medium">{{ article.name }}</td>
-                <td class="text-base-content/60 text-sm">{{ article.description }}</td>
-                <td class="text-right">{{ article.unitPrice | currency:'CHF':'code':'1.2-2' }}</td>
-                <td>
-                  @if (article.vatRateOverride != null) {
-                    <span class="badge badge-outline">{{ (article.vatRateOverride * 100).toFixed(1) }} %</span>
-                  } @else {
-                    <span class="text-base-content/40">—</span>
-                  }
-                </td>
-                <td class="text-right">{{ article.stockQuantity }}</td>
-                <td class="flex gap-1">
-                  <button class="btn btn-ghost btn-xs" (click)="openEdit(article)">
-                    {{ t().common.edit }}
-                  </button>
-                  <button class="btn btn-ghost btn-xs" (click)="store.archive(article.id)">
-                    {{ t().common.archive }}
-                  </button>
-                </td>
+                <th>{{ t().articles.name }}</th>
+                <th>{{ t().articles.description }}</th>
+                <th class="text-right">{{ t().articles.unitPrice }}</th>
+                <th>{{ t().articles.vatOverride }}</th>
+                <th class="text-right">{{ t().articles.stock }}</th>
+                <th></th>
               </tr>
-            } @empty {
-              <tr>
-                <td colspan="6" class="text-center text-base-content/40 py-8">
-                  {{ t().articles.noResults }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (article of store.items(); track article.id) {
+                <tr>
+                  <td class="font-medium">{{ article.name }}</td>
+                  <td class="text-base-content/60 text-sm">{{ article.description }}</td>
+                  <td class="text-right">{{ article.unitPrice | currency:'CHF':'code':'1.2-2' }}</td>
+                  <td>
+                    @if (article.vatRateOverride != null) {
+                      <span class="badge badge-outline">{{ (article.vatRateOverride * 100).toFixed(1) }} %</span>
+                    } @else {
+                      <span class="text-base-content/40">—</span>
+                    }
+                  </td>
+                  <td class="text-right">{{ article.stockQuantity }}</td>
+                  <td class="flex gap-1">
+                    <button class="btn btn-ghost btn-xs" (click)="openEdit(article)">
+                      {{ t().common.edit }}
+                    </button>
+                    <button class="btn btn-ghost btn-xs" (click)="store.archive(article.id)">
+                      {{ t().common.archive }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="text-center text-base-content/40 py-8">
+                    {{ t().articles.noResults }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (store.pages() > 1) {
+          <div class="flex justify-center mt-4">
+            <div class="join">
+              @for (p of pageRange(); track p) {
+                <button class="join-item btn btn-sm"
+                  [class.btn-active]="store.page() === p"
+                  (click)="store.setPage(p)">{{ p }}</button>
+              }
+            </div>
+            <span class="ml-4 text-sm text-base-content/50 self-center">
+              {{ store.total() }} {{ t().common.results }}
+            </span>
+          </div>
+        }
+      }
     </div>
 
     @if (showForm()) {
@@ -91,8 +112,22 @@ export class ArticlesComponent {
   protected readonly showForm = signal(false);
   protected readonly editingArticle = signal<Article | null>(null);
 
-  onFilter(event: Event): void {
-    this.store.setFilter((event.target as HTMLInputElement).value);
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly pageRange = computed(() => {
+    const total = this.store.pages();
+    const current = this.store.page();
+    const range: number[] = [];
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+      range.push(i);
+    }
+    return range;
+  });
+
+  onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
   }
 
   openNew(): void {

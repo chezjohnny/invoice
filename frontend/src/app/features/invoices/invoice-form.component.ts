@@ -1,8 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { Article } from '../articles/article.model';
+import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Customer } from '../customers/customer.model';
+import { Article } from '../articles/article.model';
 import { InvoiceCreate } from './invoice.model';
 
 interface LineForm {
@@ -24,17 +25,26 @@ interface LineForm {
       </h3>
 
       <fieldset class="fieldset gap-3">
-        <div>
+        <!-- Customer combobox -->
+        <div class="relative">
           <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
-          <select class="select select-bordered w-full"
-            [class.select-error]="submitted() && errors().customerId"
-            [value]="customerId()"
-            (change)="customerId.set(asStr($event))">
-            <option value="">—</option>
-            @for (c of customers(); track c.id) {
-              <option [value]="c.id">{{ c.lastName }}, {{ c.firstName }}</option>
-            }
-          </select>
+          <input type="text" class="input input-bordered w-full"
+            [class.input-error]="submitted() && errors().customerId"
+            [value]="customerSearch()"
+            (input)="onCustomerSearch(asStr($event))"
+            (blur)="onCustomerBlur()"
+            [placeholder]="t().common.searchCustomer" />
+          @if (showDropdown() && customerResults().length > 0) {
+            <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
+              @for (c of customerResults(); track c.id) {
+                <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm"
+                  (mousedown)="selectCustomer(c)">
+                  {{ c.lastName }}, {{ c.firstName }}
+                  @if (c.city) { <span class="text-base-content/50 text-xs ml-1">— {{ c.city }}</span> }
+                </li>
+              }
+            </ul>
+          }
           @if (submitted() && errors().customerId) {
             <p class="fieldset-label text-error">{{ errors().customerId }}</p>
           }
@@ -45,11 +55,6 @@ interface LineForm {
             <label class="fieldset-label">{{ t().invoices.discountLabel }}</label>
             <input class="input w-full" type="number" min="0" max="100" step="0.1"
               [value]="discountPercent()" (input)="discountPercent.set(asStr($event))" />
-          </div>
-          <div>
-            <label class="fieldset-label">{{ t().invoices.currencyLabel }}</label>
-            <input class="input w-full" type="text" maxlength="3"
-              [value]="currency()" (input)="currency.set(asStr($event))" />
           </div>
         </div>
 
@@ -138,21 +143,25 @@ interface LineForm {
   `,
 })
 export class InvoiceFormComponent {
-  readonly invoice = input<Invoice | null>(null);
+  readonly invoice = input<InvoiceType | null>(null);
   readonly articles = input<Article[]>([]);
-  readonly customers = input<Customer[]>([]);
   readonly saved = output<InvoiceCreate>();
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
+  private readonly customerService = inject(CUSTOMER_SERVICE);
 
   protected readonly customerId = linkedSignal(() => this.invoice()?.customerId ?? '');
-  protected readonly currency = linkedSignal(() => this.invoice()?.currency ?? 'CHF');
   protected readonly discountPercent = linkedSignal(() =>
     this.invoice() != null ? String(this.invoice()!.discountPercent) : '0'
   );
   protected readonly notes = linkedSignal(() => this.invoice()?.notes ?? '');
   protected readonly submitted = linkedSignal(() => { this.invoice(); return false; });
+
+  protected readonly customerSearch = linkedSignal(() => this.invoice()?.customerName ?? '');
+  protected readonly customerResults = signal<Customer[]>([]);
+  protected readonly showDropdown = signal(false);
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   protected readonly lines = linkedSignal<LineForm[]>(() =>
     this.invoice()?.lines.map((l) => ({
@@ -181,6 +190,33 @@ export class InvoiceFormComponent {
     const discountAmount = (subtotal * disc) / 100;
     return { subtotal, discountAmount, total: subtotal - discountAmount };
   });
+
+  protected onCustomerSearch(value: string): void {
+    this.customerSearch.set(value);
+    this.customerId.set('');
+    clearTimeout(this.searchTimer);
+    if (!value.trim()) {
+      this.customerResults.set([]);
+      this.showDropdown.set(false);
+      return;
+    }
+    this.searchTimer = setTimeout(async () => {
+      const page = await this.customerService.list({ search: value, perPage: 10 });
+      this.customerResults.set(page.items);
+      this.showDropdown.set(page.items.length > 0);
+    }, 300);
+  }
+
+  protected selectCustomer(customer: Customer): void {
+    this.customerId.set(customer.id);
+    this.customerSearch.set(`${customer.lastName}, ${customer.firstName}`);
+    this.showDropdown.set(false);
+    this.customerResults.set([]);
+  }
+
+  protected onCustomerBlur(): void {
+    setTimeout(() => this.showDropdown.set(false), 200);
+  }
 
   protected addLine(): void {
     this.lines.update((ls) => [
@@ -228,7 +264,6 @@ export class InvoiceFormComponent {
     if (!this.isValid()) return;
     this.saved.emit({
       customerId: this.customerId(),
-      currency: this.currency(),
       discountPercent: parseFloat(this.discountPercent()) || 0,
       notes: this.notes().trim(),
       lines: this.lines().map((l) => ({
@@ -244,4 +279,4 @@ export class InvoiceFormComponent {
 }
 
 // avoid import cycle — inline type
-type Invoice = import('./invoice.model').Invoice;
+type InvoiceType = import('./invoice.model').Invoice;

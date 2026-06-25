@@ -1,19 +1,25 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
+import { Page } from '../../core/models/page.model';
 import { Article } from './article.model';
 import { ArticleStore } from './article.store';
 
 const ARTICLES: Article[] = [
   { id: '1', name: 'Pinot Noir', description: '', unitPrice: 20, vatRateOverride: null, stockQuantity: 10, isArchived: false },
   { id: '2', name: 'Chardonnay', description: '', unitPrice: 30, vatRateOverride: null, stockQuantity: 5, isArchived: false },
-  { id: '3', name: 'Old Vintage', description: '', unitPrice: 80, vatRateOverride: null, stockQuantity: 2, isArchived: true },
 ];
+
+function makePage(items: Article[]): Page<Article> {
+  return { items, total: items.length, page: 1, perPage: 20, pages: 1 };
+}
 
 describe('ArticleStore', () => {
   let store: InstanceType<typeof ArticleStore>;
+  let articles: Article[];
 
   beforeEach(() => {
+    articles = structuredClone(ARTICLES);
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -21,14 +27,22 @@ describe('ArticleStore', () => {
         {
           provide: ARTICLE_SERVICE,
           useValue: {
-            getAll: async () => structuredClone(ARTICLES),
-            create: async (data: Omit<Article, 'id' | 'isArchived'>) => ({
-              ...data, id: 'new-id', isArchived: false,
-            }),
-            update: async (id: string, data: Omit<Article, 'id' | 'isArchived'>) => ({
-              ...data, id, isArchived: false,
-            }),
-            archive: async () => {},
+            list: async () => makePage(articles.filter((a) => !a.isArchived)),
+            getAll: async () => [...articles],
+            create: async (data: Omit<Article, 'id' | 'isArchived'>) => {
+              const a = { ...data, id: 'new-id', isArchived: false };
+              articles.push(a);
+              return a;
+            },
+            update: async (id: string, data: Omit<Article, 'id' | 'isArchived'>) => {
+              const idx = articles.findIndex((a) => a.id === id);
+              articles[idx] = { ...articles[idx], ...data };
+              return articles[idx];
+            },
+            archive: async (id: string) => {
+              const a = articles.find((a) => a.id === id);
+              if (a) a.isArchived = true;
+            },
           },
         },
       ],
@@ -36,39 +50,39 @@ describe('ArticleStore', () => {
     store = TestBed.inject(ArticleStore);
   });
 
-  it('loads all articles', async () => {
+  it('loads articles on init', async () => {
     await store.load();
-    expect(store.entities().length).toBe(3);
+    expect(store.items().length).toBe(2);
+    expect(store.total()).toBe(2);
   });
 
-  it('filteredArticles excludes archived', async () => {
+  it('setSearch resets page to 1', async () => {
     await store.load();
-    expect(store.filteredArticles().length).toBe(2);
+    store.setSearch('pinot');
+    expect(store.page()).toBe(1);
+    expect(store.search()).toBe('pinot');
   });
 
-  it('filters by name case-insensitively', async () => {
-    await store.load();
-    store.setFilter('pinot');
-    expect(store.filteredArticles().length).toBe(1);
-    expect(store.filteredArticles()[0].name).toBe('Pinot Noir');
-  });
-
-  it('archive removes article from filtered list', async () => {
-    await store.load();
-    await store.archive('1');
-    expect(store.filteredArticles().find((a) => a.id === '1')).toBeUndefined();
-    expect(store.entities().find((a) => a.id === '1')?.isArchived).toBe(true);
-  });
-
-  it('createArticle adds a new entity', async () => {
+  it('createArticle reloads the list', async () => {
     await store.load();
     await store.createArticle({ name: 'New Wine', description: '', unitPrice: 25, vatRateOverride: null, stockQuantity: 6 });
-    expect(store.filteredArticles().some((a) => a.name === 'New Wine')).toBe(true);
+    expect(store.items().some((a) => a.id === 'new-id')).toBe(true);
   });
 
-  it('updateArticle updates an existing entity', async () => {
+  it('updateArticle reflects changes after reload', async () => {
     await store.load();
     await store.updateArticle('1', { name: 'Updated Pinot', description: '', unitPrice: 22, vatRateOverride: null, stockQuantity: 10 });
-    expect(store.entities().find((a) => a.id === '1')?.name).toBe('Updated Pinot');
+    expect(store.items().find((a) => a.id === '1')?.name).toBe('Updated Pinot');
+  });
+
+  it('archive removes article from list', async () => {
+    await store.load();
+    await store.archive('1');
+    expect(store.items().find((a) => a.id === '1')).toBeUndefined();
+  });
+
+  it('setPage updates the page signal', () => {
+    store.setPage(2);
+    expect(store.page()).toBe(2);
   });
 });

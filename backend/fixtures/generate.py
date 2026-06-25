@@ -128,7 +128,6 @@ def _invoice(customer_email: str | None, index: int, inv_index: int) -> dict:
     inv: dict = {
         "customer_email": customer_email,
         "status": status,
-        "currency": "CHF",
         "discount_percent": discount,
         "notes": "",
         "lines": lines,

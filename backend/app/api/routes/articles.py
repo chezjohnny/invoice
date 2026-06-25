@@ -1,7 +1,9 @@
 import uuid
+from math import ceil
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -9,21 +11,40 @@ from app.core.database import get_db
 from app.models.article import Article
 from app.models.tenant import User
 from app.schemas.article import ArticleCreate, ArticleResponse, ArticleUpdate
+from app.schemas.common import PagedResponse
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
 
-@router.get("", response_model=list[ArticleResponse])
+@router.get("", response_model=PagedResponse[ArticleResponse])
 async def list_articles(
+    search: str = Query(""),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[Article]:
-    result = await db.execute(
-        select(Article)
-        .where(Article.tenant_id == current_user.tenant_id, Article.is_archived.is_(False))
-        .order_by(Article.created_at)
+) -> Any:
+    conditions = [
+        Article.tenant_id == current_user.tenant_id,
+        Article.is_archived.is_(False),
+    ]
+    if search:
+        conditions.append(Article.name.ilike(f"%{search}%"))
+
+    total = (await db.scalar(select(func.count(Article.id)).where(*conditions))) or 0
+    items = list(
+        (
+            await db.execute(
+                select(Article)
+                .where(*conditions)
+                .order_by(Article.name)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+        ).scalars().all()
     )
-    return list(result.scalars().all())
+    pages = max(1, ceil(total / per_page)) if total else 1
+    return PagedResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
 
 
 @router.post("", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED)

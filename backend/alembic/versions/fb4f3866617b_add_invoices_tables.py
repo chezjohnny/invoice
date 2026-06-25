@@ -28,7 +28,6 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('DRAFT', 'ISSUED', 'PAID', 'CANCELLED', name='invoice_status'), nullable=False),
     sa.Column('issue_date', sa.Date(), nullable=True),
     sa.Column('due_date', sa.Date(), nullable=True),
-    sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('discount_percent', sa.Numeric(precision=5, scale=2), nullable=False),
     sa.Column('notes', sa.String(length=1000), nullable=False),
     sa.Column('pdf_url', sa.String(length=500), nullable=True),

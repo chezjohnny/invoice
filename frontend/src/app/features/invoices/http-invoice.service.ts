@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { IInvoiceService } from '../../core/tokens/invoice-service.token';
+import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
+import { Page } from '../../core/models/page.model';
 import { Invoice, InvoiceCreate, InvoiceLine, InvoiceUpdate } from './invoice.model';
 
 interface InvoiceLineDto {
@@ -18,25 +19,46 @@ interface InvoiceDto {
   id: string;
   tenant_id: string;
   customer_id: string;
+  customer_name: string;
   invoice_number: string | null;
   status: string;
   issue_date: string | null;
   due_date: string | null;
-  currency: string;
   discount_percent: string;
   notes: string;
   pdf_url: string | null;
   lines: InvoiceLineDto[];
 }
 
+interface PageDto<T> {
+  items: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
 @Injectable()
 export class HttpInvoiceService implements IInvoiceService {
   private readonly http = inject(HttpClient);
 
-  getAll(): Promise<Invoice[]> {
-    return firstValueFrom(this.http.get<InvoiceDto[]>('/api/invoices')).then((dtos) =>
-      dtos.map(this.toInvoice)
-    );
+  list(params: InvoiceListParams): Promise<Page<Invoice>> {
+    let httpParams = new HttpParams()
+      .set('search', params.search ?? '')
+      .set('page', String(params.page ?? 1))
+      .set('per_page', String(params.perPage ?? 20));
+    if (params.status) {
+      httpParams = httpParams.set('status', params.status);
+    }
+    return firstValueFrom(
+      this.http.get<PageDto<InvoiceDto>>('/api/invoices', { params: httpParams })
+    ).then((dto) => ({
+      items: dto.items.map(this.toInvoice),
+      total: dto.total,
+      page: dto.page,
+      perPage: dto.per_page,
+      pages: dto.pages,
+    }));
   }
 
   create(data: InvoiceCreate): Promise<Invoice> {
@@ -80,11 +102,11 @@ export class HttpInvoiceService implements IInvoiceService {
       id: dto.id,
       tenantId: dto.tenant_id,
       customerId: dto.customer_id,
+      customerName: dto.customer_name ?? '',
       invoiceNumber: dto.invoice_number,
       status: dto.status as Invoice['status'],
       issueDate: dto.issue_date,
       dueDate: dto.due_date,
-      currency: dto.currency,
       discountPercent: parseFloat(dto.discount_percent),
       notes: dto.notes,
       pdfUrl: dto.pdf_url,
@@ -105,7 +127,6 @@ export class HttpInvoiceService implements IInvoiceService {
   private toDto(data: InvoiceCreate) {
     return {
       customer_id: data.customerId,
-      currency: data.currency,
       discount_percent: data.discountPercent.toFixed(2),
       notes: data.notes,
       lines: data.lines.map((l) => ({

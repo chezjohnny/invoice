@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer } from './customer.model';
 import { CustomerFormComponent } from './customer-form.component';
@@ -25,44 +25,65 @@ import { CustomerStore } from './customer.store';
           <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
         </svg>
         <input type="text" [placeholder]="t().customers.search"
-          [value]="store.filter()" (input)="onFilter($event)" />
+          [value]="store.search()" (input)="onSearch($event)" />
       </label>
 
-      <div class="overflow-x-auto">
-        <table class="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>{{ t().customers.name }}</th>
-              <th>{{ t().customers.email }}</th>
-              <th>{{ t().customers.city }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (customer of store.filteredCustomers(); track customer.id) {
+      @if (store.loading()) {
+        <div class="flex justify-center py-8">
+          <span class="loading loading-spinner loading-md"></span>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
               <tr>
-                <td class="font-medium">{{ customer.lastName }}, {{ customer.firstName }}</td>
-                <td class="text-base-content/60 text-sm">{{ customer.email ?? '—' }}</td>
-                <td class="text-sm">{{ customer.postalCode }} {{ customer.city }}</td>
-                <td class="flex gap-1">
-                  <button class="btn btn-ghost btn-xs" (click)="openEdit(customer)">
-                    {{ t().common.edit }}
-                  </button>
-                  <button class="btn btn-ghost btn-xs" (click)="store.archive(customer.id)">
-                    {{ t().common.archive }}
-                  </button>
-                </td>
+                <th>{{ t().customers.name }}</th>
+                <th>{{ t().customers.email }}</th>
+                <th>{{ t().customers.city }}</th>
+                <th></th>
               </tr>
-            } @empty {
-              <tr>
-                <td colspan="4" class="text-center text-base-content/40 py-8">
-                  {{ t().customers.noResults }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (customer of store.items(); track customer.id) {
+                <tr>
+                  <td class="font-medium">{{ customer.lastName }}, {{ customer.firstName }}</td>
+                  <td class="text-base-content/60 text-sm">{{ customer.email ?? '—' }}</td>
+                  <td class="text-sm">{{ customer.postalCode }} {{ customer.city }}</td>
+                  <td class="flex gap-1">
+                    <button class="btn btn-ghost btn-xs" (click)="openEdit(customer)">
+                      {{ t().common.edit }}
+                    </button>
+                    <button class="btn btn-ghost btn-xs" (click)="store.archive(customer.id)">
+                      {{ t().common.archive }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="text-center text-base-content/40 py-8">
+                    {{ t().customers.noResults }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (store.pages() > 1) {
+          <div class="flex justify-center mt-4">
+            <div class="join">
+              @for (p of pageRange(); track p) {
+                <button class="join-item btn btn-sm"
+                  [class.btn-active]="store.page() === p"
+                  (click)="store.setPage(p)">{{ p }}</button>
+              }
+            </div>
+            <span class="ml-4 text-sm text-base-content/50 self-center">
+              {{ store.total() }} {{ t().common.results }}
+            </span>
+          </div>
+        }
+      }
     </div>
 
     @if (showForm()) {
@@ -85,8 +106,22 @@ export class CustomersComponent {
   protected readonly showForm = signal(false);
   protected readonly editingCustomer = signal<Customer | null>(null);
 
-  onFilter(event: Event): void {
-    this.store.setFilter((event.target as HTMLInputElement).value);
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly pageRange = computed(() => {
+    const total = this.store.pages();
+    const current = this.store.page();
+    const range: number[] = [];
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+      range.push(i);
+    }
+    return range;
+  });
+
+  onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
   }
 
   openNew(): void {

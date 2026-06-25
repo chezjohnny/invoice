@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ICustomerService } from '../../core/tokens/customer-service.token';
-import { Customer, PhoneEntry } from './customer.model';
+import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
+import { Page } from '../../core/models/page.model';
+import { Customer } from './customer.model';
 
 interface PhoneDto {
   label: string;
@@ -23,14 +24,32 @@ interface CustomerDto {
   is_archived: boolean;
 }
 
+interface PageDto<T> {
+  items: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
 @Injectable()
 export class HttpCustomerService implements ICustomerService {
   private readonly http = inject(HttpClient);
 
-  getAll(): Promise<Customer[]> {
-    return firstValueFrom(this.http.get<CustomerDto[]>('/api/customers')).then((dtos) =>
-      dtos.map(this.toCustomer)
-    );
+  list(params: CustomerListParams): Promise<Page<Customer>> {
+    const httpParams = new HttpParams()
+      .set('search', params.search ?? '')
+      .set('page', String(params.page ?? 1))
+      .set('per_page', String(params.perPage ?? 20));
+    return firstValueFrom(
+      this.http.get<PageDto<CustomerDto>>('/api/customers', { params: httpParams })
+    ).then((dto) => ({
+      items: dto.items.map(this.toCustomer),
+      total: dto.total,
+      page: dto.page,
+      perPage: dto.per_page,
+      pages: dto.pages,
+    }));
   }
 
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer> {

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { IInvoiceService } from '../../core/tokens/invoice-service.token';
+import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
+import { Page } from '../../core/models/page.model';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
 
 @Injectable()
@@ -7,8 +8,24 @@ export class MockInvoiceService implements IInvoiceService {
   private invoices: Invoice[] = [];
   private nextNum = 1;
 
-  getAll(): Promise<Invoice[]> {
-    return Promise.resolve([...this.invoices]);
+  list(params: InvoiceListParams): Promise<Page<Invoice>> {
+    const search = (params.search ?? '').toLowerCase();
+    const statusFilter = params.status ?? '';
+    const page = params.page ?? 1;
+    const perPage = params.perPage ?? 20;
+    let filtered = [...this.invoices];
+    if (statusFilter && statusFilter !== 'all') {
+      filtered = filtered.filter((i) => i.status === statusFilter);
+    }
+    if (search) {
+      filtered = filtered.filter((i) =>
+        i.invoiceNumber?.toLowerCase().includes(search) ?? false
+      );
+    }
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    return Promise.resolve({ items, total, page, perPage, pages });
   }
 
   create(data: InvoiceCreate): Promise<Invoice> {
@@ -16,11 +33,11 @@ export class MockInvoiceService implements IInvoiceService {
       id: String(this.nextNum++),
       tenantId: 'mock-tenant',
       customerId: data.customerId,
+      customerName: '',
       invoiceNumber: null,
       status: 'draft',
       issueDate: null,
       dueDate: null,
-      currency: data.currency,
       discountPercent: data.discountPercent,
       notes: data.notes,
       pdfUrl: null,
@@ -43,7 +60,6 @@ export class MockInvoiceService implements IInvoiceService {
     this.invoices[idx] = {
       ...this.invoices[idx],
       customerId: data.customerId,
-      currency: data.currency,
       discountPercent: data.discountPercent,
       notes: data.notes,
       lines: data.lines.map((l, i) => ({

@@ -53,7 +53,7 @@ async def test_list_invoices(client: AsyncClient):
     await client.post("/invoices", json={"customer_id": customer_id, "lines": []}, headers=headers)
     resp = await client.get("/invoices", headers=headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    assert len(resp.json()["items"]) == 1
 
 
 @pytest.mark.anyio
@@ -149,4 +149,5 @@ async def test_invoice_tenant_isolation(client: AsyncClient):
     resp_b = await client.post("/auth/login", json={"email": "b@inv.ch", "password": "s"})
     hb = {"Authorization": f"Bearer {resp_b.json()['access_token']}"}
     resp = await client.get("/invoices", headers=hb)
-    assert resp.json() == []
+    assert resp.json()["total"] == 0
+    assert resp.json()["items"] == []

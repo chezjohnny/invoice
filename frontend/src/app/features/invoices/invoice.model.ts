@@ -14,11 +14,11 @@ export interface Invoice {
   id: string;
   tenantId: string;
   customerId: string;
+  customerName: string;
   invoiceNumber: string | null;
   status: InvoiceStatus;
   issueDate: string | null;
   dueDate: string | null;
-  currency: string;
   discountPercent: number;
   notes: string;
   pdfUrl: string | null;
@@ -35,7 +35,6 @@ export interface InvoiceLineCreate {
 
 export interface InvoiceCreate {
   customerId: string;
-  currency: string;
   discountPercent: number;
   notes: string;
   lines: InvoiceLineCreate[];

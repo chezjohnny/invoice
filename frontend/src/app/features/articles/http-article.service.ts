@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { IArticleService } from '../../core/tokens/article-service.token';
+import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
+import { Page } from '../../core/models/page.model';
 import { Article } from './article.model';
 
 interface ArticleDto {
@@ -15,14 +16,40 @@ interface ArticleDto {
   is_archived: boolean;
 }
 
+interface PageDto<T> {
+  items: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
 @Injectable()
 export class HttpArticleService implements IArticleService {
   private readonly http = inject(HttpClient);
 
+  list(params: ArticleListParams): Promise<Page<Article>> {
+    const httpParams = new HttpParams()
+      .set('search', params.search ?? '')
+      .set('page', String(params.page ?? 1))
+      .set('per_page', String(params.perPage ?? 20));
+    return firstValueFrom(
+      this.http.get<PageDto<ArticleDto>>('/api/articles', { params: httpParams })
+    ).then((dto) => ({
+      items: dto.items.map(this.toArticle),
+      total: dto.total,
+      page: dto.page,
+      perPage: dto.per_page,
+      pages: dto.pages,
+    }));
+  }
+
   getAll(): Promise<Article[]> {
     return firstValueFrom(
-      this.http.get<ArticleDto[]>('/api/articles')
-    ).then((dtos) => dtos.map(this.toArticle));
+      this.http.get<PageDto<ArticleDto>>('/api/articles', {
+        params: new HttpParams().set('per_page', '100'),
+      })
+    ).then((dto) => dto.items.map(this.toArticle));
   }
 
   create(data: Omit<Article, 'id' | 'isArchived'>): Promise<Article> {

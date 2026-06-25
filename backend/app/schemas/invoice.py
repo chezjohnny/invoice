@@ -28,7 +28,6 @@ class InvoiceLineResponse(InvoiceLineBase):
 
 class InvoiceBase(BaseModel):
     customer_id: uuid.UUID
-    currency: str = "CHF"
     discount_percent: Decimal = Decimal("0")
     notes: str = ""
 
@@ -50,5 +49,6 @@ class InvoiceResponse(InvoiceBase):
     due_date: date | None
     pdf_url: str | None
     lines: list[InvoiceLineResponse]
+    customer_name: str = ""
 
     model_config = ConfigDict(from_attributes=True)

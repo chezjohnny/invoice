@@ -37,7 +37,7 @@ const EN = {
     noResults: 'No invoices found.',
     issue: 'Issue', pay: 'Pay', pdf: 'PDF',
     customerLabel: 'Customer *', customerRequired: 'Customer is required',
-    discountLabel: 'Discount (%)', currencyLabel: 'Currency',
+    discountLabel: 'Discount (%)',
     linesLabel: 'Lines', noLines: 'No lines yet.', addLine: '+ Add line',
     notesLabel: 'Notes', saveDraft: 'Save draft',
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qty',
@@ -49,7 +49,7 @@ const EN = {
   },
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', app: 'Invoice',
-    loading: 'Loading…',
+    loading: 'Loading…', results: 'results', searchCustomer: 'Search customer…',
   },
   login: {
     subtitle: 'Sign in to your account', email: 'Email',
@@ -94,7 +94,7 @@ const FR: typeof EN = {
     noResults: 'Aucune facture.',
     issue: 'Émettre', pay: 'Payer', pdf: 'PDF',
     customerLabel: 'Client *', customerRequired: 'Le client est requis',
-    discountLabel: 'Remise (%)', currencyLabel: 'Devise',
+    discountLabel: 'Remise (%)',
     linesLabel: 'Lignes', noLines: 'Aucune ligne.', addLine: '+ Ajouter une ligne',
     notesLabel: 'Notes', saveDraft: 'Enregistrer',
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qté',
@@ -106,7 +106,7 @@ const FR: typeof EN = {
   },
   common: {
     save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', app: 'Factures',
-    loading: 'Chargement…',
+    loading: 'Chargement…', results: 'résultats', searchCustomer: 'Rechercher un client…',
   },
   login: {
     subtitle: 'Connectez-vous à votre compte', email: 'E-mail',

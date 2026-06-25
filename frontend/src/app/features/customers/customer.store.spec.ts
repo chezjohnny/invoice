@@ -1,6 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
+import { Page } from '../../core/models/page.model';
 import { Customer } from './customer.model';
 import { CustomerStore } from './customer.store';
 
@@ -15,17 +16,18 @@ const CUSTOMERS: Customer[] = [
     addressLine1: '', postalCode: '1200', city: 'Genève', country: 'CH',
     email: null, phones: [], isArchived: false,
   },
-  {
-    id: '3', firstName: 'Old', lastName: 'Client',
-    addressLine1: '', postalCode: '', city: '', country: 'CH',
-    email: null, phones: [], isArchived: true,
-  },
 ];
+
+function makePage(items: Customer[]): Page<Customer> {
+  return { items, total: items.length, page: 1, perPage: 20, pages: 1 };
+}
 
 describe('CustomerStore', () => {
   let store: InstanceType<typeof CustomerStore>;
+  let customers: Customer[];
 
   beforeEach(() => {
+    customers = structuredClone(CUSTOMERS);
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -33,14 +35,21 @@ describe('CustomerStore', () => {
         {
           provide: CUSTOMER_SERVICE,
           useValue: {
-            getAll: async () => structuredClone(CUSTOMERS),
-            create: async (data: Omit<Customer, 'id' | 'isArchived'>) => ({
-              ...data, id: 'new-id', isArchived: false,
-            }),
-            update: async (id: string, data: Omit<Customer, 'id' | 'isArchived'>) => ({
-              ...data, id, isArchived: false,
-            }),
-            archive: async () => {},
+            list: async () => makePage(customers.filter((c) => !c.isArchived)),
+            create: async (data: Omit<Customer, 'id' | 'isArchived'>) => {
+              const c = { ...data, id: 'new-id', isArchived: false };
+              customers.push(c);
+              return c;
+            },
+            update: async (id: string, data: Omit<Customer, 'id' | 'isArchived'>) => {
+              const idx = customers.findIndex((c) => c.id === id);
+              customers[idx] = { ...customers[idx], ...data };
+              return customers[idx];
+            },
+            archive: async (id: string) => {
+              const c = customers.find((c) => c.id === id);
+              if (c) c.isArchived = true;
+            },
             exportCsv: async () => new Blob([''], { type: 'text/csv' }),
           },
         },
@@ -49,52 +58,45 @@ describe('CustomerStore', () => {
     store = TestBed.inject(CustomerStore);
   });
 
-  it('loads all customers', async () => {
+  it('loads customers on init', async () => {
     await store.load();
-    expect(store.entities().length).toBe(3);
+    expect(store.items().length).toBe(2);
+    expect(store.total()).toBe(2);
   });
 
-  it('filteredCustomers excludes archived', async () => {
+  it('setSearch resets page to 1', async () => {
     await store.load();
-    expect(store.filteredCustomers().length).toBe(2);
+    store.setSearch('alice');
+    expect(store.page()).toBe(1);
+    expect(store.search()).toBe('alice');
   });
 
-  it('filters by name case-insensitively', async () => {
-    await store.load();
-    store.setFilter('martin');
-    expect(store.filteredCustomers().length).toBe(1);
-    expect(store.filteredCustomers()[0].lastName).toBe('Martin');
-  });
-
-  it('filters by first name', async () => {
-    await store.load();
-    store.setFilter('bob');
-    expect(store.filteredCustomers().length).toBe(1);
-    expect(store.filteredCustomers()[0].firstName).toBe('Bob');
-  });
-
-  it('archive removes customer from filtered list', async () => {
-    await store.load();
-    await store.archive('1');
-    expect(store.filteredCustomers().find((c) => c.id === '1')).toBeUndefined();
-    expect(store.entities().find((c) => c.id === '1')?.isArchived).toBe(true);
-  });
-
-  it('createCustomer adds a new entity', async () => {
+  it('createCustomer reloads the list', async () => {
     await store.load();
     await store.createCustomer({
       firstName: 'New', lastName: 'Customer',
       addressLine1: '', postalCode: '', city: '', country: 'CH', email: null, phones: [],
     });
-    expect(store.filteredCustomers().some((c) => c.firstName === 'New')).toBe(true);
+    expect(store.items().some((c) => c.id === 'new-id')).toBe(true);
   });
 
-  it('updateCustomer updates an existing entity', async () => {
+  it('updateCustomer reflects changes after reload', async () => {
     await store.load();
     await store.updateCustomer('1', {
       firstName: 'Alice', lastName: 'Updated',
       addressLine1: '', postalCode: '', city: '', country: 'CH', email: null, phones: [],
     });
-    expect(store.entities().find((c) => c.id === '1')?.lastName).toBe('Updated');
+    expect(store.items().find((c) => c.id === '1')?.lastName).toBe('Updated');
+  });
+
+  it('archive removes customer from list', async () => {
+    await store.load();
+    await store.archive('1');
+    expect(store.items().find((c) => c.id === '1')).toBeUndefined();
+  });
+
+  it('setPage updates the page signal', () => {
+    store.setPage(3);
+    expect(store.page()).toBe(3);
   });
 });

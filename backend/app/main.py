@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import articles, auth, customers, invoices
+from app.api.routes import articles, auth, customers, dashboard, invoices
 
 app = FastAPI(title="Invoice API", version="0.1.0")
 
@@ -17,6 +17,7 @@ app.include_router(auth.router)
 app.include_router(articles.router)
 app.include_router(customers.router)
 app.include_router(invoices.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/health")

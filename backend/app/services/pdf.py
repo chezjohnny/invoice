@@ -188,7 +188,7 @@ def _qr_slip(
     # --- Receipt section (left 62mm) ---
     _slip_title(pdf, _M - 5, _SLIP_Y + 4, "Receipt")
     _slip_section(pdf, _M - 5, _SLIP_Y + 10, "Account / Payable to", profile)
-    _slip_amount(pdf, _M - 5, _SLIP_Y + 55, amount, invoice.currency)
+    _slip_amount(pdf, _M - 5, _SLIP_Y + 55, amount)
     _slip_section(pdf, _M - 5, _SLIP_Y + 70, "Payable by", customer)
     pdf.set_xy(_M - 5, _SLIP_Y + 90)
     pdf.set_font("Helvetica", "B", 6)
@@ -203,7 +203,7 @@ def _qr_slip(
     _draw_qr_code(pdf, invoice, profile, customer, amount, qr_x, qr_y)
 
     # Currency + amount below QR code
-    _slip_amount(pdf, px, qr_y + 50, amount, invoice.currency)
+    _slip_amount(pdf, px, qr_y + 50, amount)
 
     # Creditor info right column
     rx = 120.0
@@ -261,14 +261,14 @@ def _slip_section(
                 y += 4
 
 
-def _slip_amount(pdf: FPDF, x: float, y: float, amount: float, currency: str) -> None:
+def _slip_amount(pdf: FPDF, x: float, y: float, amount: float) -> None:
     pdf.set_xy(x, y)
     pdf.set_font("Helvetica", "B", 7)
     pdf.cell(15, 4, "Currency")
     pdf.cell(25, 4, "Amount")
     pdf.set_xy(x, y + 4)
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(15, 5, currency)
+    pdf.cell(15, 5, "CHF")
     pdf.cell(25, 5, f"{amount:,.2f}")
 
 
@@ -291,7 +291,7 @@ def _draw_qr_code(
         "K",
         profile.company_name, profile.address_line1,
         f"{profile.postal_code} {profile.city}", "", "", "CH",
-        f"{amount:.2f}", invoice.currency,
+        f"{amount:.2f}", "CHF",
         "K",
         f"{customer.first_name} {customer.last_name}",
         customer.address_line1, debtor_postal, "", "", "CH",

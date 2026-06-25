@@ -46,7 +46,7 @@ async def test_list_customers(client: AsyncClient):
     await client.post("/customers", json=CUSTOMER_PAYLOAD, headers=headers)
     resp = await client.get("/customers", headers=headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    assert len(resp.json()["items"]) == 1
 
 
 @pytest.mark.anyio
@@ -70,7 +70,7 @@ async def test_archive_customer(client: AsyncClient):
     customer_id = create.json()["id"]
     await client.patch(f"/customers/{customer_id}/archive", headers=headers)
     resp = await client.get("/customers", headers=headers)
-    assert all(c["id"] != customer_id for c in resp.json())
+    assert all(c["id"] != customer_id for c in resp.json()["items"])
 
 
 @pytest.mark.anyio
@@ -100,4 +100,5 @@ async def test_customer_tenant_isolation(client: AsyncClient):
     resp_b = await client.post("/auth/login", json={"email": "b@test.ch", "password": "secret"})
     headers_b = {"Authorization": f"Bearer {resp_b.json()['access_token']}"}
     resp = await client.get("/customers", headers=headers_b)
-    assert resp.json() == []
+    assert resp.json()["total"] == 0
+    assert resp.json()["items"] == []

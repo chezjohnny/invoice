@@ -14,10 +14,16 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.security import hash_password
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import Tenant, TenantProfile, User
+
+
+async def _init_db() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print("✓ Database tables created")
 
 
 async def _load_fixtures(path: Path, reset: bool) -> None:
@@ -178,7 +184,6 @@ async def _load_invoices(
             invoice_number=spec.get("invoice_number"),
             issue_date=date.fromisoformat(spec["issue_date"]) if spec.get("issue_date") else None,
             due_date=date.fromisoformat(spec["due_date"]) if spec.get("due_date") else None,
-            currency=spec.get("currency", "CHF"),
             discount_percent=Decimal(str(spec.get("discount_percent", 0))),
             notes=spec.get("notes", ""),
         )
@@ -221,6 +226,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Invoice backend CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    sub.add_parser("init-db", help="Create all database tables (SQLite dev only)")
+
     p_fixtures = sub.add_parser("load-fixtures", help="Load fixture data into the database")
     p_fixtures.add_argument(
         "file",
@@ -236,7 +243,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "load-fixtures":
+    if args.command == "init-db":
+        asyncio.run(_init_db())
+    elif args.command == "load-fixtures":
         path = Path(args.file)
         if not path.exists():
             print(f"Error: fixtures file not found: {path}", file=sys.stderr)

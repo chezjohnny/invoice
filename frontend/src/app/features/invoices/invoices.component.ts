@@ -2,9 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
-import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Article } from '../articles/article.model';
-import { Customer } from '../customers/customer.model';
 import { InvoiceFormComponent } from './invoice-form.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
@@ -26,85 +24,114 @@ const STATUS_BADGE: Record<string, string> = {
         <button class="btn btn-primary" (click)="openNew()">{{ t().invoices.new }}</button>
       </div>
 
-      <div class="tabs tabs-bordered mb-4">
-        @for (tab of statusTabs; track tab) {
-          <button class="tab"
-            [class.tab-active]="store.statusFilter() === tab"
-            (click)="store.setStatusFilter(tab)">
-            {{ t().status[tab] }}
-            <span class="badge badge-sm ml-1">{{ countByStatus()[tab] ?? 0 }}</span>
-          </button>
-        }
+      <div class="flex flex-wrap gap-2 mb-4">
+        <div class="tabs tabs-bordered flex-1">
+          @for (tab of statusTabs; track tab) {
+            <button class="tab"
+              [class.tab-active]="store.statusFilter() === tab"
+              (click)="store.setStatusFilter(tab)">
+              {{ t().status[tab] }}
+            </button>
+          }
+        </div>
+
+        <label class="input input-sm flex items-center gap-2 w-64">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-50" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
+          </svg>
+          <input type="text" placeholder="FAC-…" [value]="store.search()" (input)="onSearch($event)" />
+        </label>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>{{ t().invoices.number }}</th>
-              <th>{{ t().invoices.customer }}</th>
-              <th>{{ t().invoices.date }}</th>
-              <th>{{ t().invoices.due }}</th>
-              <th class="text-right">{{ t().invoices.total }}</th>
-              <th>{{ t().invoices.status }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (inv of store.filteredInvoices(); track inv.id) {
+      @if (store.loading()) {
+        <div class="flex justify-center py-8">
+          <span class="loading loading-spinner loading-md"></span>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
               <tr>
-                <td class="font-mono text-sm">{{ inv.invoiceNumber ?? '—' }}</td>
-                <td>{{ customerName(inv.customerId) }}</td>
-                <td class="text-sm">{{ inv.issueDate ?? '—' }}</td>
-                <td class="text-sm">{{ inv.dueDate ?? '—' }}</td>
-                <td class="text-right font-medium">{{ lineTotal(inv) | number:'1.2-2' }}</td>
-                <td>
-                  <span class="badge" [class]="statusBadge(inv.status)">
-                    {{ t().status[inv.status] }}
-                  </span>
-                </td>
-                <td>
-                  <div class="flex gap-1 flex-wrap">
-                    @if (inv.status === 'draft') {
-                      <button class="btn btn-ghost btn-xs" (click)="openEdit(inv)">
-                        {{ t().common.edit }}
-                      </button>
-                      <button class="btn btn-ghost btn-xs text-info" (click)="store.issue(inv.id)">
-                        {{ t().invoices.issue }}
-                      </button>
-                      <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
-                        {{ t().common.cancel }}
-                      </button>
-                    }
-                    @if (inv.status === 'issued') {
-                      <button class="btn btn-ghost btn-xs text-success" (click)="store.pay(inv.id)">
-                        {{ t().invoices.pay }}
-                      </button>
-                      <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
-                        {{ t().common.cancel }}
-                      </button>
-                      <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
-                        {{ t().invoices.pdf }}
-                      </button>
-                    }
-                    @if (inv.status === 'paid') {
-                      <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
-                        {{ t().invoices.pdf }}
-                      </button>
-                    }
-                  </div>
-                </td>
+                <th>{{ t().invoices.number }}</th>
+                <th>{{ t().invoices.customer }}</th>
+                <th>{{ t().invoices.date }}</th>
+                <th>{{ t().invoices.due }}</th>
+                <th class="text-right">{{ t().invoices.total }}</th>
+                <th>{{ t().invoices.status }}</th>
+                <th></th>
               </tr>
-            } @empty {
-              <tr>
-                <td colspan="7" class="text-center text-base-content/40 py-8">
-                  {{ t().invoices.noResults }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (inv of store.items(); track inv.id) {
+                <tr>
+                  <td class="font-mono text-sm">{{ inv.invoiceNumber ?? '—' }}</td>
+                  <td>{{ inv.customerName || '—' }}</td>
+                  <td class="text-sm">{{ inv.issueDate ?? '—' }}</td>
+                  <td class="text-sm">{{ inv.dueDate ?? '—' }}</td>
+                  <td class="text-right font-medium">{{ lineTotal(inv) | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="badge" [class]="statusBadge(inv.status)">
+                      {{ statusLabel(inv.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="flex gap-1 flex-wrap">
+                      @if (inv.status === 'draft') {
+                        <button class="btn btn-ghost btn-xs" (click)="openEdit(inv)">
+                          {{ t().common.edit }}
+                        </button>
+                        <button class="btn btn-ghost btn-xs text-info" (click)="store.issue(inv.id)">
+                          {{ t().invoices.issue }}
+                        </button>
+                        <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
+                          {{ t().common.cancel }}
+                        </button>
+                      }
+                      @if (inv.status === 'issued') {
+                        <button class="btn btn-ghost btn-xs text-success" (click)="store.pay(inv.id)">
+                          {{ t().invoices.pay }}
+                        </button>
+                        <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
+                          {{ t().common.cancel }}
+                        </button>
+                        <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
+                          {{ t().invoices.pdf }}
+                        </button>
+                      }
+                      @if (inv.status === 'paid') {
+                        <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
+                          {{ t().invoices.pdf }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="text-center text-base-content/40 py-8">
+                    {{ t().invoices.noResults }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (store.pages() > 1) {
+          <div class="flex justify-center mt-4">
+            <div class="join">
+              @for (p of pageRange(); track p) {
+                <button class="join-item btn btn-sm"
+                  [class.btn-active]="store.page() === p"
+                  (click)="store.setPage(p)">{{ p }}</button>
+              }
+            </div>
+            <span class="ml-4 text-sm text-base-content/50 self-center">
+              {{ store.total() }} {{ t().common.results }}
+            </span>
+          </div>
+        }
+      }
     </div>
 
     @if (showForm()) {
@@ -113,7 +140,6 @@ const STATUS_BADGE: Record<string, string> = {
           <app-invoice-form
             [invoice]="editingInvoice()"
             [articles]="articles()"
-            [customers]="customers()"
             (saved)="onSaved($event)"
             (cancelled)="closeForm()"
           />
@@ -128,31 +154,26 @@ export class InvoicesComponent {
   protected readonly t = inject(I18nService).T;
 
   private readonly articleService = inject(ARTICLE_SERVICE);
-  private readonly customerService = inject(CUSTOMER_SERVICE);
 
   protected readonly articles = signal<Article[]>([]);
-  protected readonly customers = signal<Customer[]>([]);
   protected readonly showForm = signal(false);
   protected readonly editingInvoice = signal<Invoice | null>(null);
   protected readonly statusTabs = STATUS_TABS;
 
-  protected readonly countByStatus = computed(() => {
-    const counts: Record<string, number> = { all: 0 };
-    for (const inv of this.store.entities()) {
-      counts['all'] = (counts['all'] ?? 0) + 1;
-      counts[inv.status] = (counts[inv.status] ?? 0) + 1;
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly pageRange = computed(() => {
+    const total = this.store.pages();
+    const current = this.store.page();
+    const range: number[] = [];
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+      range.push(i);
     }
-    return counts;
+    return range;
   });
 
   constructor() {
     this.articleService.getAll().then((a) => this.articles.set(a));
-    this.customerService.getAll().then((c) => this.customers.set(c));
-  }
-
-  protected customerName(customerId: string): string {
-    const c = this.customers().find((x) => x.id === customerId);
-    return c ? `${c.lastName}, ${c.firstName}` : '—';
   }
 
   protected lineTotal(inv: Invoice): number {
@@ -168,8 +189,18 @@ export class InvoicesComponent {
     return sub - disc + vat;
   }
 
+  protected statusLabel(status: string): string {
+    return (this.t().status as Record<string, string>)[status] ?? status;
+  }
+
   protected statusBadge(status: string): string {
     return STATUS_BADGE[status] ?? 'badge-neutral';
+  }
+
+  onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
   }
 
   openNew(): void {

@@ -36,6 +36,10 @@ logs-all: ## Follow all service logs
 backend-dev: ## Start backend dev server (hot reload, requires DB running)
 	uv --directory backend run fastapi dev app/main.py
 
+.PHONY: backend-dev-sqlite
+backend-dev-sqlite: ## Start backend dev server with SQLite (no Docker needed)
+	uv --directory backend run --env-file .env.sqlite fastapi dev app/main.py
+
 .PHONY: backend-migrate
 backend-migrate: ## Apply all pending DB migrations
 	uv --directory backend run alembic upgrade head
@@ -51,6 +55,14 @@ backend-fixtures-generate: ## Regenerate fixtures/demo.json from the generator s
 .PHONY: backend-fixtures
 backend-fixtures: ## Load demo fixtures into the DB (add ARGS=--reset to wipe and reload)
 	uv --directory backend run python -m app.cli load-fixtures $(ARGS)
+
+.PHONY: backend-init-db-sqlite
+backend-init-db-sqlite: ## Create SQLite dev DB tables
+	uv --directory backend run --env-file .env.sqlite python -m app.cli init-db
+
+.PHONY: backend-fixtures-sqlite
+backend-fixtures-sqlite: backend-init-db-sqlite ## Load demo fixtures into SQLite dev DB (add ARGS=--reset to wipe and reload)
+	uv --directory backend run --env-file .env.sqlite python -m app.cli load-fixtures $(ARGS)
 
 .PHONY: backend-test
 backend-test: ## Run backend tests
@@ -98,7 +110,7 @@ frontend-build: check-node ## Build frontend for production
 .PHONY: dev
 dev: up-db ## Start DB + backend + frontend with real backend
 	@echo "Starting backend and frontend..."
-	@$(MAKE) -j2 backend-dev frontend-dev
+	@$(MAKE) -j2 backend-dev-sqlite frontend-dev
 
 .PHONY: dev-mock
 dev-mock: ## Start frontend only with mock services (no backend/DB needed)

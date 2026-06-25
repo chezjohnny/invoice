@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { IArticleService } from '../../core/tokens/article-service.token';
+import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
+import { Page } from '../../core/models/page.model';
 import { Article } from './article.model';
 
 const MOCK_ARTICLES: Article[] = [
@@ -25,8 +26,21 @@ const MOCK_ARTICLES: Article[] = [
 export class MockArticleService implements IArticleService {
   private articles = structuredClone(MOCK_ARTICLES);
 
+  list(params: ArticleListParams): Promise<Page<Article>> {
+    const search = (params.search ?? '').toLowerCase();
+    const page = params.page ?? 1;
+    const perPage = params.perPage ?? 20;
+    const filtered = this.articles.filter(
+      (a) => !a.isArchived && (!search || a.name.toLowerCase().includes(search))
+    );
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    return Promise.resolve({ items, total, page, perPage, pages });
+  }
+
   getAll(): Promise<Article[]> {
-    return Promise.resolve([...this.articles]);
+    return Promise.resolve(this.articles.filter((a) => !a.isArchived));
   }
 
   create(data: Omit<Article, 'id' | 'isArchived'>): Promise<Article> {

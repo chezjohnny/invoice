@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { ICustomerService } from '../../core/tokens/customer-service.token';
+import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
+import { Page } from '../../core/models/page.model';
 import { Customer } from './customer.model';
 
 const INITIAL: Customer[] = [
@@ -34,8 +35,23 @@ export class MockCustomerService implements ICustomerService {
   private customers = structuredClone(INITIAL);
   private nextId = INITIAL.length + 1;
 
-  getAll(): Promise<Customer[]> {
-    return Promise.resolve(this.customers.filter((c) => !c.isArchived));
+  list(params: CustomerListParams): Promise<Page<Customer>> {
+    const search = (params.search ?? '').toLowerCase();
+    const page = params.page ?? 1;
+    const perPage = params.perPage ?? 20;
+    const filtered = this.customers.filter((c) => {
+      if (c.isArchived) return false;
+      if (!search) return true;
+      return (
+        c.lastName.toLowerCase().includes(search) ||
+        c.firstName.toLowerCase().includes(search) ||
+        (c.email?.toLowerCase().includes(search) ?? false)
+      );
+    });
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    return Promise.resolve({ items, total, page, perPage, pages });
   }
 
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer> {
@@ -59,7 +75,9 @@ export class MockCustomerService implements ICustomerService {
   exportCsv(): Promise<Blob> {
     const lines = ['first_name,last_name,email,address_line1,postal_code,city,country'];
     for (const c of this.customers.filter((c) => !c.isArchived)) {
-      lines.push(`${c.firstName},${c.lastName},${c.email ?? ''},${c.addressLine1},${c.postalCode},${c.city},${c.country}`);
+      lines.push(
+        `${c.firstName},${c.lastName},${c.email ?? ''},${c.addressLine1},${c.postalCode},${c.city},${c.country}`
+      );
     }
     return Promise.resolve(new Blob([lines.join('\n')], { type: 'text/csv' }));
   }

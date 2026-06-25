@@ -1,31 +1,58 @@
 import csv
 import io
 import uuid
+from math import ceil
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.customer import Customer
 from app.models.tenant import User
+from app.schemas.common import PagedResponse
 from app.schemas.customer import CustomerCreate, CustomerResponse, CustomerUpdate
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
 
-@router.get("", response_model=list[CustomerResponse])
+@router.get("", response_model=PagedResponse[CustomerResponse])
 async def list_customers(
+    search: str = Query(""),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[Customer]:
-    result = await db.execute(
-        select(Customer)
-        .where(Customer.tenant_id == current_user.tenant_id, Customer.is_archived.is_(False))
-        .order_by(Customer.last_name, Customer.first_name)
+) -> Any:
+    conditions = [
+        Customer.tenant_id == current_user.tenant_id,
+        Customer.is_archived.is_(False),
+    ]
+    if search:
+        conditions.append(
+            or_(
+                Customer.last_name.ilike(f"%{search}%"),
+                Customer.first_name.ilike(f"%{search}%"),
+                Customer.email.ilike(f"%{search}%"),
+            )
+        )
+
+    total = (await db.scalar(select(func.count(Customer.id)).where(*conditions))) or 0
+    items = list(
+        (
+            await db.execute(
+                select(Customer)
+                .where(*conditions)
+                .order_by(Customer.last_name, Customer.first_name)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+        ).scalars().all()
     )
-    return list(result.scalars().all())
+    pages = max(1, ceil(total / per_page)) if total else 1
+    return PagedResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
 
 
 @router.get("/export.csv")
