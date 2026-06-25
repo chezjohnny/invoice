@@ -44,8 +44,12 @@ backend-migrate: ## Apply all pending DB migrations
 backend-migration: ## Create a new migration (usage: make backend-migration MSG="add articles table")
 	uv --directory backend run alembic revision --autogenerate -m "$(MSG)"
 
+.PHONY: backend-fixtures-generate
+backend-fixtures-generate: ## Regenerate fixtures/demo.json from the generator script
+	uv --directory backend run python fixtures/generate.py
+
 .PHONY: backend-fixtures
-backend-fixtures: ## Load demo fixtures into the DB (add --reset to wipe and reload)
+backend-fixtures: ## Load demo fixtures into the DB (add ARGS=--reset to wipe and reload)
 	uv --directory backend run python -m app.cli load-fixtures $(ARGS)
 
 .PHONY: backend-test
