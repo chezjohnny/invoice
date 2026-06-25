@@ -18,6 +18,9 @@ import { AuthService } from './core/auth/auth.service';
           <a routerLink="/customers" routerLinkActive="btn-active" class="btn btn-ghost btn-sm">
             Customers
           </a>
+          <a routerLink="/invoices" routerLinkActive="btn-active" class="btn btn-ghost btn-sm">
+            Invoices
+          </a>
         </div>
         <div class="flex-none">
           <button class="btn btn-ghost btn-sm" (click)="auth.logout()">Sign out</button>

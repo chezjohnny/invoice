@@ -8,8 +8,10 @@ dependencies = [
     "asyncpg>=0.31.0",
     "bcrypt>=5.0.0",
     "fastapi[standard]>=0.138.0",
+    "fpdf2>=2.8.7",
     "pyjwt[crypto]>=2.13.0",
     "python-multipart>=0.0.32",
+    "qrcode[pil]>=8.2",
     "sqlalchemy[asyncio]>=2.0.51",
 ]
 
