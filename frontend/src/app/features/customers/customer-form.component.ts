@@ -8,18 +8,18 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
   selector: 'app-customer-form',
   template: `
     <form (submit)="submit($event)">
-      <h3 class="text-lg font-bold mb-4">
+      <h3 class="text-lg font-semibold mb-5">
         {{ customer() ? t().customers.editTitle : t().customers.newTitle }}
       </h3>
 
-      <fieldset class="fieldset gap-3">
-        <div class="grid grid-cols-2 gap-3">
+      <fieldset class="fieldset gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label">{{ t().customers.firstNameLabel }}</label>
             <input class="input w-full" [class.input-error]="submitted() && errors().firstName"
               type="text" [value]="firstName()" (input)="firstName.set(asStr($event))" />
             @if (submitted() && errors().firstName) {
-              <p class="fieldset-label text-error">{{ errors().firstName }}</p>
+              <p class="fieldset-label text-error mt-1">{{ errors().firstName }}</p>
             }
           </div>
           <div>
@@ -27,7 +27,7 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
             <input class="input w-full" [class.input-error]="submitted() && errors().lastName"
               type="text" [value]="lastName()" (input)="lastName.set(asStr($event))" />
             @if (submitted() && errors().lastName) {
-              <p class="fieldset-label text-error">{{ errors().lastName }}</p>
+              <p class="fieldset-label text-error mt-1">{{ errors().lastName }}</p>
             }
           </div>
         </div>
@@ -37,7 +37,7 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
           <input class="input w-full" [class.input-error]="submitted() && errors().email"
             type="email" [value]="email()" (input)="email.set(asStr($event))" />
           @if (submitted() && errors().email) {
-            <p class="fieldset-label text-error">{{ errors().email }}</p>
+            <p class="fieldset-label text-error mt-1">{{ errors().email }}</p>
           }
         </div>
 
@@ -60,7 +60,7 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
           </div>
         </div>
 
-        <div>
+        <div class="w-24">
           <label class="fieldset-label">{{ t().customers.countryLabel }}</label>
           <input class="input w-full" type="text" maxlength="2"
             [value]="country()" (input)="country.set(asStr($event))" />

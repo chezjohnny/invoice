@@ -8,17 +8,17 @@ type ArticleData = Omit<Article, 'id' | 'isArchived'>;
   selector: 'app-article-form',
   template: `
     <form (submit)="submit($event)">
-      <h3 class="text-lg font-bold mb-4">
+      <h3 class="text-lg font-semibold mb-5">
         {{ article() ? t().articles.editTitle : t().articles.newTitle }}
       </h3>
 
-      <fieldset class="fieldset gap-3">
+      <fieldset class="fieldset gap-4">
         <div>
           <label class="fieldset-label">{{ t().articles.nameLabel }}</label>
           <input class="input w-full" [class.input-error]="submitted() && errors().name"
             type="text" [value]="name()" (input)="name.set(asStr($event))" />
           @if (submitted() && errors().name) {
-            <p class="fieldset-label text-error">{{ errors().name }}</p>
+            <p class="fieldset-label text-error mt-1">{{ errors().name }}</p>
           }
         </div>
 
@@ -28,17 +28,16 @@ type ArticleData = Omit<Article, 'id' | 'isArchived'>;
             [value]="description()" (input)="description.set(asStr($event))" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label">{{ t().articles.priceLabel }}</label>
             <input class="input w-full" [class.input-error]="submitted() && errors().unitPrice"
               type="number" min="0" step="0.01"
               [value]="unitPrice()" (input)="unitPrice.set(asStr($event))" />
             @if (submitted() && errors().unitPrice) {
-              <p class="fieldset-label text-error">{{ errors().unitPrice }}</p>
+              <p class="fieldset-label text-error mt-1">{{ errors().unitPrice }}</p>
             }
           </div>
-
           <div>
             <label class="fieldset-label">{{ t().articles.vatLabel }}</label>
             <input class="input w-full" type="number" min="0" max="100" step="0.1"
@@ -48,7 +47,7 @@ type ArticleData = Omit<Article, 'id' | 'isArchived'>;
 
         <div>
           <label class="fieldset-label">{{ t().articles.stockLabel }}</label>
-          <input class="input w-full" type="number" step="1"
+          <input class="input w-full sm:max-w-40" type="number" step="1"
             [value]="stockQuantity()" (input)="stockQuantity.set(asStr($event))" />
         </div>
       </fieldset>

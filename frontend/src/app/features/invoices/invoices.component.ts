@@ -21,25 +21,27 @@ const STATUS_BADGE: Record<string, string> = {
   providers: [InvoiceStore],
   imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe],
   template: `
-    <div class="p-6 max-w-6xl mx-auto">
+    <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">{{ t().invoices.title }}</h1>
-        <button class="btn btn-primary" (click)="openNew()">{{ t().invoices.new }}</button>
+        <h1 class="text-xl font-bold sm:text-2xl">{{ t().invoices.title }}</h1>
+        <button class="btn btn-primary btn-sm sm:btn-md" (click)="openNew()">
+          {{ t().invoices.new }}
+        </button>
       </div>
 
-      <div class="flex flex-wrap gap-2 mb-4">
-        <div class="tabs tabs-bordered flex-1">
+      <!-- Filters row -->
+      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <div class="tabs tabs-bordered overflow-x-auto flex-1 min-w-0">
           @for (tab of statusTabs; track tab) {
-            <button class="tab"
+            <button class="tab whitespace-nowrap"
               [class.tab-active]="store.statusFilter() === tab"
               (click)="store.setStatusFilter(tab)">
               {{ t().status[tab] }}
             </button>
           }
         </div>
-
-        <label class="input input-sm flex items-center gap-2 w-64">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-50" viewBox="0 0 16 16">
+        <label class="input input-sm flex items-center gap-2 w-full sm:w-48 shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-40 shrink-0" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
           </svg>
           <input type="text" placeholder="FAC-…" [value]="store.search()" (input)="onSearch($event)" />
@@ -51,77 +53,79 @@ const STATUS_BADGE: Record<string, string> = {
           <span class="loading loading-spinner loading-md"></span>
         </div>
       } @else {
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>{{ t().invoices.number }}</th>
-                <th>{{ t().invoices.customer }}</th>
-                <th>{{ t().invoices.date }}</th>
-                <th>{{ t().invoices.due }}</th>
-                <th class="text-right">{{ t().invoices.total }}</th>
-                <th>{{ t().invoices.status }}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (inv of store.items(); track inv.id) {
+        <div class="card bg-base-100 shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
                 <tr>
-                  <td class="font-mono text-sm">{{ inv.invoiceNumber ?? '—' }}</td>
-                  <td>{{ inv.customerName || '—' }}</td>
-                  <td class="text-sm">{{ inv.issueDate ?? '—' }}</td>
-                  <td class="text-sm">{{ inv.dueDate ?? '—' }}</td>
-                  <td class="text-right font-medium">{{ lineTotal(inv) | number:'1.2-2' }}</td>
-                  <td>
-                    <span class="badge" [class]="statusBadge(inv.status)">
-                      {{ statusLabel(inv.status) }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="flex gap-1 flex-wrap">
-                      @if (inv.status === 'draft') {
-                        <button class="btn btn-ghost btn-xs" (click)="openEdit(inv)">
-                          {{ t().common.edit }}
-                        </button>
-                        <button class="btn btn-ghost btn-xs text-info" (click)="store.issue(inv.id)">
-                          {{ t().invoices.issue }}
-                        </button>
-                        <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
-                          {{ t().common.cancel }}
-                        </button>
-                      }
-                      @if (inv.status === 'issued') {
-                        <button class="btn btn-ghost btn-xs text-success" (click)="store.pay(inv.id)">
-                          {{ t().invoices.pay }}
-                        </button>
-                        <button class="btn btn-ghost btn-xs text-error" (click)="store.cancel(inv.id)">
-                          {{ t().common.cancel }}
-                        </button>
-                        <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
-                          {{ t().invoices.pdf }}
-                        </button>
-                      }
-                      @if (inv.status === 'paid') {
-                        <button class="btn btn-ghost btn-xs" (click)="store.downloadPdf(inv.id)">
-                          {{ t().invoices.pdf }}
-                        </button>
-                      }
-                    </div>
-                  </td>
+                  <th class="hidden sm:table-cell">{{ t().invoices.number }}</th>
+                  <th>{{ t().invoices.customer }}</th>
+                  <th class="hidden md:table-cell">{{ t().invoices.date }}</th>
+                  <th class="hidden md:table-cell">{{ t().invoices.due }}</th>
+                  <th class="text-right">{{ t().invoices.total }}</th>
+                  <th>{{ t().invoices.status }}</th>
+                  <th></th>
                 </tr>
-              } @empty {
-                <tr>
-                  <td colspan="7" class="text-center text-base-content/40 py-8">
-                    {{ t().invoices.noResults }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (inv of store.items(); track inv.id) {
+                  <tr>
+                    <td class="font-mono text-sm hidden sm:table-cell">{{ inv.invoiceNumber ?? '—' }}</td>
+                    <td class="font-medium">{{ inv.customerName || '—' }}</td>
+                    <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.issueDate ?? '—' }}</td>
+                    <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.dueDate ?? '—' }}</td>
+                    <td class="text-right font-medium tabular-nums">{{ lineTotal(inv) | number:'1.2-2' }}</td>
+                    <td>
+                      <span class="badge badge-sm" [class]="statusBadge(inv.status)">
+                        {{ statusLabel(inv.status) }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="flex gap-1 justify-end flex-wrap">
+                        @if (inv.status === 'draft') {
+                          <button class="btn btn-ghost btn-sm" (click)="openEdit(inv)">
+                            {{ t().common.edit }}
+                          </button>
+                          <button class="btn btn-ghost btn-sm text-info" (click)="store.issue(inv.id)">
+                            {{ t().invoices.issue }}
+                          </button>
+                          <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
+                            {{ t().common.cancel }}
+                          </button>
+                        }
+                        @if (inv.status === 'issued') {
+                          <button class="btn btn-ghost btn-sm text-success" (click)="store.pay(inv.id)">
+                            {{ t().invoices.pay }}
+                          </button>
+                          <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
+                            {{ t().common.cancel }}
+                          </button>
+                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv.id)">
+                            {{ t().invoices.pdf }}
+                          </button>
+                        }
+                        @if (inv.status === 'paid') {
+                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv.id)">
+                            {{ t().invoices.pdf }}
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-base-content/40 py-10">
+                      {{ t().invoices.noResults }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
 
         @if (store.pages() > 1) {
-          <div class="flex justify-center mt-4">
+          <div class="flex justify-center items-center gap-4 mt-4">
             <div class="join">
               @for (p of pageRange(); track p) {
                 <button class="join-item btn btn-sm"
@@ -129,7 +133,7 @@ const STATUS_BADGE: Record<string, string> = {
                   (click)="store.setPage(p)">{{ p }}</button>
               }
             </div>
-            <span class="ml-4 text-sm text-base-content/50 self-center">
+            <span class="text-sm text-base-content/50">
               {{ store.total() }} {{ t().common.results }}
             </span>
           </div>
@@ -139,7 +143,7 @@ const STATUS_BADGE: Record<string, string> = {
 
     @if (showForm()) {
       <dialog class="modal modal-open">
-        <div class="modal-box max-w-4xl">
+        <div class="modal-box w-full max-w-3xl">
           <app-invoice-form
             [invoice]="editingInvoice()"
             [articles]="articles()"
@@ -156,7 +160,7 @@ const STATUS_BADGE: Record<string, string> = {
 
     @if (showCustomerForm()) {
       <dialog class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-full max-w-lg">
           <app-customer-form
             (saved)="onCustomerSaved($event)"
             (cancelled)="showCustomerForm.set(false)"

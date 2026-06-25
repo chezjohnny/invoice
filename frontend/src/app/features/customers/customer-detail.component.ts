@@ -19,31 +19,36 @@ const STATUS_BADGE: Record<string, string> = {
   selector: 'app-customer-detail',
   imports: [RouterLink, DecimalPipe, InvoiceFormComponent, CustomerFormComponent],
   template: `
-    <div class="p-6 max-w-5xl mx-auto">
-      <a routerLink="/customers" class="btn btn-ghost btn-sm mb-4">← {{ t().customers.backToList }}</a>
+    <div class="p-4 md:p-6 max-w-5xl mx-auto">
+      <a routerLink="/customers" class="btn btn-ghost btn-sm mb-5 -ml-2">
+        ← {{ t().customers.backToList }}
+      </a>
 
       @if (loading()) {
-        <div class="flex justify-center py-8">
+        <div class="flex justify-center py-12">
           <span class="loading loading-spinner loading-md"></span>
         </div>
       } @else if (customer()) {
-        <!-- Customer info -->
+
+        <!-- Customer info card -->
         <div class="card bg-base-100 shadow mb-6">
-          <div class="card-body">
-            <div class="flex justify-between items-start">
-              <div>
-                <h1 class="text-2xl font-bold">{{ customer()!.lastName }}, {{ customer()!.firstName }}</h1>
-                <p class="text-base-content/60 mt-1">
+          <div class="card-body p-4 md:p-6">
+            <div class="flex justify-between items-start gap-4">
+              <div class="min-w-0">
+                <h1 class="text-xl font-bold sm:text-2xl">
+                  {{ customer()!.lastName }}, {{ customer()!.firstName }}
+                </h1>
+                <p class="text-base-content/60 text-sm mt-1">
                   {{ customer()!.addressLine1 }}, {{ customer()!.postalCode }} {{ customer()!.city }}
                 </p>
                 @if (customer()!.email) {
                   <p class="text-sm mt-1">{{ customer()!.email }}</p>
                 }
                 @for (p of customer()!.phones; track p.number) {
-                  <p class="text-sm">{{ p.label }}: {{ p.number }}</p>
+                  <p class="text-sm text-base-content/70">{{ p.label }}: {{ p.number }}</p>
                 }
               </div>
-              <button class="btn btn-sm btn-ghost" (click)="showEditForm.set(true)">
+              <button class="btn btn-outline btn-sm shrink-0" (click)="showEditForm.set(true)">
                 {{ t().common.edit }}
               </button>
             </div>
@@ -52,8 +57,9 @@ const STATUS_BADGE: Record<string, string> = {
 
         <!-- Invoice history header -->
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">{{ t().customers.invoiceHistory }}</h2>
-          <button class="btn btn-primary btn-sm"
+          <h2 class="text-lg font-semibold">{{ t().customers.invoiceHistory }}</h2>
+          <button class="btn btn-sm"
+            [class]="showInvoiceForm() ? 'btn-ghost' : 'btn-primary'"
             (click)="showInvoiceForm.set(!showInvoiceForm())">
             {{ showInvoiceForm() ? t().common.cancel : t().invoices.new }}
           </button>
@@ -62,7 +68,7 @@ const STATUS_BADGE: Record<string, string> = {
         <!-- New invoice form (inline) -->
         @if (showInvoiceForm()) {
           <div class="card bg-base-100 shadow mb-6">
-            <div class="card-body">
+            <div class="card-body p-4 md:p-6">
               <app-invoice-form
                 [externalCustomer]="customer()"
                 [articles]="articles()"
@@ -76,84 +82,103 @@ const STATUS_BADGE: Record<string, string> = {
 
         <!-- Invoice list -->
         @if (invoices().length === 0) {
-          <p class="text-center text-base-content/40 py-8">{{ t().customers.noInvoices }}</p>
+          <div class="card bg-base-100 shadow">
+            <div class="card-body text-center text-base-content/40 py-10">
+              <p>{{ t().customers.noInvoices }}</p>
+            </div>
+          </div>
         } @else {
-          <div class="overflow-x-auto">
-            <table class="table w-full">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>{{ t().invoices.number }}</th>
-                  <th>{{ t().invoices.date }}</th>
-                  <th>{{ t().invoices.due }}</th>
-                  <th>{{ t().invoices.status }}</th>
-                  <th class="text-right">{{ t().invoices.total }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (inv of invoices(); track inv.id) {
-                  <tr class="cursor-pointer hover:bg-base-200"
-                    (click)="toggleInvoice(inv.id)">
-                    <td class="w-6 text-base-content/40 text-xs">
-                      {{ expandedInvoiceId() === inv.id ? '▲' : '▼' }}
-                    </td>
-                    <td class="font-mono text-sm">{{ inv.invoiceNumber ?? '—' }}</td>
-                    <td class="text-sm">{{ inv.issueDate ?? '—' }}</td>
-                    <td class="text-sm">{{ inv.dueDate ?? '—' }}</td>
-                    <td>
-                      <span class="badge" [class]="statusBadge(inv.status)">
-                        {{ statusLabel(inv.status) }}
-                      </span>
-                    </td>
-                    <td class="text-right font-medium">CHF {{ lineTotal(inv) | number:'1.2-2' }}</td>
+          <div class="card bg-base-100 shadow overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="table w-full">
+                <thead>
+                  <tr>
+                    <th class="w-8"></th>
+                    <th class="hidden sm:table-cell">{{ t().invoices.number }}</th>
+                    <th class="hidden md:table-cell">{{ t().invoices.date }}</th>
+                    <th class="hidden md:table-cell">{{ t().invoices.due }}</th>
+                    <th>{{ t().invoices.status }}</th>
+                    <th class="text-right">{{ t().invoices.total }}</th>
                   </tr>
-                  @if (expandedInvoiceId() === inv.id) {
-                    <tr>
-                      <td colspan="6" class="bg-base-200/50 px-4 py-3">
-                        @if (inv.lines.length === 0) {
-                          <p class="text-sm text-base-content/40">{{ t().invoices.noLines }}</p>
-                        } @else {
-                          <table class="table table-sm w-full mb-2">
-                            <thead>
-                              <tr>
-                                <th>{{ t().invoices.descLabel }}</th>
-                                <th class="text-right">{{ t().invoices.qtyLabel }}</th>
-                                <th class="text-right">{{ t().invoices.priceLabel }}</th>
-                                <th class="text-right">{{ t().invoices.vatLabel }}</th>
-                                <th class="text-right">{{ t().invoices.total }}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (line of inv.lines; track line.id) {
-                                <tr>
-                                  <td>{{ line.descriptionSnapshot }}</td>
-                                  <td class="text-right">{{ line.quantity }}</td>
-                                  <td class="text-right">{{ line.unitPriceSnapshot | number:'1.2-2' }}</td>
-                                  <td class="text-right">
-                                    @if (line.vatRateSnapshot != null) {
-                                      {{ (line.vatRateSnapshot * 100) | number:'1.1-1' }}%
-                                    } @else { — }
-                                  </td>
-                                  <td class="text-right font-medium">
-                                    {{ (line.quantity * line.unitPriceSnapshot) | number:'1.2-2' }}
-                                  </td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        }
-                        @if (inv.status === 'issued' || inv.status === 'paid') {
-                          <button class="btn btn-sm btn-outline"
-                            (click)="downloadPdf($event, inv)">
-                            ↓ PDF
-                          </button>
-                        }
+                </thead>
+                <tbody>
+                  @for (inv of invoices(); track inv.id) {
+                    <tr class="cursor-pointer hover:bg-base-200 select-none"
+                      (click)="toggleInvoice(inv.id)">
+                      <td class="text-base-content/40 text-xs pl-4">
+                        {{ expandedInvoiceId() === inv.id ? '▲' : '▼' }}
+                      </td>
+                      <td class="font-mono text-sm hidden sm:table-cell">{{ inv.invoiceNumber ?? '—' }}</td>
+                      <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.issueDate ?? '—' }}</td>
+                      <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.dueDate ?? '—' }}</td>
+                      <td>
+                        <span class="badge badge-sm" [class]="statusBadge(inv.status)">
+                          {{ statusLabel(inv.status) }}
+                        </span>
+                      </td>
+                      <td class="text-right font-semibold tabular-nums">
+                        CHF {{ lineTotal(inv) | number:'1.2-2' }}
                       </td>
                     </tr>
+                    @if (expandedInvoiceId() === inv.id) {
+                      <tr>
+                        <td colspan="6" class="bg-base-200/60 p-0">
+                          <div class="px-4 py-3">
+                            <!-- Invoice number on mobile (since column is hidden) -->
+                            <p class="text-xs text-base-content/50 font-mono mb-2 sm:hidden">
+                              {{ inv.invoiceNumber ?? '—' }}
+                              @if (inv.issueDate) { · {{ inv.issueDate }} }
+                            </p>
+                            @if (inv.lines.length === 0) {
+                              <p class="text-sm text-base-content/40">{{ t().invoices.noLines }}</p>
+                            } @else {
+                              <div class="overflow-x-auto">
+                                <table class="table table-sm w-full mb-3">
+                                  <thead>
+                                    <tr>
+                                      <th>{{ t().invoices.descLabel }}</th>
+                                      <th class="text-right">{{ t().invoices.qtyLabel }}</th>
+                                      <th class="text-right hidden sm:table-cell">{{ t().invoices.priceLabel }}</th>
+                                      <th class="text-right hidden sm:table-cell">{{ t().invoices.vatLabel }}</th>
+                                      <th class="text-right">{{ t().invoices.total }}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    @for (line of inv.lines; track line.id) {
+                                      <tr>
+                                        <td>{{ line.descriptionSnapshot }}</td>
+                                        <td class="text-right tabular-nums">{{ line.quantity }}</td>
+                                        <td class="text-right tabular-nums hidden sm:table-cell">
+                                          {{ line.unitPriceSnapshot | number:'1.2-2' }}
+                                        </td>
+                                        <td class="text-right hidden sm:table-cell">
+                                          @if (line.vatRateSnapshot != null) {
+                                            {{ (line.vatRateSnapshot * 100) | number:'1.1-1' }}%
+                                          } @else { — }
+                                        </td>
+                                        <td class="text-right font-medium tabular-nums">
+                                          {{ (line.quantity * line.unitPriceSnapshot) | number:'1.2-2' }}
+                                        </td>
+                                      </tr>
+                                    }
+                                  </tbody>
+                                </table>
+                              </div>
+                            }
+                            @if (inv.status === 'issued' || inv.status === 'paid') {
+                              <button class="btn btn-sm btn-outline"
+                                (click)="downloadPdf($event, inv)">
+                                ↓ PDF
+                              </button>
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    }
                   }
-                }
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         }
       }
@@ -161,7 +186,7 @@ const STATUS_BADGE: Record<string, string> = {
 
     @if (showEditForm()) {
       <dialog class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-full max-w-lg">
           <app-customer-form
             [customer]="customer()"
             (saved)="onCustomerSaved($event)"

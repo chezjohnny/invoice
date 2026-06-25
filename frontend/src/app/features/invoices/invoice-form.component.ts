@@ -28,12 +28,12 @@ interface Recommendation {
   imports: [CurrencyPipe],
   template: `
     <form (submit)="submit($event)">
-      <h3 class="text-lg font-bold mb-4">
+      <h3 class="text-lg font-semibold mb-5">
         {{ invoice() ? t().invoices.editTitle : t().invoices.newTitle }}
       </h3>
 
-      <fieldset class="fieldset gap-3">
-        <!-- Customer section -->
+      <fieldset class="fieldset gap-4">
+        <!-- Customer -->
         @if (externalCustomer()) {
           <div>
             <label class="fieldset-label">{{ t().invoices.customerLabel }}</label>
@@ -69,14 +69,16 @@ interface Recommendation {
               }
             }
             @if (submitted() && errors().customerId) {
-              <p class="fieldset-label text-error">{{ errors().customerId }}</p>
+              <p class="fieldset-label text-error mt-1">{{ errors().customerId }}</p>
             }
           </div>
         }
+
+        <!-- Recommendations -->
         @if (articleRecommendations().length > 0) {
-          <div class="rounded border border-base-200 p-2">
-            <p class="text-xs text-base-content/50 mb-1.5">{{ t().invoices.recommendations }}</p>
-            <div class="flex flex-wrap gap-1">
+          <div class="rounded-lg border border-base-300 bg-base-200/50 p-3">
+            <p class="text-xs text-base-content/50 mb-2">{{ t().invoices.recommendations }}</p>
+            <div class="flex flex-wrap gap-1.5">
               @for (rec of articleRecommendations(); track rec.description) {
                 <button type="button" class="btn btn-outline btn-xs" (click)="addRecommendation(rec)">
                   + {{ rec.description }}
@@ -86,93 +88,99 @@ interface Recommendation {
           </div>
         }
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="fieldset-label">{{ t().invoices.discountLabel }}</label>
-            <input class="input w-full" type="number" min="0" max="100" step="0.1"
-              [value]="discountPercent()" (input)="discountPercent.set(asStr($event))" />
-          </div>
+        <!-- Discount -->
+        <div class="w-full sm:max-w-48">
+          <label class="fieldset-label">{{ t().invoices.discountLabel }}</label>
+          <input class="input w-full" type="number" min="0" max="100" step="0.1"
+            [value]="discountPercent()" (input)="discountPercent.set(asStr($event))" />
         </div>
 
+        <!-- Lines -->
         <div>
-          <label class="fieldset-label font-semibold">{{ t().invoices.linesLabel }}</label>
+          <label class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</label>
           @if (lines().length === 0) {
             <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
           }
           @for (line of lines(); track $index; let i = $index) {
-            <div class="border border-base-300 rounded p-3 mb-2 grid grid-cols-12 gap-2 items-end">
-              <div class="col-span-4">
-                <label class="fieldset-label text-xs">{{ t().invoices.articleLabel }}</label>
-                <select class="select select-bordered select-sm w-full"
-                  [value]="line.articleId ?? ''"
-                  (change)="selectArticle(i, asStr($event))">
-                  <option value="">—</option>
-                  @for (a of articles(); track a.id) {
-                    <option [value]="a.id">{{ a.name }}</option>
+            <div class="border border-base-300 rounded-lg p-3 mb-2 bg-base-100">
+              <!-- Row 1: article + description -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                <div>
+                  <label class="fieldset-label text-xs">{{ t().invoices.articleLabel }}</label>
+                  <select class="select select-bordered select-sm w-full"
+                    [value]="line.articleId ?? ''"
+                    (change)="selectArticle(i, asStr($event))">
+                    <option value="">—</option>
+                    @for (a of articles(); track a.id) {
+                      <option [value]="a.id">{{ a.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="fieldset-label text-xs">{{ t().invoices.descLabel }}</label>
+                  <input class="input input-sm w-full" type="text"
+                    [value]="line.descriptionSnapshot"
+                    (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
+                </div>
+              </div>
+              <!-- Row 2: qty + price + vat + delete -->
+              <div class="grid grid-cols-4 gap-2 items-end">
+                <div>
+                  <label class="fieldset-label text-xs">{{ t().invoices.qtyLabel }}</label>
+                  <input class="input input-sm w-full" type="number" min="1" step="1"
+                    [value]="line.quantity"
+                    (input)="updateLine(i, 'quantity', asStr($event))" />
+                </div>
+                <div>
+                  <label class="fieldset-label text-xs">{{ t().invoices.priceLabel }}</label>
+                  <input class="input input-sm w-full" type="number" min="0" step="0.01"
+                    [value]="line.unitPriceSnapshot"
+                    (input)="updateLine(i, 'unitPriceSnapshot', asStr($event))" />
+                </div>
+                <div>
+                  <label class="fieldset-label text-xs">{{ t().invoices.vatLabel }}</label>
+                  <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
+                    placeholder="—"
+                    [value]="line.vatRateSnapshot"
+                    (input)="updateLine(i, 'vatRateSnapshot', asStr($event))" />
+                </div>
+                <div class="flex items-end justify-end gap-1">
+                  @if (lineStockWarning(line)) {
+                    <span class="badge badge-warning badge-xs mb-1" [title]="t().articles.lowStockWarning">!</span>
                   }
-                </select>
-              </div>
-              <div class="col-span-4">
-                <label class="fieldset-label text-xs">{{ t().invoices.descLabel }}</label>
-                <input class="input input-sm w-full" type="text"
-                  [value]="line.descriptionSnapshot"
-                  (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
-              </div>
-              <div class="col-span-1">
-                <label class="fieldset-label text-xs">{{ t().invoices.qtyLabel }}</label>
-                <input class="input input-sm w-full" type="number" min="1" step="1"
-                  [value]="line.quantity"
-                  (input)="updateLine(i, 'quantity', asStr($event))" />
-              </div>
-              <div class="col-span-1">
-                <label class="fieldset-label text-xs">{{ t().invoices.priceLabel }}</label>
-                <input class="input input-sm w-full" type="number" min="0" step="0.01"
-                  [value]="line.unitPriceSnapshot"
-                  (input)="updateLine(i, 'unitPriceSnapshot', asStr($event))" />
-              </div>
-              <div class="col-span-1">
-                <label class="fieldset-label text-xs">{{ t().invoices.vatLabel }}</label>
-                <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
-                  placeholder="—"
-                  [value]="line.vatRateSnapshot"
-                  (input)="updateLine(i, 'vatRateSnapshot', asStr($event))" />
-              </div>
-              <div class="col-span-1 flex flex-col items-end gap-1">
-                @if (lineStockWarning(line)) {
-                  <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
-                }
-                <button type="button" class="btn btn-ghost btn-xs text-error"
-                  (click)="removeLine(i)">✕</button>
+                  <button type="button" class="btn btn-ghost btn-sm text-error"
+                    (click)="removeLine(i)">✕</button>
+                </div>
               </div>
             </div>
           }
-          <button type="button" class="btn btn-ghost btn-sm" (click)="addLine()">
+          <button type="button" class="btn btn-ghost btn-sm mt-1" (click)="addLine()">
             {{ t().invoices.addLine }}
           </button>
         </div>
 
+        <!-- Totals summary -->
         @if (lines().length > 0) {
-          <div class="text-sm text-right text-base-content/70 border-t border-base-200 pt-2">
-            <span class="mr-4">
-              {{ t().dashboard.total }}: {{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}
-            </span>
+          <div class="text-sm text-right text-base-content/70 border-t border-base-200 pt-3 space-y-0.5">
+            <div>{{ t().dashboard.total }}: <span class="tabular-nums">{{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}</span></div>
             @if (totals().discountAmount > 0) {
-              <span class="mr-4">
-                -{{ totals().discountAmount | currency:'CHF':'code':'1.2-2' }}
-              </span>
+              <div class="text-error">− {{ totals().discountAmount | currency:'CHF':'code':'1.2-2' }}</div>
             }
-            <strong>{{ t().invoices.total }}: {{ totals().total | currency:'CHF':'code':'1.2-2' }}</strong>
+            <div class="font-semibold text-base-content">
+              {{ t().invoices.total }}: <span class="tabular-nums">{{ totals().total | currency:'CHF':'code':'1.2-2' }}</span>
+            </div>
           </div>
         }
 
+        <!-- Notes -->
         <div>
           <label class="fieldset-label">{{ t().invoices.notesLabel }}</label>
-          <textarea class="textarea textarea-bordered w-full" rows="3"
+          <textarea class="textarea textarea-bordered w-full" rows="2"
             [value]="notes()" (input)="notes.set(asStr($event))"></textarea>
         </div>
       </fieldset>
 
-      <div class="flex justify-end gap-2 mt-6">
+      <div class="flex flex-wrap justify-end gap-2 mt-6">
         <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
           {{ t().common.cancel }}
         </button>
