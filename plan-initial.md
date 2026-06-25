@@ -4,6 +4,8 @@ Je veux construire une application pour gérer des factures initialement pour un
 
 ### But
 
+Développer une application fonctionnelle et performante. Elle me permettra d'apprendre les nouveaux concepts angular et peut-être de nouveaux framework python (je connais bien flask).
+
 ## Technologies
 Le code doit être minimal et des tests unitaires seront mis en place avec au minimum les tests complets du backend et des stores. Les outils de qualités lint, format, etc. doivent être configurés.
 

@@ -98,62 +98,70 @@ interface Recommendation {
         <!-- Lines -->
         <div>
           <label class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</label>
-          @if (lines().length === 0) {
-            <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
-          }
-          @for (line of lines(); track $index; let i = $index) {
-            <div class="border border-base-300 rounded-lg p-3 mb-2 bg-base-100">
-              <!-- Row 1: article + description -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                <div>
-                  <label class="fieldset-label text-xs">{{ t().invoices.articleLabel }}</label>
-                  <select class="select select-bordered select-sm w-full"
-                    [value]="line.articleId ?? ''"
-                    (change)="selectArticle(i, asStr($event))">
-                    <option value="">—</option>
-                    @for (a of articles(); track a.id) {
-                      <option [value]="a.id">{{ a.name }}</option>
-                    }
-                  </select>
-                </div>
-                <div>
-                  <label class="fieldset-label text-xs">{{ t().invoices.descLabel }}</label>
-                  <input class="input input-sm w-full" type="text"
-                    [value]="line.descriptionSnapshot"
-                    (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
-                </div>
+
+          @if (lines().length > 0) {
+            <div class="overflow-x-auto">
+              <!-- Column headers -->
+              <div class="grid items-end gap-x-2 px-0.5 mb-1 text-xs text-base-content/50"
+                   style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                <span>{{ t().invoices.articleLabel }}</span>
+                <span>{{ t().invoices.qtyLabel }}</span>
+                <span>{{ t().invoices.priceLabel }}</span>
+                <span>{{ t().invoices.vatLabel }}</span>
+                <span></span>
               </div>
-              <!-- Row 2: qty + price + vat + delete -->
-              <div class="grid grid-cols-4 gap-2 items-end">
-                <div>
-                  <label class="fieldset-label text-xs">{{ t().invoices.qtyLabel }}</label>
+              <!-- One row per line -->
+              @for (line of lines(); track $index; let i = $index) {
+                <div class="grid items-center gap-x-2 px-0.5 mb-1"
+                     style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                  <!-- Article select (with description tooltip) or free-text description -->
+                  <div class="flex gap-1 min-w-0">
+                    <select class="select select-bordered select-sm"
+                      [class.flex-1]="line.articleId !== null"
+                      [class.w-32]="line.articleId === null"
+                      [class.shrink-0]="line.articleId === null"
+                      [title]="line.descriptionSnapshot"
+                      (change)="selectArticle(i, asStr($event))">
+                      <option value="" [selected]="!line.articleId">—</option>
+                      @for (a of articles(); track a.id) {
+                        <option [value]="a.id" [selected]="a.id === line.articleId">{{ a.name }}</option>
+                      }
+                    </select>
+                    @if (line.articleId === null) {
+                      <input class="input input-sm flex-1 min-w-0" type="text"
+                        [placeholder]="t().invoices.descLabel"
+                        [value]="line.descriptionSnapshot"
+                        (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
+                    }
+                  </div>
+                  <!-- Qty -->
                   <input class="input input-sm w-full" type="number" min="1" step="1"
                     [value]="line.quantity"
                     (input)="updateLine(i, 'quantity', asStr($event))" />
-                </div>
-                <div>
-                  <label class="fieldset-label text-xs">{{ t().invoices.priceLabel }}</label>
+                  <!-- Price -->
                   <input class="input input-sm w-full" type="number" min="0" step="0.01"
                     [value]="line.unitPriceSnapshot"
                     (input)="updateLine(i, 'unitPriceSnapshot', asStr($event))" />
-                </div>
-                <div>
-                  <label class="fieldset-label text-xs">{{ t().invoices.vatLabel }}</label>
+                  <!-- VAT% -->
                   <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
                     placeholder="—"
                     [value]="line.vatRateSnapshot"
                     (input)="updateLine(i, 'vatRateSnapshot', asStr($event))" />
+                  <!-- Delete + warning -->
+                  <div class="flex items-center justify-end gap-0.5">
+                    @if (lineStockWarning(line)) {
+                      <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
+                    }
+                    <button type="button" class="btn btn-ghost btn-xs text-error px-1"
+                      (click)="removeLine(i)">✕</button>
+                  </div>
                 </div>
-                <div class="flex items-end justify-end gap-1">
-                  @if (lineStockWarning(line)) {
-                    <span class="badge badge-warning badge-xs mb-1" [title]="t().articles.lowStockWarning">!</span>
-                  }
-                  <button type="button" class="btn btn-ghost btn-sm text-error"
-                    (click)="removeLine(i)">✕</button>
-                </div>
-              </div>
+              }
             </div>
+          } @else {
+            <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
           }
+
           <button type="button" class="btn btn-ghost btn-sm mt-1" (click)="addLine()">
             {{ t().invoices.addLine }}
           </button>
@@ -227,13 +235,14 @@ export class InvoiceFormComponent {
   protected readonly articleRecommendations = computed<Recommendation[]>(() => {
     const seen = new Set<string>();
     const recs: Recommendation[] = [];
+    const activeIds = new Set(this.articles().map((a) => a.id));
     for (const inv of this.recentInvoices()) {
       for (const line of inv.lines) {
         const key = line.articleId ?? line.descriptionSnapshot;
         if (!seen.has(key)) {
           seen.add(key);
           recs.push({
-            articleId: line.articleId,
+            articleId: line.articleId && activeIds.has(line.articleId) ? line.articleId : null,
             description: line.descriptionSnapshot,
             unitPrice: line.unitPriceSnapshot,
             vatRate: line.vatRateSnapshot,
