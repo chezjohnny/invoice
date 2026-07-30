@@ -48,13 +48,19 @@ describe('InvoiceStore', () => {
             list: async (params: { status?: string }) =>
               makePage(invoices, params),
             create: async (data: InvoiceCreate): Promise<Invoice> => {
-              const inv = { ...BASE, ...data, id: 'new-id', status: 'draft' as const };
+              const inv: Invoice = {
+                ...BASE, ...data, id: 'new-id', status: 'draft',
+                lines: data.lines.map((l, i) => ({ ...l, id: `new-line-${i}`, invoiceId: 'new-id' })),
+              };
               invoices.push(inv);
               return inv;
             },
             update: async (id: string, data: InvoiceUpdate): Promise<Invoice> => {
               const idx = invoices.findIndex((i) => i.id === id);
-              invoices[idx] = { ...invoices[idx], ...data };
+              invoices[idx] = {
+                ...invoices[idx], ...data,
+                lines: data.lines.map((l, i) => ({ ...l, id: `${id}-line-${i}`, invoiceId: id })),
+              };
               return invoices[idx];
             },
             issue: async (id: string): Promise<Invoice> => {
