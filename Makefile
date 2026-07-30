@@ -64,6 +64,14 @@ backend-init-db-sqlite: ## Create SQLite dev DB tables
 backend-fixtures-sqlite: backend-init-db-sqlite ## Load demo fixtures into SQLite dev DB (add ARGS=--reset to wipe and reload)
 	uv --directory backend run --env-file .env.sqlite python -m app.cli load-fixtures $(ARGS)
 
+.PHONY: backend-shell
+backend-shell: ## Interactive shell with app + DB preloaded (uses default/Postgres)
+	uv --directory backend run python -m app.cli shell
+
+.PHONY: backend-shell-sqlite
+backend-shell-sqlite: ## Interactive shell with app + DB preloaded (SQLite dev DB)
+	uv --directory backend run --env-file .env.sqlite python -m app.cli shell
+
 .PHONY: backend-test
 backend-test: ## Run backend tests
 	uv --directory backend run pytest

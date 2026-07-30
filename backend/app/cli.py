@@ -222,11 +222,65 @@ async def _load_invoices(
     print(f"  ✓ {len(specs)} invoices")
 
 
+def run_shell() -> None:
+    """Interactive REPL with the app, a live DB session and all models preloaded."""
+    from sqlalchemy import func, update
+
+    from app.core.config import settings
+    from app.models.article import Article
+    from app.models.customer import Customer
+
+    db = AsyncSessionLocal()
+    namespace: dict[str, Any] = {
+        "db": db,
+        "engine": engine,
+        "AsyncSessionLocal": AsyncSessionLocal,
+        "Base": Base,
+        "settings": settings,
+        "select": select,
+        "func": func,
+        "delete": delete,
+        "update": update,
+        "Article": Article,
+        "Customer": Customer,
+        "Invoice": Invoice,
+        "InvoiceLine": InvoiceLine,
+        "InvoiceStatus": InvoiceStatus,
+        "Tenant": Tenant,
+        "TenantProfile": TenantProfile,
+        "User": User,
+    }
+    models = ", ".join(sorted(k for k in namespace if k[0].isupper()))
+    banner = (
+        f"Invoice shell — DB: {settings.database_url}\n"
+        "  Preloaded: db (AsyncSession), engine, settings, select/func/delete/update\n"
+        f"  Models: {models}\n"
+        "  Top-level await works, e.g.  await db.scalar(select(func.count(User.id)))\n"
+    )
+
+    try:
+        from IPython import start_ipython
+
+        print(banner)
+        start_ipython(argv=["--no-banner"], user_ns=namespace)  # type: ignore[no-untyped-call]
+    except ImportError:
+        import code
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        namespace["run"] = loop.run_until_complete
+        print(banner)
+        print("  (IPython not installed — no top-level await; use run(coro) instead)")
+        code.interact(local=namespace)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Invoice backend CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("init-db", help="Create all database tables (SQLite dev only)")
+
+    sub.add_parser("shell", help="Interactive shell with the app and DB preloaded")
 
     p_fixtures = sub.add_parser("load-fixtures", help="Load fixture data into the database")
     p_fixtures.add_argument(
@@ -245,6 +299,8 @@ def main() -> None:
 
     if args.command == "init-db":
         asyncio.run(_init_db())
+    elif args.command == "shell":
+        run_shell()
     elif args.command == "load-fixtures":
         path = Path(args.file)
         if not path.exists():
