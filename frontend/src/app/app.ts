@@ -2,10 +2,11 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { I18nService } from './core/i18n/i18n.service';
+import { Toasts } from './shared/toasts';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Toasts],
   template: `
     @if (auth.isAuthenticated()) {
       <div class="drawer lg:drawer-open">
@@ -85,6 +86,7 @@ import { I18nService } from './core/i18n/i18n.service';
     } @else {
       <router-outlet />
     }
+    <app-toasts />
   `,
 })
 export class App {

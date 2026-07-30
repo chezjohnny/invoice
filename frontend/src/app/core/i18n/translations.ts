@@ -64,6 +64,17 @@ const EN = {
     subtitle: 'Sign in to your account', email: 'Email',
     password: 'Password', signIn: 'Sign in', invalid: 'Invalid email or password.',
   },
+  errors: {
+    network: 'Cannot reach the server. Check your connection and try again.',
+    badRequest: 'The request could not be processed. Please check your input.',
+    unauthorized: 'Your session has expired. Please sign in again.',
+    forbidden: 'You are not allowed to perform this action.',
+    notFound: 'The requested item was not found.',
+    conflict: 'This action conflicts with the current state of the data.',
+    validation: 'Some fields are invalid. Please review your input.',
+    server: 'A server error occurred. Please try again later.',
+    unknown: 'An unexpected error occurred.',
+  },
 };
 
 const FR: typeof EN = {
@@ -129,6 +140,17 @@ const FR: typeof EN = {
   login: {
     subtitle: 'Connectez-vous à votre compte', email: 'E-mail',
     password: 'Mot de passe', signIn: 'Connexion', invalid: 'E-mail ou mot de passe invalide.',
+  },
+  errors: {
+    network: 'Serveur injoignable. Vérifiez votre connexion et réessayez.',
+    badRequest: 'La requête n\'a pas pu être traitée. Vérifiez vos données.',
+    unauthorized: 'Votre session a expiré. Veuillez vous reconnecter.',
+    forbidden: 'Vous n\'êtes pas autorisé à effectuer cette action.',
+    notFound: 'L\'élément demandé est introuvable.',
+    conflict: 'Cette action est en conflit avec l\'état actuel des données.',
+    validation: 'Certains champs sont invalides. Veuillez vérifier votre saisie.',
+    server: 'Une erreur serveur est survenue. Réessayez plus tard.',
+    unknown: 'Une erreur inattendue est survenue.',
   },
 };
 

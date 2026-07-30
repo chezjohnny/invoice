@@ -9,6 +9,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { ARTICLE_SERVICE } from './core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from './core/tokens/customer-service.token';
 import { DASHBOARD_SERVICE } from './core/tokens/dashboard-service.token';
@@ -26,7 +27,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([errorInterceptor, authInterceptor])),
     provideRouter(routes),
     { provide: ARTICLE_SERVICE, useClass: environment.useMock ? MockArticleService : HttpArticleService },
     { provide: CUSTOMER_SERVICE, useClass: environment.useMock ? MockCustomerService : HttpCustomerService },
