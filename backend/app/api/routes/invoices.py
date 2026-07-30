@@ -88,6 +88,7 @@ async def create_invoice(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Invoice:
+    await _validate_refs(body, current_user.tenant_id, db)
     invoice = Invoice(
         tenant_id=current_user.tenant_id,
         customer_id=body.customer_id,
@@ -113,6 +114,7 @@ async def update_invoice(
     if invoice.status != InvoiceStatus.DRAFT:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only draft invoices can be edited")
 
+    await _validate_refs(body, current_user.tenant_id, db)
     invoice.customer_id = body.customer_id
     invoice.discount_percent = body.discount_percent
     invoice.notes = body.notes
@@ -241,6 +243,41 @@ async def download_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
     )
+
+
+async def _validate_refs(
+    body: InvoiceCreate | InvoiceUpdate, tenant_id: uuid.UUID, db: AsyncSession
+) -> None:
+    """Ensure the customer and every referenced article belong to the tenant."""
+    customer = await db.scalar(
+        select(Customer.id).where(
+            Customer.id == body.customer_id, Customer.tenant_id == tenant_id
+        )
+    )
+    if customer is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Unknown customer: {body.customer_id}",
+        )
+
+    article_ids = {line.article_id for line in body.lines if line.article_id is not None}
+    if article_ids:
+        found = set(
+            (
+                await db.execute(
+                    select(Article.id).where(
+                        Article.id.in_(article_ids),
+                        Article.tenant_id == tenant_id,
+                    )
+                )
+            ).scalars().all()
+        )
+        missing = article_ids - found
+        if missing:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Unknown article(s): {', '.join(str(a) for a in missing)}",
+            )
 
 
 async def _get_invoice(
