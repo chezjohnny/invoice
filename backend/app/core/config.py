@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "env_prefix": "INVOICE_"}
 
 
 settings = Settings()

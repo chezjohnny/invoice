@@ -58,7 +58,7 @@ invoice/
 - **IBAN** required on TenantProfile for Swiss QR-bill
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
-- **SQLite dev mode**: `backend/.env.sqlite` sets `DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`
+- **SQLite dev mode**: `backend/.env.sqlite` sets `INVOICE_DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`
 
 ## Backend conventions
 - Python 3.14, all code in English
