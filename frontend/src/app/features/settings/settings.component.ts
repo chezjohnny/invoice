@@ -13,6 +13,11 @@ import { isValidQrBillIban, normalizeIban } from './iban';
         <div class="flex justify-center py-12">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
+      } @else if (!store.profile()) {
+        <div role="alert" class="alert alert-error">
+          <span>{{ t().settings.loadError }}</span>
+          <button class="btn btn-sm" (click)="store.load()">{{ t().common.retry }}</button>
+        </div>
       } @else {
         <form (submit)="submit($event)" class="flex flex-col gap-4">
           <!-- ── Identity ── -->
@@ -143,6 +148,13 @@ export class SettingsComponent {
   protected readonly store = inject(CompanyStore);
   protected readonly t = inject(I18nService).T;
 
+  constructor() {
+    // Never edit a stale profile: the shell loads it once at sign-in, while
+    // invoice_next_number moves server-side on every issue — and this is also
+    // what recovers the page when that initial load failed.
+    this.store.load();
+  }
+
   protected readonly companyName = linkedSignal(() => this.store.profile()?.companyName ?? '');
   protected readonly addressLine1 = linkedSignal(() => this.store.profile()?.addressLine1 ?? '');
   protected readonly addressLine2 = linkedSignal(() => this.store.profile()?.addressLine2 ?? '');
@@ -153,7 +165,8 @@ export class SettingsComponent {
   protected readonly vatNumber = linkedSignal(() => this.store.profile()?.vatNumber ?? '');
   protected readonly vatRate = linkedSignal(() => {
     const rate = this.store.profile()?.defaultVatRate;
-    return rate != null ? String(rate * 100) : '';
+    // The rate is a 4-decimal fraction; *100 alone shows 0.037 as 3.6999999999999997.
+    return rate != null ? String(Math.round(rate * 1e6) / 1e4) : '';
   });
   protected readonly invoicePrefix = linkedSignal(
     () => this.store.profile()?.invoicePrefix ?? 'INV'

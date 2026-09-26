@@ -99,6 +99,15 @@ describe('CompanyStore', () => {
     expect(notify.notifications().some((n) => n.kind === 'success')).toBe(true);
   });
 
+  it('drops the profile on reset so the next tenant starts clean', async () => {
+    await store.load();
+    expect(store.profile()).not.toBeNull();
+
+    store.reset();
+    expect(store.profile()).toBeNull();
+    expect(store.isIncomplete()).toBe(false);
+  });
+
   it('resets the loading flags when the backend fails', async () => {
     failNext = true;
     await store.load();

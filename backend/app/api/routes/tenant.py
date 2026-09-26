@@ -1,12 +1,11 @@
-import uuid
-
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models.tenant import Tenant, TenantProfile, User
+from app.models.tenant import TenantProfile, User
 from app.schemas.tenant import TenantProfileResponse, TenantProfileUpdate
 
 router = APIRouter(prefix="/tenant", tags=["tenant"])
@@ -17,7 +16,10 @@ async def get_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TenantProfile:
-    return await _get_profile(current_user.tenant_id, db)
+    result = await db.execute(
+        select(TenantProfile).where(TenantProfile.tenant_id == current_user.tenant_id)
+    )
+    return result.scalar_one()
 
 
 @router.put("/profile", response_model=TenantProfileResponse)
@@ -26,23 +28,22 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TenantProfile:
-    profile = await _get_profile(current_user.tenant_id, db)
+    result = await db.execute(
+        select(TenantProfile)
+        .where(TenantProfile.tenant_id == current_user.tenant_id)
+        .options(joinedload(TenantProfile.tenant))
+    )
+    profile = result.scalar_one()
+
+    # TenantProfileUpdate carries exactly the client-writable fields, so
+    # invoice_next_number cannot be moved from here.
     for field, value in body.model_dump().items():
         setattr(profile, field, value)
-
     # Keep the tenant label aligned with the legal name printed on invoices.
-    tenant = (
-        await db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    ).scalar_one()
-    tenant.name = profile.company_name
+    profile.tenant.name = profile.company_name
 
     await db.commit()
+    # Not redundant despite expire_on_commit=False: re-reading applies the
+    # column scale (Numeric(5, 4)), so this response matches a later GET.
     await db.refresh(profile)
     return profile
-
-
-async def _get_profile(tenant_id: uuid.UUID, db: AsyncSession) -> TenantProfile:
-    result = await db.execute(
-        select(TenantProfile).where(TenantProfile.tenant_id == tenant_id)
-    )
-    return result.scalar_one()

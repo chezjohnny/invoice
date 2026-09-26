@@ -21,20 +21,22 @@ interface CompanyProfileDto {
   is_complete: boolean;
 }
 
-const URL = '/api/tenant/profile';
+const PROFILE_URL = '/api/tenant/profile';
 
 @Injectable()
 export class HttpTenantService implements ITenantService {
   private readonly http = inject(HttpClient);
 
   getProfile(): Promise<CompanyProfile> {
-    return firstValueFrom(this.http.get<CompanyProfileDto>(URL)).then(this.toProfile);
+    return firstValueFrom(this.http.get<CompanyProfileDto>(PROFILE_URL)).then((dto) =>
+      this.toProfile(dto)
+    );
   }
 
   updateProfile(data: CompanyProfileData): Promise<CompanyProfile> {
     return firstValueFrom(
-      this.http.put<CompanyProfileDto>(URL, this.toDto(data))
-    ).then(this.toProfile);
+      this.http.put<CompanyProfileDto>(PROFILE_URL, this.toDto(data))
+    ).then((dto) => this.toProfile(dto));
   }
 
   private toProfile(dto: CompanyProfileDto): CompanyProfile {

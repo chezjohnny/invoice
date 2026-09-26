@@ -29,14 +29,45 @@ export const InvoiceStore = signalStore(
     async function load(): Promise<void> {
       patchState(store, { loading: true });
       const status = store.statusFilter();
-      const result = await service.list({
-        search: store.search(),
-        status: status === 'all' ? '' : status,
-        page: store.page(),
-        perPage: store.perPage(),
-      });
-      patchState(store, { ...result, loading: false });
+      try {
+        const result = await service.list({
+          search: store.search(),
+          status: status === 'all' ? '' : status,
+          page: store.page(),
+          perPage: store.perPage(),
+        });
+        patchState(store, { ...result, loading: false });
+      } catch (error) {
+        patchState(store, { loading: false });
+        throw error;
+      }
     }
+
+    // A mutation can legitimately fail — issuing with an incomplete company
+    // profile is rejected with a 422 — and the list must never stay stuck
+    // behind its spinner when it does.
+    async function mutate<T>(action: () => Promise<T>): Promise<T> {
+      patchState(store, { loading: true });
+      try {
+        const result = await action();
+        await load();
+        return result;
+      } catch (error) {
+        patchState(store, { loading: false });
+        throw error;
+      }
+    }
+
+    async function print(id: string): Promise<void> {
+      const blob = await service.downloadPdf(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoice.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
     return {
       load,
       setSearch(search: string): Promise<void> {
@@ -51,53 +82,28 @@ export const InvoiceStore = signalStore(
         patchState(store, { statusFilter: value, page: 1 });
         return load();
       },
-      async createInvoice(data: InvoiceCreate): Promise<Invoice> {
-        patchState(store, { loading: true });
-        const invoice = await service.create(data);
-        await load();
-        return invoice;
+      createInvoice(data: InvoiceCreate): Promise<Invoice> {
+        return mutate(() => service.create(data));
       },
       async issueAndPrint(id: string): Promise<void> {
-        patchState(store, { loading: true });
-        await service.issue(id);
-        const blob = await service.downloadPdf(id);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'invoice.pdf';
-        a.click();
-        URL.revokeObjectURL(url);
-        await load();
+        await mutate(async () => {
+          await service.issue(id);
+          await print(id);
+        });
       },
       async updateInvoice(id: string, data: InvoiceUpdate): Promise<void> {
-        patchState(store, { loading: true });
-        await service.update(id, data);
-        await load();
+        await mutate(() => service.update(id, data));
       },
       async issue(id: string): Promise<void> {
-        patchState(store, { loading: true });
-        await service.issue(id);
-        await load();
+        await mutate(() => service.issue(id));
       },
       async pay(id: string): Promise<void> {
-        patchState(store, { loading: true });
-        await service.pay(id);
-        await load();
+        await mutate(() => service.pay(id));
       },
       async cancel(id: string): Promise<void> {
-        patchState(store, { loading: true });
-        await service.cancel(id);
-        await load();
+        await mutate(() => service.cancel(id));
       },
-      async downloadPdf(id: string): Promise<void> {
-        const blob = await service.downloadPdf(id);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'invoice.pdf';
-        a.click();
-        URL.revokeObjectURL(url);
-      },
+      downloadPdf: print,
     };
   }),
   withHooks({ onInit(store) { store.load(); } })

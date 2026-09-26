@@ -35,9 +35,11 @@ function makePage(items: Invoice[], params?: { status?: string }): Page<Invoice>
 describe('InvoiceStore', () => {
   let store: InstanceType<typeof InvoiceStore>;
   let invoices: Invoice[];
+  let failIssue: boolean;
 
   beforeEach(() => {
     invoices = structuredClone(INVOICES);
+    failIssue = false;
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -64,6 +66,7 @@ describe('InvoiceStore', () => {
               return invoices[idx];
             },
             issue: async (id: string): Promise<Invoice> => {
+              if (failIssue) throw new Error('incomplete company profile');
               const inv = invoices.find((i) => i.id === id)!;
               inv.status = 'issued';
               inv.invoiceNumber = 'INV-2026-0002';
@@ -125,6 +128,14 @@ describe('InvoiceStore', () => {
     const inv = invoices.find((i) => i.id === '1');
     expect(inv?.status).toBe('issued');
     expect(inv?.invoiceNumber).toBe('INV-2026-0002');
+  });
+
+  it('clears loading when a mutation is rejected', async () => {
+    await store.load();
+    failIssue = true;
+    await expect(store.issue('1')).rejects.toThrow();
+    expect(store.loading()).toBe(false);
+    expect(store.items().length).toBe(4);
   });
 
   it('pay transitions issued to paid', async () => {

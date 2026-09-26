@@ -58,7 +58,8 @@ invoice/
 - **VAT**: `default_vat_rate` on TenantProfile (nullable = not VAT-registered), overridable per article
 - **IBAN** required on TenantProfile for Swiss QR-bill; validated (CH/LI, mod-97) in `app/schemas/tenant.py` and mirrored client-side in `features/settings/iban.ts`
 - **Profile completeness**: `TenantProfile.is_complete` (address + IBAN) is the single source of truth — it gates `POST /invoices/{id}/issue` (422) and drives the shell warning banner
-- **`invoice_next_number`** is never client-writable: `PUT /tenant/profile` only touches the `TenantProfileUpdate` fields, the counter moves solely on issue
+- **`PUT /tenant/profile`** replaces the whole profile: a partial payload is rejected (422) instead of being completed with schema defaults, which would silently wipe the omitted fields
+- **`invoice_next_number`** is never client-writable: it is absent from `TenantProfileUpdate`, the counter moves solely on issue
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
 - **SQLite dev mode**: `backend/.env.sqlite` sets `INVOICE_DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`

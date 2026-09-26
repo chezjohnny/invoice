@@ -52,6 +52,7 @@ const EN = {
     recommendations: 'Previously ordered — click to add',
     createCustomer: 'Create as new customer',
     issueAndPrint: 'Issue & Print',
+    issueBlocked: 'Complete your company profile before issuing invoices',
   },
   settings: {
     title: 'Company settings',
@@ -68,6 +69,7 @@ const EN = {
     invalidVatRate: 'Must be between 0 and 100',
     invalidTerms: 'Must be between 0 and 365',
     saved: 'Company settings saved.',
+    loadError: 'Your company settings could not be loaded.',
     incompleteBanner: 'Your company profile is incomplete — an address and an IBAN are '
       + 'required before invoices can be issued.',
     completeProfile: 'Complete it',
@@ -78,6 +80,7 @@ const EN = {
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', app: 'Invoice',
     loading: 'Loading…', results: 'results', searchCustomer: 'Search customer…',
+    retry: 'Retry',
   },
   login: {
     subtitle: 'Sign in to your account', email: 'Email',
@@ -148,6 +151,7 @@ const FR: typeof EN = {
     recommendations: 'Commandés précédemment — cliquer pour ajouter',
     createCustomer: 'Créer comme nouveau client',
     issueAndPrint: 'Émettre & Imprimer',
+    issueBlocked: 'Complétez le profil de votre entreprise avant d\'émettre des factures',
   },
   settings: {
     title: 'Paramètres de l\'entreprise',
@@ -164,6 +168,7 @@ const FR: typeof EN = {
     invalidVatRate: 'Doit être compris entre 0 et 100',
     invalidTerms: 'Doit être compris entre 0 et 365',
     saved: 'Paramètres de l\'entreprise enregistrés.',
+    loadError: 'Impossible de charger les paramètres de l\'entreprise.',
     incompleteBanner: 'Le profil de votre entreprise est incomplet — une adresse et un IBAN '
       + 'sont requis avant de pouvoir émettre des factures.',
     completeProfile: 'Compléter',
@@ -174,6 +179,7 @@ const FR: typeof EN = {
   common: {
     save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', app: 'Factures',
     loading: 'Chargement…', results: 'résultats', searchCustomer: 'Rechercher un client…',
+    retry: 'Réessayer',
   },
   login: {
     subtitle: 'Connectez-vous à votre compte', email: 'E-mail',

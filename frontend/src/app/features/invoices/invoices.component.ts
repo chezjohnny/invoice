@@ -5,6 +5,7 @@ import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Article } from '../articles/article.model';
 import { Customer } from '../customers/customer.model';
+import { CompanyStore } from '../settings/company.store';
 import { CustomerFormComponent } from '../customers/customer-form.component';
 import { InvoiceFormComponent } from './invoice-form.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
@@ -86,7 +87,9 @@ const STATUS_BADGE: Record<string, string> = {
                           <button class="btn btn-ghost btn-sm" (click)="openEdit(inv)">
                             {{ t().common.edit }}
                           </button>
-                          <button class="btn btn-ghost btn-sm text-info" (click)="store.issue(inv.id)">
+                          <button class="btn btn-ghost btn-sm text-info" (click)="store.issue(inv.id)"
+                            [disabled]="company.isIncomplete()"
+                            [title]="company.isIncomplete() ? t().invoices.issueBlocked : ''">
                             {{ t().invoices.issue }}
                           </button>
                           <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
@@ -148,6 +151,7 @@ const STATUS_BADGE: Record<string, string> = {
             [invoice]="editingInvoice()"
             [articles]="articles()"
             [externalCustomer]="pendingCustomer()"
+            [canIssue]="!company.isIncomplete()"
             (saved)="onSaved($event)"
             (cancelled)="closeForm()"
             (createCustomerRequested)="onCreateCustomerRequested()"
@@ -196,6 +200,8 @@ export class InvoicesComponent {
     }
     return range;
   });
+
+  protected readonly company = inject(CompanyStore);
 
   constructor() {
     this.articleService.getAll().then((a) => this.articles.set(a));
@@ -255,8 +261,10 @@ export class InvoicesComponent {
 
   async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
     const invoice = await this.store.createInvoice(data);
-    await this.store.issueAndPrint(invoice.id);
+    // The draft is persisted: close the modal before issuing so a failure
+    // there cannot be retried into a second draft.
     this.closeForm();
+    await this.store.issueAndPrint(invoice.id);
   }
 
   onCreateCustomerRequested(): void {

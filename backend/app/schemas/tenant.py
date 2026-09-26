@@ -16,28 +16,40 @@ def _iban_checksum_ok(iban: str) -> bool:
     return int(digits) % 97 == 1
 
 
-class TenantProfileBase(BaseModel):
-    company_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-    address_line1: Annotated[str, StringConstraints(strip_whitespace=True)] = ""
-    address_line2: str | None = None
-    postal_code: Annotated[str, StringConstraints(strip_whitespace=True)] = ""
-    city: Annotated[str, StringConstraints(strip_whitespace=True)] = ""
+# Lengths mirror the columns of TenantProfile: without them an oversize value
+# reaches the INSERT and raises a DataError (500) instead of a 422.
+Text255 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=255)]
+
+
+class TenantProfileUpdate(BaseModel):
+    """Full replacement of the editable profile — every field must be sent.
+
+    A partial payload is rejected instead of being completed with defaults,
+    which would silently wipe the fields left out.
+    """
+
+    company_name: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)
+    ]
+    address_line1: Text255
+    address_line2: Text255 | None
+    postal_code: Annotated[str, StringConstraints(strip_whitespace=True, max_length=20)]
+    city: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)]
     country: Annotated[
         str, StringConstraints(strip_whitespace=True, to_upper=True, min_length=2, max_length=2)
-    ] = "CH"
-    iban: str | None = None
-    vat_number: str | None = None
-    default_vat_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    ]
+    iban: str | None
+    vat_number: Annotated[str, StringConstraints(strip_whitespace=True, max_length=20)] | None
+    default_vat_rate: Decimal | None = Field(ge=0, le=1)
     invoice_prefix: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=10)
-    ] = "INV"
-    payment_terms_days: int = Field(default=30, ge=0, le=365)
+    ]
+    payment_terms_days: int = Field(ge=0, le=365)
 
     @field_validator("address_line2", "vat_number", mode="after")
     @classmethod
     def _blank_to_none(cls, value: str | None) -> str | None:
-        stripped = (value or "").strip()
-        return stripped or None
+        return value or None
 
     @field_validator("iban", mode="after")
     @classmethod
@@ -55,14 +67,25 @@ class TenantProfileBase(BaseModel):
         return iban
 
 
-class TenantProfileUpdate(TenantProfileBase):
-    pass
-
-
-class TenantProfileResponse(TenantProfileBase):
-    id: uuid.UUID
-    tenant_id: uuid.UUID
-    invoice_next_number: int
-    is_complete: bool
+class TenantProfileResponse(BaseModel):
+    """Read model, deliberately free of input validators: a row that predates
+    the current rules must still be served, otherwise the settings page that
+    would fix it can never be reached."""
 
     model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    company_name: str
+    address_line1: str
+    address_line2: str | None
+    postal_code: str
+    city: str
+    country: str
+    iban: str | None
+    vat_number: str | None
+    default_vat_rate: Decimal | None
+    invoice_prefix: str
+    payment_terms_days: int
+    invoice_next_number: int
+    is_complete: bool

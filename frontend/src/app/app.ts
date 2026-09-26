@@ -118,10 +118,12 @@ export class App {
 
   constructor() {
     // Fetch the company profile on sign-in only — a silent token refresh keeps
-    // `isAuthenticated` true and must not trigger a reload.
+    // `isAuthenticated` true and must not trigger a reload — and drop it on
+    // sign-out so it cannot leak into the next session.
     effect(() => {
       const authenticated = this.auth.isAuthenticated();
       if (authenticated && !this.wasAuthenticated) this.company.load();
+      if (!authenticated && this.wasAuthenticated) this.company.reset();
       this.wasAuthenticated = authenticated;
     });
   }

@@ -192,7 +192,9 @@ interface Recommendation {
         <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
           {{ t().common.cancel }}
         </button>
-        <button type="button" class="btn btn-outline" (click)="submitAndIssue()">
+        <button type="button" class="btn btn-outline" (click)="submitAndIssue()"
+          [disabled]="!canIssue()"
+          [title]="canIssue() ? '' : t().invoices.issueBlocked">
           {{ t().invoices.issueAndPrint }}
         </button>
         <button type="submit" class="btn btn-primary">{{ t().invoices.saveDraft }}</button>
@@ -204,6 +206,8 @@ export class InvoiceFormComponent {
   readonly invoice = input<InvoiceType | null>(null);
   readonly articles = input<Article[]>([]);
   readonly externalCustomer = input<Customer | null>(null);
+  // Issuing needs a complete company profile (address + IBAN) for the QR-bill.
+  readonly canIssue = input(true);
   readonly saved = output<InvoiceCreate>();
   readonly cancelled = output<void>();
   readonly createCustomerRequested = output<void>();

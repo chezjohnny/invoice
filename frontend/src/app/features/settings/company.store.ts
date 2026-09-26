@@ -11,11 +11,13 @@ interface CompanyState {
   saving: boolean;
 }
 
+const EMPTY: CompanyState = { profile: null, loading: false, saving: false };
+
 // Root-provided: the shell reads `isIncomplete` for its warning banner while the
 // settings page edits the same instance, so the profile is fetched only once.
 export const CompanyStore = signalStore(
   { providedIn: 'root' },
-  withState<CompanyState>({ profile: null, loading: false, saving: false }),
+  withState<CompanyState>(EMPTY),
   withComputed(({ profile }) => ({
     isIncomplete: computed(() => profile()?.isComplete === false),
   })),
@@ -34,6 +36,11 @@ export const CompanyStore = signalStore(
       } finally {
         patchState(store, { loading: false });
       }
+    },
+    // The store is root-provided, so it outlives a session: without this the
+    // next tenant to sign in would read (and could overwrite) this profile.
+    reset(): void {
+      patchState(store, EMPTY);
     },
     async save(data: CompanyProfileData): Promise<void> {
       patchState(store, { saving: true });

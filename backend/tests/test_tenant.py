@@ -1,5 +1,9 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.tenant import TenantProfile
 
 AUTH = "/auth"
 PROFILE = "/tenant/profile"
@@ -113,3 +117,54 @@ async def test_profile_tenant_isolation(client: AsyncClient, auth_headers: dict[
 @pytest.mark.anyio
 async def test_profile_requires_auth(client: AsyncClient):
     assert (await client.get(PROFILE)).status_code == 401
+
+
+@pytest.mark.anyio
+async def test_partial_payload_is_rejected(client: AsyncClient, auth_headers: dict[str, str]):
+    """PUT replaces the whole profile, so an incomplete body must not be
+    completed with defaults — that would silently wipe the omitted fields."""
+    await client.put(PROFILE, json=VALID, headers=auth_headers)
+
+    resp = await client.put(
+        PROFILE, json={"company_name": "Cave du Coteau"}, headers=auth_headers
+    )
+    assert resp.status_code == 422
+
+    unchanged = (await client.get(PROFILE, headers=auth_headers)).json()
+    assert unchanged["city"] == "Rolle"
+    assert unchanged["invoice_prefix"] == "CDC"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"company_name": "x" * 256},
+        {"address_line1": "x" * 256},
+        {"postal_code": "x" * 21},
+        {"city": "x" * 101},
+        {"vat_number": "x" * 21},
+    ],
+)
+async def test_oversize_values_are_rejected(
+    client: AsyncClient, auth_headers: dict[str, str], payload: dict[str, object]
+):
+    """The columns are bounded; without matching limits the INSERT would fail
+    with a DataError (500) instead of a field-level 422."""
+    resp = await client.put(PROFILE, json={**VALID, **payload}, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_get_serves_a_profile_the_input_rules_would_reject(
+    client: AsyncClient, auth_headers: dict[str, str], db_session: AsyncSession
+):
+    """Rows written before the IBAN rules (fixtures, earlier versions) must stay
+    readable, otherwise the page that would fix them is unreachable."""
+    profile = (await db_session.execute(select(TenantProfile))).scalar_one()
+    profile.iban = "FR7630006000011234567890189"
+    await db_session.commit()
+
+    resp = await client.get(PROFILE, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["iban"] == "FR7630006000011234567890189"
