@@ -30,10 +30,11 @@ and a bilingual (EN/FR) interface. One admin user per tenant.
 
 ```
 invoice/
-├── backend/    FastAPI app, models, migrations, CLI, tests
-├── frontend/   Angular app
-├── docker-compose.yml
-└── Makefile    all dev commands — run `make help`
+├── backend/                 FastAPI app, models, migrations, CLI, tests
+├── frontend/                Angular app (+ nginx.conf for production)
+├── docker-compose.yml       production stack (SQLite + nginx, Traefik labels)
+├── docker-compose.dev.yml   development stack (PostgreSQL + hot reload)
+└── Makefile                 all dev commands — run `make help`
 ```
 
 ## Prerequisites
@@ -99,6 +100,70 @@ Run `make help` for the full list.
 | `make backend-migration MSG="…"` | Generate a new Alembic migration |
 | `make backend-fixtures [ARGS=--reset]` | Load demo fixtures |
 | `make check` | All checks (backend lint + typecheck + tests, frontend build) |
+
+## Deployment
+
+Production runs at <https://app.saudan-vins.ch> on the VPS managed by the
+`vps-infra` repository: Traefik terminates TLS and routes to the `web`
+container, which serves the Angular build and proxies `/api` to the API.
+
+Two containers, no published ports:
+
+| Service | Image | Role |
+|---|---|---|
+| `api` | `python:3.14-slim` + uv | FastAPI via uvicorn; applies Alembic migrations on start |
+| `web` | multi-stage → `nginx:1.27-alpine` | serves the Angular bundle, proxies `/api/` to `api:8000` |
+
+Production uses **SQLite**, not PostgreSQL: a single-tenant winery does not need
+a database server, and a backup is one file. The database lives outside the
+repository, in `INVOICE_DATA_DIR` on the host, so the deployment hook's
+`git checkout -f` can never touch it.
+
+### First install on the VPS
+
+1. Point `app.saudan-vins.ch` at the VPS **before** the first deployment —
+   Traefik asks Let's Encrypt for a certificate as soon as the container
+   appears, and does not retry on its own if that first attempt fails.
+2. Create the bare repository and its `post-receive` hook (see the `vps-infra`
+   README, part B).
+3. Create the data directory and the environment file:
+
+   ```bash
+   mkdir -p /home/johnny/data/invoice
+   # /home/johnny/apps/invoice/.env, from .env.example — at minimum:
+   #   INVOICE_SECRET_KEY=$(openssl rand -hex 32)
+   #   INVOICE_DATA_DIR=/home/johnny/data/invoice
+   ```
+
+4. Deploy:
+
+   ```bash
+   git remote add production ssh://git@<VPS_IP>:60022/home/git/repositories/invoice.git
+   git push production main
+   ```
+
+5. Create the tenant — there is no self-service signup:
+
+   ```bash
+   curl -fsS https://app.saudan-vins.ch/api/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"tenant_name":"Saudan Vins","subdomain":"saudan","email":"you@example.com","password":"…"}'
+   ```
+
+### Updates
+
+```bash
+git push production main
+```
+
+The hook checks the code out and runs `docker compose up -d --build`; the API
+container applies any new migration on start.
+
+### Backup
+
+```bash
+ssh <vps> "sqlite3 /home/johnny/data/invoice/invoice.db .dump" > invoice-$(date +%F).sql
+```
 
 ## Testing
 

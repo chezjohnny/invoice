@@ -64,6 +64,25 @@ invoice/
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
 - **SQLite dev mode**: `backend/.env.sqlite` sets `INVOICE_DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`
 
+## Production
+
+- `docker-compose.yml` is the **production** stack (SQLite, Angular build served
+  by nginx, Traefik labels); `docker-compose.dev.yml` is the dev one (PostgreSQL,
+  hot reload). The Makefile targets all pass `-f docker-compose.dev.yml`.
+- The deployment hook on the VPS runs a bare `docker compose up -d --build`, so
+  the production file must stay the default one.
+- Production is SQLite: keep migrations dialect-portable. Never write raw
+  PostgreSQL SQL in a migration — `sa.func.now()`, not `sa.text('now()')`, which
+  SQLite rejects at insert time. `alembic/env.py` enables `render_as_batch` on
+  SQLite so that column-altering migrations work.
+- The `api` container applies `alembic upgrade head` on start (entrypoint), so a
+  push that adds a migration needs no manual step.
+- Frontend `Dockerfile` is multi-stage: `dev` (ng serve) → `build` → `prod`
+  (nginx, the default target). Keep the `/api/` proxy in `frontend/nginx.conf`
+  aligned with `proxy.conf.json`: both strip the prefix.
+- Persistent state lives on the host in `INVOICE_DATA_DIR`, never in the repo
+  directory — the hook's `git checkout -f` would wipe it.
+
 ## Backend conventions
 - Python 3.14, all code in English
 - Models inherit `UUIDBase` from `app/models/base.py`

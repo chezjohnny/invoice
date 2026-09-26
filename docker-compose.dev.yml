@@ -1,3 +1,8 @@
+# DEVELOPMENT stack (PostgreSQL + hot reload).
+# Production lives in docker-compose.yml: SQLite, Angular build served by nginx,
+# Traefik labels.
+#
+# Usage: make up / make down (the Makefile passes -f docker-compose.dev.yml).
 services:
   db:
     image: postgres:16-alpine
@@ -31,7 +36,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # The Dockerfile defaults to the production nginx image.
+      target: dev
     command: npm start -- --host 0.0.0.0
     volumes:
       - ./frontend/src:/app/src

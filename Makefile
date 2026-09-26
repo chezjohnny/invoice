@@ -3,6 +3,8 @@
 NODE_VERSION := $(shell cat .nvmrc | tr -d '[:space:]')
 NODE_CURRENT := $(shell node -v 2>/dev/null | tr -d 'v\n ')
 
+COMPOSE := docker compose -f docker-compose.dev.yml
+
 .PHONY: check-node
 check-node:
 	@[ "$(NODE_CURRENT)" = "$(NODE_VERSION)" ] || \
@@ -12,23 +14,23 @@ check-node:
 
 .PHONY: up
 up: ## Start all services (PostgreSQL + backend + frontend)
-	docker compose up -d
+	$(COMPOSE) up -d
 
 .PHONY: up-db
 up-db: ## Start PostgreSQL only
-	docker compose up -d db
+	$(COMPOSE) up -d db
 
 .PHONY: down
 down: ## Stop all services
-	docker compose down
+	$(COMPOSE) down
 
 .PHONY: logs
 logs: ## Follow backend logs
-	docker compose logs -f backend
+	$(COMPOSE) logs -f backend
 
 .PHONY: logs-all
 logs-all: ## Follow all service logs
-	docker compose logs -f
+	$(COMPOSE) logs -f
 
 # ── Backend ─────────────────────────────────────────────────────────────────
 
