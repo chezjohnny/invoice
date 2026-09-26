@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.api.routes import articles, auth, customers, dashboard, invoices
+from app.api.routes import articles, auth, customers, dashboard, invoices, tenant
 
 logger = logging.getLogger("app")
 
@@ -36,6 +36,7 @@ app.include_router(articles.router)
 app.include_router(customers.router)
 app.include_router(invoices.router)
 app.include_router(dashboard.router)
+app.include_router(tenant.router)
 
 
 @app.get("/health")

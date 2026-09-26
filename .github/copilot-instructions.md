@@ -5,7 +5,7 @@ Multi-tenant SaaS invoice management for Swiss SMEs. One admin user per tenant.
 Swiss QR-bill support. Bilingual UI (EN/FR).
 
 ## Current phase
-**Phase 8 — Server-side pagination + search + SQLite dev mode** (complete)
+**Phase 9 — Company profile editing** (complete)
 
 ### Completed
 - **Phase 1** — Backend skeleton (FastAPI + SQLAlchemy + Alembic + JWT auth) + frontend skeleton (Angular 22 zoneless + Tailwind v4 + DaisyUI)
@@ -16,6 +16,7 @@ Swiss QR-bill support. Bilingual UI (EN/FR).
 - **Phase 6** — Invoice CRUD + status workflow (`draft → issued → paid → cancelled`); Swiss QR-bill PDF (`fpdf2` + `qrcode[pil]`)
 - **Phase 7** — Dashboard KPIs (DaisyUI `stats`); `I18nService` EN/FR with `computed(T)` reactive translations; all components i18n; store vitest specs
 - **Phase 8** — Server-side pagination + search on all list endpoints (`PagedResponse[T]`); customer combobox in invoice form; `IDashboardService` token; SQLite dev mode (`make backend-dev-sqlite`); drop `currency` field (Swiss SME = CHF only)
+- **Phase 9** — `GET`/`PUT /tenant/profile` + `/settings` page (`ITenantService` token, root-provided `CompanyStore`); IBAN mod-97 validation; incomplete-profile banner + 422 on issue
 
 ## Repo structure
 ```
@@ -50,12 +51,14 @@ invoice/
 - `src/environments/environment.mock.ts` — mock mode (`useMock: true`)
 
 ## Architecture decisions
-- **Tenant onboarding**: no self-service signup — tenants are created via `/auth/register` endpoint or `make backend-fixtures-sqlite`; the UI only exposes login
+- **Tenant onboarding**: no self-service signup — tenants are created via `/auth/register` endpoint or `make backend-fixtures-sqlite` with an empty profile, then completed on `/settings`; the UI only exposes login
 - **Multi-tenant**: every table has `tenant_id`; auth guard in `backend/app/api/deps.py`
 - **Invoice entity**: single entity, statuses `draft → issued → paid → cancelled`; always CHF (no currency field)
 - **InvoiceLines are immutable** once `status = issued`
 - **VAT**: `default_vat_rate` on TenantProfile (nullable = not VAT-registered), overridable per article
-- **IBAN** required on TenantProfile for Swiss QR-bill
+- **IBAN** required on TenantProfile for Swiss QR-bill; validated (CH/LI, mod-97) in `app/schemas/tenant.py` and mirrored client-side in `features/settings/iban.ts`
+- **Profile completeness**: `TenantProfile.is_complete` (address + IBAN) is the single source of truth — it gates `POST /invoices/{id}/issue` (422) and drives the shell warning banner
+- **`invoice_next_number`** is never client-writable: `PUT /tenant/profile` only touches the `TenantProfileUpdate` fields, the counter moves solely on issue
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
 - **SQLite dev mode**: `backend/.env.sqlite` sets `INVOICE_DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`

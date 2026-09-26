@@ -50,6 +50,18 @@ async def auth_headers(client: AsyncClient) -> dict[str, str]:
 
 
 @pytest.fixture
+async def complete_profile(client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    """Fill the company profile so invoices can be issued (address + IBAN required)."""
+    await client.put("/tenant/profile", json={
+        "company_name": "Cave Test",
+        "address_line1": "Route du Vignoble 4",
+        "postal_code": "1180", "city": "Rolle", "country": "CH",
+        "iban": "CH9300762011623852957",
+        "default_vat_rate": "0.081",
+    }, headers=auth_headers)
+
+
+@pytest.fixture
 async def customer_id(client: AsyncClient, auth_headers: dict[str, str]) -> str:
     resp = await client.post("/customers", json={
         "first_name": "Jean", "last_name": "Dupont",

@@ -147,6 +147,11 @@ async def issue_invoice(
         select(TenantProfile).where(TenantProfile.tenant_id == current_user.tenant_id)
     )
     profile = profile_result.scalar_one()
+    if not profile.is_complete:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Company profile is incomplete: address and IBAN are required",
+        )
 
     today = date.today()
     invoice.invoice_number = (

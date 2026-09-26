@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { I18nService } from './core/i18n/i18n.service';
+import { CompanyStore } from './features/settings/company.store';
 import { Toasts } from './shared/toasts';
 
 @Component({
@@ -24,6 +25,17 @@ import { Toasts } from './shared/toasts';
             <span class="ml-2 font-semibold text-sm">{{ t().common.app }}</span>
           </header>
           <main class="flex-1">
+            @if (company.isIncomplete()) {
+              <div class="px-4 pt-4 md:px-6 md:pt-6">
+                <div role="alert" class="alert alert-warning">
+                  <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                  </svg>
+                  <span>{{ t().settings.incompleteBanner }}</span>
+                  <a routerLink="/settings" class="btn btn-sm">{{ t().settings.completeProfile }}</a>
+                </div>
+              </div>
+            }
             <router-outlet />
           </main>
         </div>
@@ -67,6 +79,13 @@ import { Toasts } from './shared/toasts';
 
             <!-- Footer controls -->
             <div class="p-3 pb-4 border-t border-primary-content/10 flex flex-col gap-0.5">
+              <a routerLink="/settings" routerLinkActive="is-active" class="sidebar-link">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{ t().nav.settings }}
+              </a>
               <button class="sidebar-link" (click)="i18n.toggle()">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
@@ -93,4 +112,17 @@ export class App {
   protected readonly auth = inject(AuthService);
   protected readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.T;
+  protected readonly company = inject(CompanyStore);
+
+  private wasAuthenticated = false;
+
+  constructor() {
+    // Fetch the company profile on sign-in only — a silent token refresh keeps
+    // `isAuthenticated` true and must not trigger a reload.
+    effect(() => {
+      const authenticated = this.auth.isAuthenticated();
+      if (authenticated && !this.wasAuthenticated) this.company.load();
+      this.wasAuthenticated = authenticated;
+    });
+  }
 }

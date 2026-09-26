@@ -3,7 +3,7 @@ export type Locale = 'en' | 'fr';
 const EN = {
   nav: {
     dashboard: 'Dashboard', articles: 'Articles', customers: 'Customers',
-    invoices: 'Invoices', signOut: 'Sign out',
+    invoices: 'Invoices', settings: 'Settings', signOut: 'Sign out',
   },
   dashboard: {
     title: 'Dashboard', draft: 'Draft', outstanding: 'Outstanding',
@@ -53,6 +53,25 @@ const EN = {
     createCustomer: 'Create as new customer',
     issueAndPrint: 'Issue & Print',
   },
+  settings: {
+    title: 'Company settings',
+    identity: 'Identity', address: 'Address', billing: 'Billing', numbering: 'Numbering',
+    companyNameLabel: 'Company name *', addressLabel: 'Address', address2Label: 'Address line 2',
+    postalLabel: 'Postal code', cityLabel: 'City', countryLabel: 'Country',
+    ibanLabel: 'IBAN', ibanHint: 'Swiss or Liechtenstein IBAN, required for the QR-bill',
+    vatNumberLabel: 'VAT number', vatRateLabel: 'Default VAT rate (%)',
+    prefixLabel: 'Invoice prefix', termsLabel: 'Payment terms (days)',
+    nextNumberLabel: 'Next invoice number', nextNumberHint: 'Next invoice: {n}',
+    companyNameRequired: 'Company name is required',
+    prefixRequired: 'Prefix is required',
+    invalidIban: 'Invalid IBAN (a Swiss or Liechtenstein IBAN is required)',
+    invalidVatRate: 'Must be between 0 and 100',
+    invalidTerms: 'Must be between 0 and 365',
+    saved: 'Company settings saved.',
+    incompleteBanner: 'Your company profile is incomplete — an address and an IBAN are '
+      + 'required before invoices can be issued.',
+    completeProfile: 'Complete it',
+  },
   status: {
     all: 'All', draft: 'Draft', issued: 'Issued', paid: 'Paid', cancelled: 'Cancelled',
   },
@@ -80,7 +99,7 @@ const EN = {
 const FR: typeof EN = {
   nav: {
     dashboard: 'Tableau de bord', articles: 'Articles', customers: 'Clients',
-    invoices: 'Factures', signOut: 'Déconnexion',
+    invoices: 'Factures', settings: 'Paramètres', signOut: 'Déconnexion',
   },
   dashboard: {
     title: 'Tableau de bord', draft: 'Brouillons', outstanding: 'En attente',
@@ -129,6 +148,25 @@ const FR: typeof EN = {
     recommendations: 'Commandés précédemment — cliquer pour ajouter',
     createCustomer: 'Créer comme nouveau client',
     issueAndPrint: 'Émettre & Imprimer',
+  },
+  settings: {
+    title: 'Paramètres de l\'entreprise',
+    identity: 'Identité', address: 'Adresse', billing: 'Facturation', numbering: 'Numérotation',
+    companyNameLabel: 'Raison sociale *', addressLabel: 'Adresse', address2Label: 'Complément d\'adresse',
+    postalLabel: 'NPA', cityLabel: 'Localité', countryLabel: 'Pays',
+    ibanLabel: 'IBAN', ibanHint: 'IBAN suisse ou liechtensteinois, requis pour la QR-facture',
+    vatNumberLabel: 'N° TVA', vatRateLabel: 'Taux de TVA par défaut (%)',
+    prefixLabel: 'Préfixe de facture', termsLabel: 'Délai de paiement (jours)',
+    nextNumberLabel: 'Prochain numéro', nextNumberHint: 'Prochaine facture : {n}',
+    companyNameRequired: 'La raison sociale est requise',
+    prefixRequired: 'Le préfixe est requis',
+    invalidIban: 'IBAN invalide (un IBAN suisse ou liechtensteinois est requis)',
+    invalidVatRate: 'Doit être compris entre 0 et 100',
+    invalidTerms: 'Doit être compris entre 0 et 365',
+    saved: 'Paramètres de l\'entreprise enregistrés.',
+    incompleteBanner: 'Le profil de votre entreprise est incomplet — une adresse et un IBAN '
+      + 'sont requis avant de pouvoir émettre des factures.',
+    completeProfile: 'Compléter',
   },
   status: {
     all: 'Tout', draft: 'Brouillon', issued: 'Émise', paid: 'Payée', cancelled: 'Annulée',

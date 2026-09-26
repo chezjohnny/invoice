@@ -40,6 +40,13 @@ class TenantProfile(UUIDBase):
 
     tenant: Mapped[Tenant] = relationship(back_populates="profile")
 
+    @property
+    def is_complete(self) -> bool:
+        """A Swiss QR-bill needs a full issuer address and an IBAN."""
+        return all(
+            [self.company_name, self.address_line1, self.postal_code, self.city, self.iban]
+        )
+
 
 class User(UUIDBase):
     __tablename__ = "users"

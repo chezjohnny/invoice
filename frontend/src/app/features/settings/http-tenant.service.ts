@@ -1,0 +1,74 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { ITenantService } from '../../core/tokens/tenant-service.token';
+import { CompanyProfile, CompanyProfileData } from './company.model';
+
+interface CompanyProfileDto {
+  id: string;
+  company_name: string;
+  address_line1: string;
+  address_line2: string | null;
+  postal_code: string;
+  city: string;
+  country: string;
+  iban: string | null;
+  vat_number: string | null;
+  default_vat_rate: string | null;
+  invoice_prefix: string;
+  payment_terms_days: number;
+  invoice_next_number: number;
+  is_complete: boolean;
+}
+
+const URL = '/api/tenant/profile';
+
+@Injectable()
+export class HttpTenantService implements ITenantService {
+  private readonly http = inject(HttpClient);
+
+  getProfile(): Promise<CompanyProfile> {
+    return firstValueFrom(this.http.get<CompanyProfileDto>(URL)).then(this.toProfile);
+  }
+
+  updateProfile(data: CompanyProfileData): Promise<CompanyProfile> {
+    return firstValueFrom(
+      this.http.put<CompanyProfileDto>(URL, this.toDto(data))
+    ).then(this.toProfile);
+  }
+
+  private toProfile(dto: CompanyProfileDto): CompanyProfile {
+    return {
+      id: dto.id,
+      companyName: dto.company_name,
+      addressLine1: dto.address_line1,
+      addressLine2: dto.address_line2,
+      postalCode: dto.postal_code,
+      city: dto.city,
+      country: dto.country,
+      iban: dto.iban,
+      vatNumber: dto.vat_number,
+      defaultVatRate: dto.default_vat_rate != null ? parseFloat(dto.default_vat_rate) : null,
+      invoicePrefix: dto.invoice_prefix,
+      paymentTermsDays: dto.payment_terms_days,
+      invoiceNextNumber: dto.invoice_next_number,
+      isComplete: dto.is_complete,
+    };
+  }
+
+  private toDto(data: CompanyProfileData) {
+    return {
+      company_name: data.companyName,
+      address_line1: data.addressLine1,
+      address_line2: data.addressLine2,
+      postal_code: data.postalCode,
+      city: data.city,
+      country: data.country,
+      iban: data.iban,
+      vat_number: data.vatNumber,
+      default_vat_rate: data.defaultVatRate,
+      invoice_prefix: data.invoicePrefix,
+      payment_terms_days: data.paymentTermsDays,
+    };
+  }
+}

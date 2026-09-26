@@ -57,7 +57,7 @@ async def test_update_invoice(
 
 @pytest.mark.anyio
 async def test_issue_invoice(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
     create = await client.post(INVOICES, json={
         "customer_id": customer_id, "lines": [LINE],
@@ -73,8 +73,24 @@ async def test_issue_invoice(
 
 
 @pytest.mark.anyio
-async def test_pay_invoice(
+async def test_issue_invoice_requires_complete_profile(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str
+):
+    create = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    invoice_id = create.json()["id"]
+    resp = await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    assert resp.status_code == 422
+    assert "incomplete" in resp.json()["detail"]
+
+    listed = await client.get(INVOICES, headers=auth_headers)
+    assert listed.json()["items"][0]["status"] == "draft"
+
+
+@pytest.mark.anyio
+async def test_pay_invoice(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
     create = await client.post(INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers)
     invoice_id = create.json()["id"]
@@ -97,7 +113,7 @@ async def test_cancel_draft(
 
 @pytest.mark.anyio
 async def test_cancel_issued(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
     create = await client.post(INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers)
     invoice_id = create.json()["id"]
@@ -109,7 +125,7 @@ async def test_cancel_issued(
 
 @pytest.mark.anyio
 async def test_download_pdf(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
     create = await client.post(INVOICES, json={
         "customer_id": customer_id, "lines": [LINE],
