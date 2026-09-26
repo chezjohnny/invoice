@@ -32,8 +32,8 @@ def upgrade() -> None:
     sa.Column('notes', sa.String(length=1000), nullable=False),
     sa.Column('pdf_url', sa.String(length=500), nullable=True),
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     sa.ForeignKeyConstraint(['customer_id'], ['customers.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -46,8 +46,8 @@ def upgrade() -> None:
     sa.Column('unit_price_snapshot', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('vat_rate_snapshot', sa.Numeric(precision=5, scale=4), nullable=True),
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     sa.ForeignKeyConstraint(['article_id'], ['articles.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
