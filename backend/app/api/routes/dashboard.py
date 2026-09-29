@@ -63,7 +63,11 @@ async def get_dashboard_stats(
                 select(Invoice)
                 .where(Invoice.tenant_id == current_user.tenant_id)
                 .options(selectinload(Invoice.lines))
-                .order_by(Invoice.created_at.desc())
+                .order_by(
+                    func.coalesce(Invoice.issue_date, func.date(Invoice.created_at)).desc(),
+                    Invoice.created_at.desc(),
+                    Invoice.id.desc(),
+                )
             )
         ).scalars().all()
     )
