@@ -66,6 +66,14 @@ backend-init-db-sqlite: ## Create SQLite dev DB tables
 backend-fixtures-sqlite: backend-init-db-sqlite ## Load demo fixtures into SQLite dev DB (add ARGS=--reset to wipe and reload)
 	uv --directory backend run --env-file .env.sqlite python -m app.cli load-fixtures $(ARGS)
 
+.PHONY: backend-import-legacy
+backend-import-legacy: ## Import Qt3 KInvoice JSON exports (TENANT=... CUSTOMERS=... PRODUCTS=... INVOICES=...)
+	uv --directory backend run python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" --customers "$(abspath $(CUSTOMERS))" --products "$(abspath $(PRODUCTS))" --invoices "$(abspath $(INVOICES))"
+
+.PHONY: backend-import-legacy-sqlite
+backend-import-legacy-sqlite: ## Import Qt3 KInvoice JSON exports into SQLite
+	uv --directory backend run --env-file .env.sqlite python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" --customers "$(abspath $(CUSTOMERS))" --products "$(abspath $(PRODUCTS))" --invoices "$(abspath $(INVOICES))"
+
 .PHONY: backend-shell
 backend-shell: ## Interactive shell with app + DB preloaded (uses default/Postgres)
 	uv --directory backend run python -m app.cli shell

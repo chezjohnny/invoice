@@ -45,7 +45,7 @@ async def list_customers(
             await db.execute(
                 select(Customer)
                 .where(*conditions)
-                .order_by(Customer.last_name, Customer.first_name)
+                .order_by(Customer.created_at.desc(), Customer.id.desc())
                 .offset((page - 1) * per_page)
                 .limit(per_page)
             )

@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.security import hash_password
+from app.legacy_import import import_legacy_data
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import Tenant, TenantProfile, User
 
@@ -45,6 +46,13 @@ async def _load_fixtures(path: Path, reset: bool) -> None:
         await db.commit()
 
     print(f"✓ Fixtures loaded from {path}")
+
+
+async def _import_legacy(
+    tenant_subdomain: str, customers: Path, products: Path, invoices: Path
+) -> dict[str, int]:
+    async with AsyncSessionLocal() as db:
+        return await import_legacy_data(db, tenant_subdomain, customers, products, invoices)
 
 
 async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> bool:
@@ -295,6 +303,12 @@ def main() -> None:
         help="Delete and recreate the tenant if it already exists",
     )
 
+    p_legacy = sub.add_parser("import-legacy", help="Import Qt3 KInvoice JSON exports")
+    p_legacy.add_argument("--tenant-subdomain", required=True)
+    p_legacy.add_argument("--customers", required=True, type=Path)
+    p_legacy.add_argument("--products", required=True, type=Path)
+    p_legacy.add_argument("--invoices", required=True, type=Path)
+
     args = parser.parse_args()
 
     if args.command == "init-db":
@@ -307,6 +321,29 @@ def main() -> None:
             print(f"Error: fixtures file not found: {path}", file=sys.stderr)
             sys.exit(1)
         asyncio.run(_load_fixtures(path, args.reset))
+    elif args.command == "import-legacy":
+        paths = (args.customers, args.products, args.invoices)
+        missing = [path for path in paths if not path.is_file()]
+        if missing:
+            print(f"Error: file not found: {missing[0]}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            counts = asyncio.run(
+                _import_legacy(args.tenant_subdomain, args.customers, args.products, args.invoices)
+            )
+        except (ValueError, json.JSONDecodeError) as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(
+            "✓ Imported "
+            f"{counts['customers']} customers, {counts['articles']} articles, "
+            f"{counts['invoices']} invoices"
+        )
+        if counts["unmatched_invoice_customers"]:
+            print(
+                "  Created separate customers for "
+                f"{counts['unmatched_invoice_customers']} unmatched billed names"
+            )
 
 
 if __name__ == "__main__":

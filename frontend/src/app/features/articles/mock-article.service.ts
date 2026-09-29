@@ -32,7 +32,7 @@ export class MockArticleService implements IArticleService {
     const perPage = params.perPage ?? 20;
     const filtered = this.articles.filter(
       (a) => !a.isArchived && (!search || a.name.toLowerCase().includes(search))
-    );
+    ).reverse();
     const total = filtered.length;
     const items = filtered.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
@@ -40,7 +40,7 @@ export class MockArticleService implements IArticleService {
   }
 
   getAll(): Promise<Article[]> {
-    return Promise.resolve(this.articles.filter((a) => !a.isArchived));
+    return Promise.resolve(this.articles.filter((a) => !a.isArchived).reverse());
   }
 
   create(data: Omit<Article, 'id' | 'isArchived'>): Promise<Article> {

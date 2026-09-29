@@ -47,7 +47,7 @@ export class MockCustomerService implements ICustomerService {
         c.firstName.toLowerCase().includes(search) ||
         (c.email?.toLowerCase().includes(search) ?? false)
       );
-    });
+    }).reverse();
     const total = filtered.length;
     const items = filtered.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));

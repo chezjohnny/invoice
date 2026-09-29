@@ -284,21 +284,7 @@ def _draw_qr_code(
     import qrcode
     import qrcode.constants
 
-    debtor_postal = f"{customer.postal_code} {customer.city}".strip()
-    data = "\r\n".join([
-        "SPC", "0200", "1",
-        profile.iban or "",
-        "K",
-        profile.company_name, profile.address_line1,
-        f"{profile.postal_code} {profile.city}", "", "", "CH",
-        f"{amount:.2f}", "CHF",
-        "K",
-        f"{customer.first_name} {customer.last_name}",
-        customer.address_line1, debtor_postal, "", "", "CH",
-        "NON", "",
-        invoice.invoice_number or "",
-        "EPD",
-    ])
+    data = _build_qr_payload(invoice, profile, customer, amount)
 
     qr = qrcode.QRCode(
         version=None,
@@ -323,3 +309,28 @@ def _draw_qr_code(
     pdf.set_fill_color(220, 0, 0)
     pdf.rect(cx - 3.1, cy - 1.2, 6.2, 2.4, "F")
     pdf.rect(cx - 1.2, cy - 3.1, 2.4, 6.2, "F")
+
+
+def _build_qr_payload(
+    invoice: Invoice,
+    profile: TenantProfile,
+    customer: Customer,
+    amount: float,
+) -> str:
+    debtor_postal = f"{customer.postal_code} {customer.city}".strip()
+    fields = [
+        "SPC", "0200", "1",
+        profile.iban or "",
+        "K",
+        profile.company_name, profile.address_line1,
+        f"{profile.postal_code} {profile.city}", "", "", "CH",
+        "", "", "", "", "", "", "",
+        f"{amount:.2f}", "CHF",
+        "K",
+        f"{customer.first_name} {customer.last_name}",
+        customer.address_line1, debtor_postal, "", "", "CH",
+        "NON", "",
+        invoice.invoice_number or "",
+        "EPD", "", "", "",
+    ]
+    return "\r\n".join(fields)

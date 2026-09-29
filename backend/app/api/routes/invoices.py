@@ -51,7 +51,11 @@ async def list_invoices(
                 select(Invoice)
                 .where(*conditions)
                 .options(selectinload(Invoice.lines))
-                .order_by(Invoice.created_at.desc())
+                .order_by(
+                    func.coalesce(Invoice.issue_date, func.date(Invoice.created_at)).desc(),
+                    Invoice.created_at.desc(),
+                    Invoice.id.desc(),
+                )
                 .offset((page - 1) * per_page)
                 .limit(per_page)
             )

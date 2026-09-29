@@ -75,6 +75,49 @@ The UI is then available at <http://localhost:4200> and the API at
 > Tenants are created via the `/auth/register` endpoint or the demo fixtures —
 > there is no self-service signup; the UI only exposes login.
 
+## Importer un ancien projet KInvoice/Qt3
+
+Le convertisseur produit trois fichiers JSON. Relance-le depuis l’ancien dépôt
+avec le fichier `.kiv` d’origine pour conserver les identifiants clients et les
+coordonnées structurées. Il retire à la génération les factures antérieures au
+`01/01/2022` et les fiches clients sans facture récente correspondante :
+
+```bash
+cd ../sam-invoice
+uv run python tools/convert_kiv_to_json_minimal.py /chemin/vers/archive.kiv
+```
+
+Initialise la base SQLite de développement, puis lance l’API dans un premier
+terminal :
+
+```bash
+cd ../invoice
+make backend-init-db-sqlite
+make backend-dev-sqlite
+```
+
+Dans un autre terminal, crée le tenant (remplace les valeurs d’exemple), puis
+importe les JSON générés dans `../sam-invoice/out/` :
+
+```bash
+curl -X POST http://localhost:8000/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"tenant_name":"Saudan Vins","subdomain":"saudan","email":"vous@example.ch","password":"change-me"}'
+
+make backend-import-legacy-sqlite TENANT=saudan \
+  CUSTOMERS=../sam-invoice/out/customers.json \
+  PRODUCTS=../sam-invoice/out/products.json \
+  INVOICES=../sam-invoice/out/factures.json
+```
+
+L’import ne remplace jamais les données : le tenant doit encore être vide
+(aucun client, article ou facture). Les factures historiques sont importées avec
+leur numéro, leurs dates, leurs lignes et leur TVA au statut « émises » ; le JSON
+Qt3 ne permet pas de savoir si elles ont été payées. Les noms de clients sont
+rapprochés à partir du nom sur la facture ; lorsqu’il n’y a pas de correspondance
+unique, une fiche client distincte est créée. Complète ensuite le profil de
+l’entreprise dans `/settings` avant d’émettre de nouvelles factures.
+
 ## Configuration
 
 Settings are read from environment variables (via `pydantic-settings`) with the

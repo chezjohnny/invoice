@@ -1,5 +1,14 @@
+from datetime import date, datetime
+from types import SimpleNamespace
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.invoice import Invoice
+from app.services.pdf import _build_qr_payload
 
 AUTH = "/auth"
 CUSTOMERS = "/customers"
@@ -13,6 +22,38 @@ LINE = {
     "unit_price_snapshot": "50.00",
     "vat_rate_snapshot": "0.081",
 }
+
+
+def test_qr_payload_contains_all_fields_in_spec_order():
+    payload = _build_qr_payload(
+        invoice=SimpleNamespace(invoice_number="FAC-2026-0001"),
+        profile=SimpleNamespace(
+            iban="CH9300762011623852957",
+            company_name="Cave Test",
+            address_line1="Rue du Lac 1",
+            postal_code="1110",
+            city="Morges",
+        ),
+        customer=SimpleNamespace(
+            first_name="Jean",
+            last_name="Dupont",
+            address_line1="Rue de la Gare 2",
+            postal_code="1000",
+            city="Lausanne",
+        ),
+        amount=108.10,
+    )
+
+    fields = payload.split("\r\n")
+
+    assert len(fields) == 34
+    assert fields[0:5] == ["SPC", "0200", "1", "CH9300762011623852957", "K"]
+    assert fields[11:18] == [""] * 7
+    assert fields[18:21] == ["108.10", "CHF", "K"]
+    assert fields[21:27] == [
+        "Jean Dupont", "Rue de la Gare 2", "1000 Lausanne", "", "", "CH"
+    ]
+    assert fields[27:34] == ["NON", "", "FAC-2026-0001", "EPD", "", "", ""]
 
 
 @pytest.mark.anyio
@@ -37,6 +78,77 @@ async def test_list_invoices(
     resp = await client.get(INVOICES, headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()["items"]) == 1
+
+
+@pytest.mark.anyio
+async def test_invoice_history_newest_first(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+    customer_id: str,
+    db_session: AsyncSession,
+):
+    older = await client.post(
+        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
+    )
+    newer = await client.post(
+        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
+    )
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(older.json()["id"]))
+        .values(created_at=datetime(2020, 1, 1))
+    )
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(newer.json()["id"]))
+        .values(created_at=datetime(2025, 1, 1))
+    )
+    await db_session.commit()
+
+    response = await client.get(
+        f"{INVOICES}?customer_id={customer_id}", headers=auth_headers
+    )
+
+    assert [invoice["id"] for invoice in response.json()["items"]] == [
+        newer.json()["id"],
+        older.json()["id"],
+    ]
+
+
+@pytest.mark.anyio
+async def test_invoice_history_uses_issue_date_for_imported_invoices(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+    customer_id: str,
+    db_session: AsyncSession,
+):
+    older = await client.post(
+        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
+    )
+    newer = await client.post(
+        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
+    )
+    import_created_at = datetime(2026, 9, 29, 17, 36, 42)
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(older.json()["id"]))
+        .values(issue_date=date(2022, 1, 5), created_at=import_created_at)
+    )
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(newer.json()["id"]))
+        .values(issue_date=date(2025, 11, 21), created_at=import_created_at)
+    )
+    await db_session.commit()
+
+    response = await client.get(
+        f"{INVOICES}?customer_id={customer_id}", headers=auth_headers
+    )
+
+    assert [invoice["id"] for invoice in response.json()["items"]] == [
+        newer.json()["id"],
+        older.json()["id"],
+    ]
 
 
 @pytest.mark.anyio

@@ -13,7 +13,7 @@ export class MockInvoiceService implements IInvoiceService {
     const statusFilter = params.status ?? '';
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
-    let filtered = [...this.invoices];
+    let filtered = [...this.invoices].reverse();
     if (params.customerId) {
       filtered = filtered.filter((i) => i.customerId === params.customerId);
     }

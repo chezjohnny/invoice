@@ -1,5 +1,12 @@
+from datetime import datetime
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.article import Article
 
 AUTH = "/auth"
 ARTICLES = "/articles"
@@ -32,6 +39,36 @@ async def test_list_articles(client: AsyncClient, auth_headers: dict[str, str]):
     data = resp.json()
     assert data["total"] == 1
     assert len(data["items"]) == 1
+
+
+@pytest.mark.anyio
+async def test_list_articles_newest_first(
+    client: AsyncClient, auth_headers: dict[str, str], db_session: AsyncSession
+):
+    older = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
+    newer = await client.post(
+        ARTICLES,
+        json={**ARTICLE_PAYLOAD, "name": "Nouveau Pinot"},
+        headers=auth_headers,
+    )
+    await db_session.execute(
+        update(Article)
+        .where(Article.id == UUID(older.json()["id"]))
+        .values(created_at=datetime(2020, 1, 1))
+    )
+    await db_session.execute(
+        update(Article)
+        .where(Article.id == UUID(newer.json()["id"]))
+        .values(created_at=datetime(2025, 1, 1))
+    )
+    await db_session.commit()
+
+    response = await client.get(ARTICLES, headers=auth_headers)
+
+    assert [article["id"] for article in response.json()["items"]] == [
+        newer.json()["id"],
+        older.json()["id"],
+    ]
 
 
 @pytest.mark.anyio

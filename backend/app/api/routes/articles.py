@@ -37,7 +37,7 @@ async def list_articles(
             await db.execute(
                 select(Article)
                 .where(*conditions)
-                .order_by(Article.name)
+                .order_by(Article.created_at.desc(), Article.id.desc())
                 .offset((page - 1) * per_page)
                 .limit(per_page)
             )

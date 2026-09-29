@@ -1,5 +1,12 @@
+from datetime import datetime
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.customer import Customer
 
 AUTH = "/auth"
 CUSTOMERS = "/customers"
@@ -34,6 +41,36 @@ async def test_list_customers(client: AsyncClient, auth_headers: dict[str, str])
     resp = await client.get(CUSTOMERS, headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()["items"]) == 1
+
+
+@pytest.mark.anyio
+async def test_list_customers_newest_first(
+    client: AsyncClient, auth_headers: dict[str, str], db_session: AsyncSession
+):
+    older = await client.post(CUSTOMERS, json=CUSTOMER_PAYLOAD, headers=auth_headers)
+    newer = await client.post(
+        CUSTOMERS,
+        json={**CUSTOMER_PAYLOAD, "email": "newer@example.ch"},
+        headers=auth_headers,
+    )
+    await db_session.execute(
+        update(Customer)
+        .where(Customer.id == UUID(older.json()["id"]))
+        .values(created_at=datetime(2020, 1, 1))
+    )
+    await db_session.execute(
+        update(Customer)
+        .where(Customer.id == UUID(newer.json()["id"]))
+        .values(created_at=datetime(2025, 1, 1))
+    )
+    await db_session.commit()
+
+    response = await client.get(CUSTOMERS, headers=auth_headers)
+
+    assert [customer["id"] for customer in response.json()["items"]] == [
+        newer.json()["id"],
+        older.json()["id"],
+    ]
 
 
 @pytest.mark.anyio
