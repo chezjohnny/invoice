@@ -24,6 +24,7 @@ interface InvoiceDto {
   status: string;
   issue_date: string | null;
   due_date: string | null;
+  paid_at: string | null;
   discount_percent: string;
   notes: string;
   pdf_url: string | null;
@@ -88,6 +89,12 @@ export class HttpInvoiceService implements IInvoiceService {
     ).then(this.toInvoice);
   }
 
+  updatePaymentDate(id: string, paidAt: string): Promise<Invoice> {
+    return firstValueFrom(
+      this.http.patch<InvoiceDto>(`/api/invoices/${id}/payment-date`, { paid_at: paidAt })
+    ).then(this.toInvoice);
+  }
+
   cancel(id: string): Promise<Invoice> {
     return firstValueFrom(
       this.http.post<InvoiceDto>(`/api/invoices/${id}/cancel`, {})
@@ -110,6 +117,7 @@ export class HttpInvoiceService implements IInvoiceService {
       status: dto.status as Invoice['status'],
       issueDate: dto.issue_date,
       dueDate: dto.due_date,
+      paidAt: dto.paid_at,
       discountPercent: parseFloat(dto.discount_percent),
       notes: dto.notes,
       pdfUrl: dto.pdf_url,

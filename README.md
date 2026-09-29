@@ -112,11 +112,14 @@ make backend-import-legacy-sqlite TENANT=saudan \
 
 L’import ne remplace jamais les données : le tenant doit encore être vide
 (aucun client, article ou facture). Les factures historiques sont importées avec
-leur numéro, leurs dates, leurs lignes et leur TVA au statut « émises » ; le JSON
-Qt3 ne permet pas de savoir si elles ont été payées. Les noms de clients sont
-rapprochés à partir du nom sur la facture ; lorsqu’il n’y a pas de correspondance
-unique, une fiche client distincte est créée. Complète ensuite le profil de
-l’entreprise dans `/settings` avant d’émettre de nouvelles factures.
+leur numéro, leurs dates, leurs lignes et leur TVA au statut « payées ». Le champ
+`paid_at` reprend une date de modification/création si l’export en fournit une ;
+le `.kiv` actuel n’en contient pas, donc la date de facture sert de repli. Ce
+statut payé est une règle d’import manuelle, pas une preuve de règlement bancaire.
+Les noms de clients sont rapprochés à partir du nom sur la facture ; lorsqu’il
+n’y a pas de correspondance unique, une fiche client distincte est créée.
+Complète ensuite le profil de l’entreprise dans `/settings` avant d’émettre de
+nouvelles factures. La date de paiement est éditable dans la liste Factures.
 
 ## Configuration
 
@@ -201,6 +204,34 @@ git push production main
 
 The hook checks the code out and runs `docker compose up -d --build`; the API
 container applies any new migration on start.
+
+### Import legacy data
+
+Deploy the importer and `paid_at` migration first; the API container applies the
+migration automatically. Back up the production SQLite database before importing.
+From the local checkout, copy the three generated JSON files to the VPS:
+
+```bash
+ssh <vps> 'mkdir -p /tmp/invoice-legacy'
+scp ../sam-invoice/out/customers.json ../sam-invoice/out/products.json \
+  ../sam-invoice/out/factures.json <vps>:/tmp/invoice-legacy/
+```
+
+Then run the import from the production checkout on the VPS, replacing the
+tenant subdomain if needed:
+
+```bash
+cd /home/johnny/apps/invoice
+make backend-import-legacy-prod TENANT=saudan \
+  CUSTOMERS=/tmp/invoice-legacy/customers.json \
+  PRODUCTS=/tmp/invoice-legacy/products.json \
+  INVOICES=/tmp/invoice-legacy/factures.json
+```
+
+The command uses the production image and persistent `/data` volume; it does
+not copy the JSON into the image. The tenant must have no customers, articles,
+or invoices. Imported invoices are marked paid, with `paid_at` taken from a
+legacy modification date, creation date, or the invoice date fallback.
 
 ### Backup
 

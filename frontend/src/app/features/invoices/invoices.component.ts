@@ -63,6 +63,7 @@ const STATUS_BADGE: Record<string, string> = {
                   <th>{{ t().invoices.customer }}</th>
                   <th class="hidden md:table-cell">{{ t().invoices.date }}</th>
                   <th class="hidden md:table-cell">{{ t().invoices.due }}</th>
+                  <th>{{ t().invoices.paymentDate }}</th>
                   <th class="text-right">{{ t().invoices.total }}</th>
                   <th>{{ t().invoices.status }}</th>
                   <th></th>
@@ -75,6 +76,15 @@ const STATUS_BADGE: Record<string, string> = {
                     <td class="font-medium">{{ inv.customerName || '—' }}</td>
                     <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.issueDate ?? '—' }}</td>
                     <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.dueDate ?? '—' }}</td>
+                    <td>
+                      @if (inv.status === 'paid') {
+                        <input type="date" class="input input-bordered input-xs w-36"
+                          [value]="inv.paidAt ?? ''"
+                          [attr.aria-label]="t().invoices.paymentDate"
+                          [disabled]="store.loading()"
+                          (change)="onPaymentDateChange(inv.id, $event)" />
+                      } @else { — }
+                    </td>
                     <td class="text-right font-medium tabular-nums">{{ lineTotal(inv) | number:'1.2-2' }}</td>
                     <td>
                       <span class="badge badge-sm" [class]="statusBadge(inv.status)">
@@ -117,7 +127,7 @@ const STATUS_BADGE: Record<string, string> = {
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="7" class="text-center text-base-content/40 py-10">
+                    <td colspan="8" class="text-center text-base-content/40 py-10">
                       {{ t().invoices.noResults }}
                     </td>
                   </tr>
@@ -232,6 +242,11 @@ export class InvoicesComponent {
     const value = (event.target as HTMLInputElement).value;
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
+  }
+
+  async onPaymentDateChange(id: string, event: Event): Promise<void> {
+    const paidAt = (event.target as HTMLInputElement).value;
+    if (paidAt) await this.store.setPaymentDate(id, paidAt);
   }
 
   openNew(): void {

@@ -15,7 +15,12 @@ from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import TenantProfile, User
 from app.schemas.common import PagedResponse
-from app.schemas.invoice import InvoiceCreate, InvoiceResponse, InvoiceUpdate
+from app.schemas.invoice import (
+    InvoiceCreate,
+    InvoicePaymentDateUpdate,
+    InvoiceResponse,
+    InvoiceUpdate,
+)
 from app.services.pdf import generate_invoice_pdf
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
@@ -191,6 +196,22 @@ async def pay_invoice(
     if invoice.status != InvoiceStatus.ISSUED:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only issued invoices can be paid")
     invoice.status = InvoiceStatus.PAID
+    invoice.paid_at = date.today()
+    await db.commit()
+    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+
+
+@router.patch("/{invoice_id}/payment-date", response_model=InvoiceResponse)
+async def update_payment_date(
+    invoice_id: uuid.UUID,
+    body: InvoicePaymentDateUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Invoice:
+    invoice = await _get_invoice(invoice_id, current_user.tenant_id, db)
+    if invoice.status != InvoiceStatus.PAID:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only paid invoices have a payment date")
+    invoice.paid_at = body.paid_at
     await db.commit()
     return await _load_invoice(invoice.id, current_user.tenant_id, db)
 

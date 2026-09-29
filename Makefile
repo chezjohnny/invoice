@@ -74,6 +74,16 @@ backend-import-legacy: ## Import Qt3 KInvoice JSON exports (TENANT=... CUSTOMERS
 backend-import-legacy-sqlite: ## Import Qt3 KInvoice JSON exports into SQLite
 	uv --directory backend run --env-file .env.sqlite python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" --customers "$(abspath $(CUSTOMERS))" --products "$(abspath $(PRODUCTS))" --invoices "$(abspath $(INVOICES))"
 
+.PHONY: backend-import-legacy-prod
+backend-import-legacy-prod: ## Run from the production checkout on the VPS; JSON files are mounted read-only
+	docker compose run --rm --no-deps -T \
+	  -v "$(abspath $(CUSTOMERS)):/legacy/customers.json:ro" \
+	  -v "$(abspath $(PRODUCTS)):/legacy/products.json:ro" \
+	  -v "$(abspath $(INVOICES)):/legacy/factures.json:ro" \
+	  api python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" \
+	  --customers /legacy/customers.json --products /legacy/products.json \
+	  --invoices /legacy/factures.json
+
 .PHONY: backend-shell
 backend-shell: ## Interactive shell with app + DB preloaded (uses default/Postgres)
 	uv --directory backend run python -m app.cli shell

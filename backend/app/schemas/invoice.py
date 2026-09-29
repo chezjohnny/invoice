@@ -40,6 +40,10 @@ class InvoiceUpdate(InvoiceBase):
     lines: list[InvoiceLineCreate] = []
 
 
+class InvoicePaymentDateUpdate(BaseModel):
+    paid_at: date
+
+
 class InvoiceResponse(InvoiceBase):
     id: uuid.UUID
     tenant_id: uuid.UUID
@@ -47,6 +51,7 @@ class InvoiceResponse(InvoiceBase):
     status: InvoiceStatus
     issue_date: date | None
     due_date: date | None
+    paid_at: date | None
     pdf_url: str | None
     lines: list[InvoiceLineResponse]
     customer_name: str = ""

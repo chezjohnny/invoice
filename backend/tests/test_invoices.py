@@ -210,6 +210,31 @@ async def test_pay_invoice(
     resp = await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "paid"
+    assert resp.json()["paid_at"] == date.today().isoformat()
+
+
+@pytest.mark.anyio
+async def test_update_payment_date(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+    customer_id: str,
+    complete_profile: None,
+):
+    create = await client.post(
+        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
+    )
+    invoice_id = create.json()["id"]
+    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+
+    response = await client.patch(
+        f"{INVOICES}/{invoice_id}/payment-date",
+        json={"paid_at": "2025-03-12"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["paid_at"] == "2025-03-12"
 
 
 @pytest.mark.anyio

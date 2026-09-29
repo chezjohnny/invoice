@@ -38,6 +38,7 @@ const EN = {
   invoices: {
     title: 'Invoices', new: 'New invoice', number: 'Number', customer: 'Customer',
     date: 'Date', due: 'Due', total: 'Total', status: 'Status',
+    paymentDate: 'Paid on',
     noResults: 'No invoices found.',
     issue: 'Issue', pay: 'Pay', pdf: 'PDF',
     customerLabel: 'Customer *', customerRequired: 'Customer is required',
@@ -137,6 +138,7 @@ const FR: typeof EN = {
   invoices: {
     title: 'Factures', new: 'Nouvelle facture', number: 'Numéro', customer: 'Client',
     date: 'Date', due: 'Échéance', total: 'Total', status: 'Statut',
+    paymentDate: 'Date de paiement',
     noResults: 'Aucune facture.',
     issue: 'Émettre', pay: 'Payer', pdf: 'PDF',
     customerLabel: 'Client *', customerRequired: 'Le client est requis',

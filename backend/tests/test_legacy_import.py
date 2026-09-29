@@ -1,15 +1,26 @@
 import json
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.legacy_import import import_legacy_data
+from app.legacy_import import _legacy_paid_date, import_legacy_data
 from app.models.article import Article
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.tenant import Tenant
+
+
+def test_legacy_paid_date_prefers_modification_then_creation_date():
+    issue_date = date(2022, 1, 5)
+    assert _legacy_paid_date(
+        {"updated_at": "2025-03-12T10:30:00", "created_at": "2022-01-05T00:00:00"},
+        issue_date,
+    ) == date(2025, 3, 12)
+    assert _legacy_paid_date({"created_at": "2023-06-20T12:00:00"}, issue_date) == date(2023, 6, 20)
+    assert _legacy_paid_date({}, issue_date) == issue_date
 
 
 @pytest.mark.anyio
@@ -66,6 +77,8 @@ async def test_import_legacy_uses_billed_name_when_source_ids_collide(
 
     invoice = await db_session.scalar(select(Invoice).where(Invoice.invoice_number == "2007020201"))
     assert invoice is not None
+    assert invoice.status.value == "paid"
+    assert invoice.paid_at.isoformat() == "2007-01-05"
     billed_customer = await db_session.get(Customer, invoice.customer_id)
     assert billed_customer is not None
     assert billed_customer.first_name == "Gérald"

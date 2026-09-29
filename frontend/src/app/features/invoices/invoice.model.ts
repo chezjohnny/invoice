@@ -19,6 +19,7 @@ export interface Invoice {
   status: InvoiceStatus;
   issueDate: string | null;
   dueDate: string | null;
+  paidAt: string | null;
   discountPercent: number;
   notes: string;
   pdfUrl: string | null;

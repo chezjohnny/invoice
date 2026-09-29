@@ -12,6 +12,7 @@ const BASE: Omit<Invoice, 'id' | 'status'> = {
   invoiceNumber: null,
   issueDate: null,
   dueDate: null,
+  paidAt: null,
   discountPercent: 0,
   notes: '',
   pdfUrl: null,
@@ -77,6 +78,12 @@ describe('InvoiceStore', () => {
             pay: async (id: string): Promise<Invoice> => {
               const inv = invoices.find((i) => i.id === id)!;
               inv.status = 'paid';
+              inv.paidAt = '2026-06-25';
+              return inv;
+            },
+            updatePaymentDate: async (id: string, paidAt: string): Promise<Invoice> => {
+              const inv = invoices.find((i) => i.id === id)!;
+              inv.paidAt = paidAt;
               return inv;
             },
             cancel: async (id: string): Promise<Invoice> => {
@@ -142,6 +149,13 @@ describe('InvoiceStore', () => {
     await store.load();
     await store.pay('2');
     expect(invoices.find((i) => i.id === '2')?.status).toBe('paid');
+    expect(invoices.find((i) => i.id === '2')?.paidAt).toBe('2026-06-25');
+  });
+
+  it('updates the payment date of a paid invoice', async () => {
+    await store.load();
+    await store.setPaymentDate('3', '2025-06-15');
+    expect(invoices.find((i) => i.id === '3')?.paidAt).toBe('2025-06-15');
   });
 
   it('cancel transitions invoice to cancelled', async () => {

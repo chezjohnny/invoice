@@ -125,6 +125,22 @@ def _vat_rate(value: Any) -> Decimal | None:
     return rate
 
 
+def _legacy_paid_date(spec: dict[str, Any], issue_date: date | None) -> date | None:
+    for key in (
+        "modified_at",
+        "updated_at",
+        "modified_date",
+        "modification_date",
+        "date_modification",
+    ):
+        if spec.get(key):
+            return date.fromisoformat(str(spec[key])[:10])
+    for key in ("created_at", "creation_date", "created_date", "date_creation"):
+        if spec.get(key):
+            return date.fromisoformat(str(spec[key])[:10])
+    return issue_date
+
+
 async def import_legacy_data(
     db: AsyncSession,
     tenant_subdomain: str,
@@ -228,9 +244,10 @@ async def import_legacy_data(
             tenant_id=tenant.id,
             customer_id=customer_id,
             invoice_number=str(spec.get("ref") or "").strip() or None,
-            status=InvoiceStatus.ISSUED,
+            status=InvoiceStatus.PAID,
             issue_date=issue_date,
             due_date=due_date,
+            paid_at=_legacy_paid_date(spec, issue_date),
             notes="\n".join(
                 filter(
                     None,

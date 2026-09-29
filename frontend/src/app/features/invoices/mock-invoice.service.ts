@@ -41,6 +41,7 @@ export class MockInvoiceService implements IInvoiceService {
       status: 'draft',
       issueDate: null,
       dueDate: null,
+      paidAt: null,
       discountPercent: data.discountPercent,
       notes: data.notes,
       pdfUrl: null,
@@ -90,6 +91,13 @@ export class MockInvoiceService implements IInvoiceService {
   pay(id: string): Promise<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     inv.status = 'paid';
+    inv.paidAt = new Date().toISOString().slice(0, 10);
+    return Promise.resolve(inv);
+  }
+
+  updatePaymentDate(id: string, paidAt: string): Promise<Invoice> {
+    const inv = this.invoices.find((i) => i.id === id)!;
+    inv.paidAt = paidAt;
     return Promise.resolve(inv);
   }
 

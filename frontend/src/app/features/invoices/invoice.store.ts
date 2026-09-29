@@ -100,6 +100,9 @@ export const InvoiceStore = signalStore(
       async pay(id: string): Promise<void> {
         await mutate(() => service.pay(id));
       },
+      async setPaymentDate(id: string, paidAt: string): Promise<void> {
+        await mutate(() => service.updatePaymentDate(id, paidAt));
+      },
       async cancel(id: string): Promise<void> {
         await mutate(() => service.cancel(id));
       },

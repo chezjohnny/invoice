@@ -36,6 +36,7 @@ class Invoice(UUIDBase):
     )
     issue_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    paid_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     discount_percent: Mapped[Decimal] = mapped_column(
         Numeric(5, 2), nullable=False, default=Decimal("0")
     )
