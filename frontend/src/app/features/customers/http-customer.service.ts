@@ -39,6 +39,7 @@ export class HttpCustomerService implements ICustomerService {
   list(params: CustomerListParams): Promise<Page<Customer>> {
     const httpParams = new HttpParams()
       .set('search', params.search ?? '')
+      .set('archived', String(params.archived ?? false))
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
     return firstValueFrom(
@@ -73,6 +74,10 @@ export class HttpCustomerService implements ICustomerService {
   archive(id: string): Promise<void> {
     return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/archive`, {}));
   }
+  restore(id: string): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/restore`, {}));
+  }
+
 
   exportCsv(): Promise<Blob> {
     return firstValueFrom(

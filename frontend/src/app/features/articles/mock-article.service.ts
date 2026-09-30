@@ -20,6 +20,10 @@ const MOCK_ARTICLES: Article[] = [
     id: '4', name: 'Caisse bois personnalisée', description: 'Gravure incluse',
     unitPrice: 35, vatRateOverride: 0.081, stockQuantity: 10, isArchived: false,
   },
+  {
+    id: '5', name: 'Chasselas 2019', description: 'Millésime épuisé',
+    unitPrice: 18, vatRateOverride: null, stockQuantity: 0, isArchived: true,
+  },
 ];
 
 @Injectable()
@@ -31,7 +35,7 @@ export class MockArticleService implements IArticleService {
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
     const filtered = this.articles.filter(
-      (a) => !a.isArchived && (!search || a.name.toLowerCase().includes(search))
+      (a) => a.isArchived === (params.archived ?? false) && (!search || a.name.toLowerCase().includes(search))
     ).reverse();
     const total = filtered.length;
     const items = filtered.slice((page - 1) * perPage, page * perPage);
@@ -59,6 +63,12 @@ export class MockArticleService implements IArticleService {
   archive(id: string): Promise<void> {
     const article = this.articles.find((a) => a.id === id);
     if (article) article.isArchived = true;
+    return Promise.resolve();
+  }
+
+  restore(id: string): Promise<void> {
+    const article = this.articles.find((a) => a.id === id);
+    if (article) article.isArchived = false;
     return Promise.resolve();
   }
 }

@@ -31,6 +31,7 @@ export class HttpArticleService implements IArticleService {
   list(params: ArticleListParams): Promise<Page<Article>> {
     const httpParams = new HttpParams()
       .set('search', params.search ?? '')
+      .set('archived', String(params.archived ?? false))
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
     return firstValueFrom(
@@ -69,6 +70,10 @@ export class HttpArticleService implements IArticleService {
       this.http.patch<void>(`/api/articles/${id}/archive`, {})
     );
   }
+  restore(id: string): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`/api/articles/${id}/restore`, {}));
+  }
+
 
   private toArticle(dto: ArticleDto): Article {
     return {

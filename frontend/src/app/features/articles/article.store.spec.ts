@@ -27,7 +27,8 @@ describe('ArticleStore', () => {
         {
           provide: ARTICLE_SERVICE,
           useValue: {
-            list: async () => makePage(articles.filter((a) => !a.isArchived)),
+            list: async (params: { archived?: boolean }) =>
+              makePage(articles.filter((a) => a.isArchived === (params.archived ?? false))),
             getAll: async () => [...articles],
             create: async (data: Omit<Article, 'id' | 'isArchived'>) => {
               const a = { ...data, id: 'new-id', isArchived: false };
@@ -42,6 +43,10 @@ describe('ArticleStore', () => {
             archive: async (id: string) => {
               const a = articles.find((a) => a.id === id);
               if (a) a.isArchived = true;
+            },
+            restore: async (id: string) => {
+              const a = articles.find((a) => a.id === id);
+              if (a) a.isArchived = false;
             },
           },
         },
@@ -79,6 +84,22 @@ describe('ArticleStore', () => {
     await store.load();
     await store.archive('1');
     expect(store.items().find((a) => a.id === '1')).toBeUndefined();
+  });
+
+  it('shows archived articles and restores them to the active list', async () => {
+    await store.load();
+    await store.archive('1');
+    await store.setPage(2);
+
+    await store.setArchived(true);
+    expect(store.page()).toBe(1);
+    expect(store.items().map((a) => a.id)).toEqual(['1']);
+
+    await store.restore('1');
+    expect(store.items()).toEqual([]);
+
+    await store.setArchived(false);
+    expect(store.items().some((a) => a.id === '1')).toBe(true);
   });
 
   it('setPage updates the page signal', () => {

@@ -23,13 +23,20 @@ import { CustomerStore } from './customer.store';
         </div>
       </div>
 
-      <label class="input mb-4 w-full sm:max-w-xs flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-4 mb-4">
+      <label class="input w-full sm:max-w-xs flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40 shrink-0" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
         </svg>
         <input type="text" [placeholder]="t().customers.search"
           [value]="store.search()" (input)="onSearch($event)" />
       </label>
+      <label class="label cursor-pointer gap-2 text-sm">
+        <input type="checkbox" class="toggle toggle-sm"
+          [checked]="store.archived()" (change)="onToggleArchived($event)" />
+        {{ t().common.showArchived }}
+      </label>
+      </div>
 
       @if (store.loading()) {
         <div class="flex justify-center py-8">
@@ -63,12 +70,18 @@ import { CustomerStore } from './customer.store';
                     </td>
                     <td>
                       <div class="flex gap-1 justify-end">
-                        <button class="btn btn-ghost btn-sm" (click)="openEdit(customer)">
-                          {{ t().common.edit }}
-                        </button>
-                        <button class="btn btn-ghost btn-sm text-error" (click)="store.archive(customer.id)">
-                          {{ t().common.archive }}
-                        </button>
+                        @if (customer.isArchived) {
+                          <button class="btn btn-ghost btn-sm text-success" (click)="store.restore(customer.id)">
+                            {{ t().common.restore }}
+                          </button>
+                        } @else {
+                          <button class="btn btn-ghost btn-sm" (click)="openEdit(customer)">
+                            {{ t().common.edit }}
+                          </button>
+                          <button class="btn btn-ghost btn-sm text-error" (click)="store.archive(customer.id)">
+                            {{ t().common.archive }}
+                          </button>
+                        }
                       </div>
                     </td>
                   </tr>
@@ -137,6 +150,10 @@ export class CustomersComponent {
     const value = (event.target as HTMLInputElement).value;
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
+  }
+
+  onToggleArchived(event: Event): void {
+    this.store.setArchived((event.target as HTMLInputElement).checked);
   }
 
   openNew(): void {

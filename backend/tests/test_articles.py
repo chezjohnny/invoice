@@ -117,3 +117,22 @@ async def test_article_tenant_isolation(client: AsyncClient, auth_headers: dict[
     resp = await client.get(ARTICLES, headers=headers_b)
     assert resp.json()["total"] == 0
     assert resp.json()["items"] == []
+
+
+@pytest.mark.anyio
+async def test_list_archived_and_restore_article(client: AsyncClient, auth_headers: dict[str, str]):
+    create = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
+    article_id = create.json()["id"]
+    await client.patch(f"{ARTICLES}/{article_id}/archive", headers=auth_headers)
+
+    archived = (await client.get(f"{ARTICLES}?archived=true", headers=auth_headers)).json()
+    assert [x["id"] for x in archived["items"]] == [article_id]
+    assert archived["total"] == 1
+
+    resp = await client.patch(f"{ARTICLES}/{article_id}/restore", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["is_archived"] is False
+    active = (await client.get(ARTICLES, headers=auth_headers)).json()
+    assert [x["id"] for x in active["items"]] == [article_id]
+    archived = (await client.get(f"{ARTICLES}?archived=true", headers=auth_headers)).json()
+    assert archived["items"] == []

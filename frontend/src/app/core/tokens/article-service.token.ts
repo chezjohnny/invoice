@@ -4,6 +4,7 @@ import type { Page } from '../models/page.model';
 
 export interface ArticleListParams {
   search?: string;
+  archived?: boolean;
   page?: number;
   perPage?: number;
 }
@@ -14,6 +15,7 @@ export interface IArticleService {
   create(data: Omit<Article, 'id' | 'isArchived'>): Promise<Article>;
   update(id: string, data: Omit<Article, 'id' | 'isArchived'>): Promise<Article>;
   archive(id: string): Promise<void>;
+  restore(id: string): Promise<void>;
 }
 
 export const ARTICLE_SERVICE = new InjectionToken<IArticleService>('ArticleService');

@@ -35,7 +35,8 @@ describe('CustomerStore', () => {
         {
           provide: CUSTOMER_SERVICE,
           useValue: {
-            list: async () => makePage(customers.filter((c) => !c.isArchived)),
+            list: async (params: { archived?: boolean }) =>
+              makePage(customers.filter((c) => c.isArchived === (params.archived ?? false))),
             create: async (data: Omit<Customer, 'id' | 'isArchived'>) => {
               const c = { ...data, id: 'new-id', isArchived: false };
               customers.push(c);
@@ -49,6 +50,10 @@ describe('CustomerStore', () => {
             archive: async (id: string) => {
               const c = customers.find((c) => c.id === id);
               if (c) c.isArchived = true;
+            },
+            restore: async (id: string) => {
+              const c = customers.find((c) => c.id === id);
+              if (c) c.isArchived = false;
             },
             exportCsv: async () => new Blob([''], { type: 'text/csv' }),
           },
@@ -93,6 +98,22 @@ describe('CustomerStore', () => {
     await store.load();
     await store.archive('1');
     expect(store.items().find((c) => c.id === '1')).toBeUndefined();
+  });
+
+  it('shows archived customers and restores them to the active list', async () => {
+    await store.load();
+    await store.archive('1');
+    await store.setPage(2);
+
+    await store.setArchived(true);
+    expect(store.page()).toBe(1);
+    expect(store.items().map((c) => c.id)).toEqual(['1']);
+
+    await store.restore('1');
+    expect(store.items()).toEqual([]);
+
+    await store.setArchived(false);
+    expect(store.items().some((c) => c.id === '1')).toBe(true);
   });
 
   it('setPage updates the page signal', () => {

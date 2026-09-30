@@ -10,6 +10,7 @@ interface ArticleState {
   perPage: number;
   pages: number;
   search: string;
+  archived: boolean;
   loading: boolean;
 }
 
@@ -21,6 +22,7 @@ export const ArticleStore = signalStore(
     perPage: 20,
     pages: 1,
     search: '',
+    archived: false,
     loading: false,
   }),
   withMethods((store, service = inject(ARTICLE_SERVICE)) => {
@@ -28,6 +30,7 @@ export const ArticleStore = signalStore(
       patchState(store, { loading: true });
       const result = await service.list({
         search: store.search(),
+        archived: store.archived(),
         page: store.page(),
         perPage: store.perPage(),
       });
@@ -37,6 +40,10 @@ export const ArticleStore = signalStore(
       load,
       setSearch(search: string): Promise<void> {
         patchState(store, { search, page: 1 });
+        return load();
+      },
+      setArchived(archived: boolean): Promise<void> {
+        patchState(store, { archived, page: 1 });
         return load();
       },
       setPage(page: number): Promise<void> {
@@ -56,6 +63,11 @@ export const ArticleStore = signalStore(
       async archive(id: string): Promise<void> {
         patchState(store, { loading: true });
         await service.archive(id);
+        await load();
+      },
+      async restore(id: string): Promise<void> {
+        patchState(store, { loading: true });
+        await service.restore(id);
         await load();
       },
     };

@@ -4,6 +4,7 @@ import type { Page } from '../models/page.model';
 
 export interface CustomerListParams {
   search?: string;
+  archived?: boolean;
   page?: number;
   perPage?: number;
 }
@@ -14,6 +15,7 @@ export interface ICustomerService {
   create(data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer>;
   update(id: string, data: Omit<Customer, 'id' | 'isArchived'>): Promise<Customer>;
   archive(id: string): Promise<void>;
+  restore(id: string): Promise<void>;
   exportCsv(): Promise<Blob>;
 }
 

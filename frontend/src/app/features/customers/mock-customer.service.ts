@@ -28,6 +28,12 @@ const INITIAL: Customer[] = [
     email: 'sophie.renard@example.ch', phones: [],
     isArchived: false,
   },
+  {
+    id: '5', firstName: 'Luc', lastName: 'Favre',
+    addressLine1: 'Route de Lausanne 40', postalCode: '1180', city: 'Rolle', country: 'CH',
+    email: null, phones: [],
+    isArchived: true,
+  },
 ];
 
 @Injectable()
@@ -40,7 +46,7 @@ export class MockCustomerService implements ICustomerService {
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
     const filtered = this.customers.filter((c) => {
-      if (c.isArchived) return false;
+      if (c.isArchived !== (params.archived ?? false)) return false;
       if (!search) return true;
       return (
         c.lastName.toLowerCase().includes(search) ||
@@ -75,6 +81,12 @@ export class MockCustomerService implements ICustomerService {
   archive(id: string): Promise<void> {
     const c = this.customers.find((c) => c.id === id);
     if (c) c.isArchived = true;
+    return Promise.resolve();
+  }
+
+  restore(id: string): Promise<void> {
+    const c = this.customers.find((c) => c.id === id);
+    if (c) c.isArchived = false;
     return Promise.resolve();
   }
 

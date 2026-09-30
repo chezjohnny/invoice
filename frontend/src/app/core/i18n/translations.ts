@@ -79,7 +79,8 @@ const EN = {
     all: 'All', draft: 'Draft', issued: 'Issued', paid: 'Paid', cancelled: 'Cancelled',
   },
   common: {
-    save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', app: 'Invoice',
+    save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', restore: 'Restore',
+    showArchived: 'Show archived', app: 'Invoice',
     loading: 'Loading…', results: 'results', searchCustomer: 'Search customer…',
     retry: 'Retry',
   },
@@ -179,7 +180,8 @@ const FR: typeof EN = {
     all: 'Tout', draft: 'Brouillon', issued: 'Émise', paid: 'Payée', cancelled: 'Annulée',
   },
   common: {
-    save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', app: 'Factures',
+    save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', restore: 'Restaurer',
+    showArchived: 'Afficher les archivés', app: 'Factures',
     loading: 'Chargement…', results: 'résultats', searchCustomer: 'Rechercher un client…',
     retry: 'Réessayer',
   },

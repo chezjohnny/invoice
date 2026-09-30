@@ -19,6 +19,7 @@ router = APIRouter(prefix="/articles", tags=["articles"])
 @router.get("", response_model=PagedResponse[ArticleResponse])
 async def list_articles(
     search: str = Query(""),
+    archived: bool = Query(False),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -26,7 +27,7 @@ async def list_articles(
 ) -> Any:
     conditions = [
         Article.tenant_id == current_user.tenant_id,
-        Article.is_archived.is_(False),
+        Article.is_archived.is_(archived),
     ]
     if search:
         conditions.append(Article.name.ilike(f"%{search}%"))
@@ -83,6 +84,19 @@ async def archive_article(
 ) -> Article:
     article = await _get_article(article_id, current_user.tenant_id, db)
     article.is_archived = True
+    await db.commit()
+    await db.refresh(article)
+    return article
+
+
+@router.patch("/{article_id}/restore", response_model=ArticleResponse)
+async def restore_article(
+    article_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Article:
+    article = await _get_article(article_id, current_user.tenant_id, db)
+    article.is_archived = False
     await db.commit()
     await db.refresh(article)
     return article

@@ -21,6 +21,7 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 @router.get("", response_model=PagedResponse[CustomerResponse])
 async def list_customers(
     search: str = Query(""),
+    archived: bool = Query(False),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -28,7 +29,7 @@ async def list_customers(
 ) -> Any:
     conditions = [
         Customer.tenant_id == current_user.tenant_id,
-        Customer.is_archived.is_(False),
+        Customer.is_archived.is_(archived),
     ]
     if search:
         conditions.append(
@@ -130,6 +131,19 @@ async def archive_customer(
 ) -> Customer:
     customer = await _get_customer(customer_id, current_user.tenant_id, db)
     customer.is_archived = True
+    await db.commit()
+    await db.refresh(customer)
+    return customer
+
+
+@router.patch("/{customer_id}/restore", response_model=CustomerResponse)
+async def restore_customer(
+    customer_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Customer:
+    customer = await _get_customer(customer_id, current_user.tenant_id, db)
+    customer.is_archived = False
     await db.commit()
     await db.refresh(customer)
     return customer
