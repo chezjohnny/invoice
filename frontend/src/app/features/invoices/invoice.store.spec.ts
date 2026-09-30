@@ -1,5 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { Locale } from '../../core/i18n/translations';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Page } from '../../core/models/page.model';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
@@ -37,6 +39,7 @@ describe('InvoiceStore', () => {
   let store: InstanceType<typeof InvoiceStore>;
   let invoices: Invoice[];
   let failIssue: boolean;
+  let pdfLocale: Locale | undefined;
 
   beforeEach(() => {
     invoices = structuredClone(INVOICES);
@@ -91,7 +94,10 @@ describe('InvoiceStore', () => {
               inv.status = 'cancelled';
               return inv;
             },
-            downloadPdf: async () => new Blob(['%PDF'], { type: 'application/pdf' }),
+            downloadPdf: async (_id: string, locale: Locale) => {
+              pdfLocale = locale;
+              return new Blob(['%PDF'], { type: 'application/pdf' });
+            },
           },
         },
       ],
@@ -162,6 +168,15 @@ describe('InvoiceStore', () => {
     await store.load();
     await store.cancel('1');
     expect(invoices.find((i) => i.id === '1')?.status).toBe('cancelled');
+  });
+
+  it('downloads the PDF in the UI language', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    TestBed.inject(I18nService).locale.set('fr');
+    await store.downloadPdf('2');
+    expect(pdfLocale).toBe('fr');
   });
 
   it('setPage updates the page signal', () => {

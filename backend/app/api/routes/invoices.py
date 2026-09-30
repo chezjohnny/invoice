@@ -21,7 +21,7 @@ from app.schemas.invoice import (
     InvoiceResponse,
     InvoiceUpdate,
 )
-from app.services.pdf import generate_invoice_pdf
+from app.services.pdf import Lang, generate_invoice_pdf
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
@@ -249,6 +249,7 @@ async def cancel_invoice(
 @router.get("/{invoice_id}/pdf")
 async def download_pdf(
     invoice_id: uuid.UUID,
+    lang: Lang = Query("en"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
@@ -266,7 +267,7 @@ async def download_pdf(
     )
     profile = profile_result.scalar_one()
 
-    pdf_bytes = generate_invoice_pdf(invoice, invoice.lines, customer, profile)
+    pdf_bytes = generate_invoice_pdf(invoice, invoice.lines, customer, profile, lang)
     filename = invoice.invoice_number or f"invoice-{invoice.id}"
     return Response(
         content=pdf_bytes,

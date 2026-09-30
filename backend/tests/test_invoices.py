@@ -10,7 +10,7 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.invoice import Invoice
-from app.services.pdf import _build_qr_payload
+from app.services.pdf import _build_qr_payload, _chf
 
 AUTH = "/auth"
 CUSTOMERS = "/customers"
@@ -308,6 +308,26 @@ async def test_pdf_shows_twint_payment_only_when_configured(
 
 
 @pytest.mark.anyio
+async def test_pdf_language(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    create = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
+
+    english = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "Invoice" in english and "Receipt" in english
+
+    french = _pdf_text((await client.get(f"{pdf_url}?lang=fr", headers=auth_headers)).content)
+    assert "Facture" in french and "Récépissé" in french
+    assert "Invoice" not in french
+
+    resp = await client.get(f"{pdf_url}?lang=de", headers=auth_headers)
+    assert resp.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_invoice_tenant_isolation(client: AsyncClient, auth_headers: dict[str, str]):
     cust_payload = {
         "first_name": "Jean", "last_name": "Dupont", "address_line1": "Rue 1",
@@ -326,3 +346,9 @@ async def test_invoice_tenant_isolation(client: AsyncClient, auth_headers: dict[
     resp = await client.get(INVOICES, headers=hb)
     assert resp.json()["total"] == 0
     assert resp.json()["items"] == []
+
+
+def test_chf_uses_swiss_thousands_separator():
+    assert _chf(1234.5) == "1'234.50"
+    assert _chf(-13.5) == "-13.50"
+    assert _chf(1234567.891, " ") == "1 234 567.89"

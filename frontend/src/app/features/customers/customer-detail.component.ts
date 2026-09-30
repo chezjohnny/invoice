@@ -199,7 +199,8 @@ const STATUS_BADGE: Record<string, string> = {
   `,
 })
 export class CustomerDetailComponent {
-  protected readonly t = inject(I18nService).T;
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.T;
   private readonly route = inject(ActivatedRoute);
   private readonly customerService = inject(CUSTOMER_SERVICE);
   private readonly invoiceService = inject(INVOICE_SERVICE);
@@ -248,7 +249,7 @@ export class CustomerDetailComponent {
   protected async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
     const invoice = await this.invoiceService.create(data);
     const issued = await this.invoiceService.issue(invoice.id);
-    const blob = await this.invoiceService.downloadPdf(issued.id);
+    const blob = await this.invoiceService.downloadPdf(issued.id, this.i18n.locale());
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -284,7 +285,7 @@ export class CustomerDetailComponent {
 
   protected async downloadPdf(event: Event, inv: Invoice): Promise<void> {
     event.stopPropagation();
-    const blob = await this.invoiceService.downloadPdf(inv.id);
+    const blob = await this.invoiceService.downloadPdf(inv.id, this.i18n.locale());
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

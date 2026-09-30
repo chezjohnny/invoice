@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
 import { Page } from '../../core/models/page.model';
+import { Locale } from '../../core/i18n/translations';
 import { Invoice, InvoiceCreate, InvoiceLine, InvoiceUpdate } from './invoice.model';
 
 interface InvoiceLineDto {
@@ -101,9 +102,12 @@ export class HttpInvoiceService implements IInvoiceService {
     ).then(this.toInvoice);
   }
 
-  downloadPdf(id: string): Promise<Blob> {
+  downloadPdf(id: string, locale: Locale): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`/api/invoices/${id}/pdf`, { responseType: 'blob' })
+      this.http.get(`/api/invoices/${id}/pdf`, {
+        params: new HttpParams().set('lang', locale),
+        responseType: 'blob',
+      })
     );
   }
 

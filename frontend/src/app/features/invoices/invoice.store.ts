@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
 
 interface InvoiceState {
@@ -25,7 +26,7 @@ export const InvoiceStore = signalStore(
     statusFilter: 'all',
     loading: false,
   }),
-  withMethods((store, service = inject(INVOICE_SERVICE)) => {
+  withMethods((store, service = inject(INVOICE_SERVICE), i18n = inject(I18nService)) => {
     async function load(): Promise<void> {
       patchState(store, { loading: true });
       const status = store.statusFilter();
@@ -59,7 +60,7 @@ export const InvoiceStore = signalStore(
     }
 
     async function print(id: string): Promise<void> {
-      const blob = await service.downloadPdf(id);
+      const blob = await service.downloadPdf(id, i18n.locale());
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
