@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
 import { Page } from '../../core/models/page.model';
+import { withSort } from '../../shared/sort';
 import { Customer } from './customer.model';
 
 interface PhoneDto {
@@ -43,7 +44,9 @@ export class HttpCustomerService implements ICustomerService {
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
     return firstValueFrom(
-      this.http.get<PageDto<CustomerDto>>('/api/customers', { params: httpParams })
+      this.http.get<PageDto<CustomerDto>>('/api/customers', {
+        params: withSort(httpParams, params.sort),
+      })
     ).then((dto) => ({
       items: dto.items.map(this.toCustomer),
       total: dto.total,

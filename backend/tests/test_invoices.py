@@ -352,3 +352,36 @@ def test_chf_uses_swiss_thousands_separator():
     assert _chf(1234.5) == "1'234.50"
     assert _chf(-13.5) == "-13.50"
     assert _chf(1234567.891, " ") == "1 234 567.89"
+
+
+@pytest.mark.anyio
+async def test_sort_invoices(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    async def create(quantity: int, discount: str = "0") -> str:
+        resp = await client.post(INVOICES, json={
+            "customer_id": customer_id, "discount_percent": discount,
+            "lines": [{**LINE, "quantity": quantity}],
+        }, headers=auth_headers)
+        return str(resp.json()["id"])
+
+    small = await create(1)                    # 50 + VAT = 54.05
+    big = await create(3, discount="50")       # 150 - 50 % + VAT = 81.08
+    medium = await create(2)                   # 100 + VAT = 108.10
+    await client.post(f"{INVOICES}/{medium}/issue", headers=auth_headers)
+    await client.post(f"{INVOICES}/{big}/issue", headers=auth_headers)
+    await client.post(f"{INVOICES}/{big}/pay", headers=auth_headers)
+
+    async def ids(query: str) -> list[str]:
+        resp = await client.get(f"{INVOICES}?{query}", headers=auth_headers)
+        assert resp.status_code == 200, resp.text
+        return [i["id"] for i in resp.json()["items"]]
+
+    assert await ids("sort=total") == [small, big, medium]
+    assert await ids("sort=total&order=desc") == [medium, big, small]
+    # Workflow order: draft, issued, paid.
+    assert await ids("sort=status") == [small, medium, big]
+    # The draft has no number yet: last in both directions.
+    assert (await ids("sort=number"))[-1] == small
+    assert (await ids("sort=number&order=desc"))[-1] == small
+    assert len(await ids("sort=customer")) == 3

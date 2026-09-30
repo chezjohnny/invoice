@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
 import { Page } from '../../core/models/page.model';
+import { withSort } from '../../shared/sort';
 import { Locale } from '../../core/i18n/translations';
 import { Invoice, InvoiceCreate, InvoiceLine, InvoiceUpdate } from './invoice.model';
 
@@ -56,7 +57,9 @@ export class HttpInvoiceService implements IInvoiceService {
       httpParams = httpParams.set('customer_id', params.customerId);
     }
     return firstValueFrom(
-      this.http.get<PageDto<InvoiceDto>>('/api/invoices', { params: httpParams })
+      this.http.get<PageDto<InvoiceDto>>('/api/invoices', {
+        params: withSort(httpParams, params.sort),
+      })
     ).then((dto) => ({
       items: dto.items.map(this.toInvoice),
       total: dto.total,

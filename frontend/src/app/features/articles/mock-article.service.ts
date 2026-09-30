@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
+import { sortItems } from '../../shared/sort';
 import { Article, ArticleListItem } from './article.model';
 
 const MOCK_ARTICLES: Article[] = [
@@ -44,15 +45,23 @@ export class MockArticleService implements IArticleService {
     const perPage = params.perPage ?? 20;
     const filtered = this.articles.filter(
       (a) => a.isArchived === (params.archived ?? false) && (!search || a.name.toLowerCase().includes(search))
-    ).reverse();
-    const total = filtered.length;
-    const items = filtered.slice((page - 1) * perPage, page * perPage).map((a) => {
+    ).reverse().map((a) => {
       const sales = MOCK_SALES[a.id] ?? {};
       const soldQuantity = params.salesYear != null
         ? sales[params.salesYear] ?? 0
         : Object.values(sales).reduce((sum, n) => sum + n, 0);
       return { ...a, soldQuantity };
     });
+    const sorted = sortItems(filtered, params.sort, {
+      name: (a) => a.name.toLowerCase(),
+      description: (a) => a.description.toLowerCase(),
+      unit_price: (a) => a.unitPrice,
+      vat_rate_override: (a) => a.vatRateOverride,
+      stock_quantity: (a) => a.stockQuantity,
+      sold_quantity: (a) => a.soldQuantity,
+    });
+    const total = sorted.length;
+    const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
     return Promise.resolve({ items, total, page, perPage, pages });
   }

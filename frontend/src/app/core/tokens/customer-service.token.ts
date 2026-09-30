@@ -1,10 +1,12 @@
 import { InjectionToken } from '@angular/core';
 import type { Customer } from '../../features/customers/customer.model';
 import type { Page } from '../models/page.model';
+import type { Sort } from '../../shared/sort';
 
 export interface CustomerListParams {
   search?: string;
   archived?: boolean;
+  sort?: Sort | null;
   page?: number;
   perPage?: number;
 }

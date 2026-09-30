@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
+import { Sort, nextSort } from '../../shared/sort';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
 
@@ -12,6 +13,8 @@ interface InvoiceState {
   pages: number;
   search: string;
   statusFilter: string;
+  /** null = the API default, most recent issue date first. */
+  sort: Sort | null;
   loading: boolean;
 }
 
@@ -24,6 +27,7 @@ export const InvoiceStore = signalStore(
     pages: 1,
     search: '',
     statusFilter: 'all',
+    sort: null,
     loading: false,
   }),
   withMethods((store, service = inject(INVOICE_SERVICE), i18n = inject(I18nService)) => {
@@ -34,6 +38,7 @@ export const InvoiceStore = signalStore(
         const result = await service.list({
           search: store.search(),
           status: status === 'all' ? '' : status,
+          sort: store.sort(),
           page: store.page(),
           perPage: store.perPage(),
         });
@@ -77,6 +82,10 @@ export const InvoiceStore = signalStore(
       },
       setPage(page: number): Promise<void> {
         patchState(store, { page });
+        return load();
+      },
+      toggleSort(key: string): Promise<void> {
+        patchState(store, { sort: nextSort(store.sort(), key), page: 1 });
         return load();
       },
       setStatusFilter(value: string): Promise<void> {

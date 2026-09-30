@@ -189,3 +189,33 @@ async def test_sold_quantity_counts_issued_and_paid_invoices_only(
 
     years = (await client.get(f"{ARTICLES}/sales-years", headers=auth_headers)).json()
     assert years == sorted({this_year, 2025}, reverse=True)
+
+
+@pytest.mark.anyio
+async def test_sort_articles(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    ids = {}
+    for name, price, vat in [("beta", "30.00", "0.026"), ("Alpha", "10.00", None), ("gamma", "20.00", "0.081")]:
+        resp = await client.post(ARTICLES, json={
+            **ARTICLE_PAYLOAD, "name": name, "unit_price": price, "vat_rate_override": vat,
+        }, headers=auth_headers)
+        ids[name] = resp.json()["id"]
+    await _invoice(client, auth_headers, customer_id, ids["gamma"], 5, "issue")
+    await _invoice(client, auth_headers, customer_id, ids["beta"], 2, "issue")
+
+    async def names(query: str) -> list[str]:
+        resp = await client.get(f"{ARTICLES}?{query}", headers=auth_headers)
+        assert resp.status_code == 200, resp.text
+        return [a["name"] for a in resp.json()["items"]]
+
+    # Case-insensitive, unlike SQLite's default binary collation.
+    assert await names("sort=name") == ["Alpha", "beta", "gamma"]
+    assert await names("sort=name&order=desc") == ["gamma", "beta", "Alpha"]
+    assert await names("sort=unit_price&order=desc") == ["beta", "gamma", "Alpha"]
+    assert await names("sort=sold_quantity&order=desc") == ["gamma", "beta", "Alpha"]
+    # No override stays last in both directions.
+    assert await names("sort=vat_rate_override") == ["beta", "gamma", "Alpha"]
+    assert await names("sort=vat_rate_override&order=desc") == ["gamma", "beta", "Alpha"]
+
+    assert (await client.get(f"{ARTICLES}?sort=tenant_id", headers=auth_headers)).status_code == 422

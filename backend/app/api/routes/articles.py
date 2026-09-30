@@ -1,13 +1,14 @@
 import uuid
 from datetime import date
 from math import ceil
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import ScalarSelect, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.api.sorting import SortColumn, SortOrder, sort_clauses
 from app.core.database import get_db
 from app.models.article import Article
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
@@ -20,12 +21,18 @@ router = APIRouter(prefix="/articles", tags=["articles"])
 # Same rule as the stock: an issued invoice consumes it, a cancelled one gives it back.
 _SOLD_STATUSES = (InvoiceStatus.ISSUED, InvoiceStatus.PAID)
 
+ArticleSort = Literal[
+    "name", "description", "unit_price", "vat_rate_override", "stock_quantity", "sold_quantity"
+]
+
 
 @router.get("", response_model=PagedResponse[ArticleListItem])
 async def list_articles(
     search: str = Query(""),
     archived: bool = Query(False),
     sales_year: int | None = Query(None, ge=1900, le=9999),
+    sort: ArticleSort | None = Query(None),
+    order: SortOrder = Query("asc"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -38,12 +45,26 @@ async def list_articles(
     if search:
         conditions.append(Article.name.ilike(f"%{search}%"))
 
+    sold = _sold_quantity(sales_year).label("sold_quantity")
+    if sort is None:
+        ordering: list[SortColumn] = [Article.created_at.desc(), Article.id.desc()]
+    else:
+        columns: dict[str, list[SortColumn]] = {
+            "name": [func.lower(Article.name)],
+            "description": [func.lower(Article.description)],
+            "unit_price": [Article.unit_price],
+            "vat_rate_override": [Article.vat_rate_override],
+            "stock_quantity": [Article.stock_quantity],
+            "sold_quantity": [sold],
+        }
+        ordering = [*sort_clauses(columns[sort], order), Article.id]
+
     total = (await db.scalar(select(func.count(Article.id)).where(*conditions))) or 0
     rows = (
         await db.execute(
-            select(Article, _sold_quantity(sales_year))
+            select(Article, sold)
             .where(*conditions)
-            .order_by(Article.created_at.desc(), Article.id.desc())
+            .order_by(*ordering)
             .offset((page - 1) * per_page)
             .limit(per_page)
         )

@@ -138,3 +138,27 @@ async def test_list_archived_and_restore_customer(client: AsyncClient, auth_head
     assert [x["id"] for x in active["items"]] == [customer_id]
     archived = (await client.get(f"{CUSTOMERS}?archived=true", headers=auth_headers)).json()
     assert archived["items"] == []
+
+
+@pytest.mark.anyio
+async def test_sort_customers(client: AsyncClient, auth_headers: dict[str, str]):
+    for first, last, email, city in [
+        ("Luc", "favre", "luc@test.ch", "Rolle"),
+        ("Anne", "Martin", None, "Aubonne"),
+        ("Jean", "Dupont", "jean@test.ch", "Morges"),
+    ]:
+        await client.post(CUSTOMERS, json={
+            "first_name": first, "last_name": last, "address_line1": "Rue 1",
+            "postal_code": "1110", "city": city, "country": "CH", "email": email, "phones": [],
+        }, headers=auth_headers)
+
+    async def last_names(query: str) -> list[str]:
+        resp = await client.get(f"{CUSTOMERS}?{query}", headers=auth_headers)
+        assert resp.status_code == 200, resp.text
+        return [c["last_name"] for c in resp.json()["items"]]
+
+    assert await last_names("sort=name") == ["Dupont", "favre", "Martin"]
+    assert await last_names("sort=city&order=desc") == ["favre", "Dupont", "Martin"]
+    # A customer without an email stays last in both directions.
+    assert await last_names("sort=email") == ["Dupont", "favre", "Martin"]
+    assert await last_names("sort=email&order=desc") == ["favre", "Dupont", "Martin"]

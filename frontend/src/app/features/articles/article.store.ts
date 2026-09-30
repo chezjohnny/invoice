@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
+import { Sort, nextSort } from '../../shared/sort';
 import { Article, ArticleListItem } from './article.model';
 
 interface ArticleState {
@@ -14,6 +15,8 @@ interface ArticleState {
   /** null = all time. */
   salesYear: number | null;
   salesYears: number[];
+  /** null = the API default, newest first. */
+  sort: Sort | null;
   loading: boolean;
 }
 
@@ -28,6 +31,7 @@ export const ArticleStore = signalStore(
     archived: false,
     salesYear: null,
     salesYears: [],
+    sort: null,
     loading: false,
   }),
   withMethods((store, service = inject(ARTICLE_SERVICE)) => {
@@ -37,6 +41,7 @@ export const ArticleStore = signalStore(
         search: store.search(),
         archived: store.archived(),
         salesYear: store.salesYear(),
+        sort: store.sort(),
         page: store.page(),
         perPage: store.perPage(),
       });
@@ -57,6 +62,10 @@ export const ArticleStore = signalStore(
       },
       setSalesYear(salesYear: number | null): Promise<void> {
         patchState(store, { salesYear });
+        return load();
+      },
+      toggleSort(key: string): Promise<void> {
+        patchState(store, { sort: nextSort(store.sort(), key), page: 1 });
         return load();
       },
       setPage(page: number): Promise<void> {

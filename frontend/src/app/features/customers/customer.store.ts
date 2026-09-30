@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
+import { Sort, nextSort } from '../../shared/sort';
 import { Customer } from './customer.model';
 
 interface CustomerState {
@@ -11,6 +12,8 @@ interface CustomerState {
   pages: number;
   search: string;
   archived: boolean;
+  /** null = the API default, newest first. */
+  sort: Sort | null;
   loading: boolean;
 }
 
@@ -23,6 +26,7 @@ export const CustomerStore = signalStore(
     pages: 1,
     search: '',
     archived: false,
+    sort: null,
     loading: false,
   }),
   withMethods((store, service = inject(CUSTOMER_SERVICE)) => {
@@ -31,6 +35,7 @@ export const CustomerStore = signalStore(
       const result = await service.list({
         search: store.search(),
         archived: store.archived(),
+        sort: store.sort(),
         page: store.page(),
         perPage: store.perPage(),
       });
@@ -44,6 +49,10 @@ export const CustomerStore = signalStore(
       },
       setArchived(archived: boolean): Promise<void> {
         patchState(store, { archived, page: 1 });
+        return load();
+      },
+      toggleSort(key: string): Promise<void> {
+        patchState(store, { sort: nextSort(store.sort(), key), page: 1 });
         return load();
       },
       setPage(page: number): Promise<void> {

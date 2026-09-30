@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
+import { Sort } from '../../shared/sort';
 import { Article, ArticleListItem } from './article.model';
 import { ArticleStore } from './article.store';
 
@@ -20,6 +21,7 @@ function makePage(items: Article[], soldQuantity = 0): Page<ArticleListItem> {
 describe('ArticleStore', () => {
   let store: InstanceType<typeof ArticleStore>;
   let articles: Article[];
+  let lastSort: Sort | null | undefined;
 
   beforeEach(() => {
     articles = structuredClone(ARTICLES);
@@ -30,11 +32,13 @@ describe('ArticleStore', () => {
         {
           provide: ARTICLE_SERVICE,
           useValue: {
-            list: async (params: { archived?: boolean; salesYear?: number | null }) =>
-              makePage(
+            list: async (params: { archived?: boolean; salesYear?: number | null; sort?: Sort | null }) => {
+              lastSort = params.sort;
+              return makePage(
                 articles.filter((a) => a.isArchived === (params.archived ?? false)),
                 params.salesYear === 2025 ? 4 : 9,
-              ),
+              );
+            },
             salesYears: async () => [2026, 2025],
             getAll: async () => [...articles],
             create: async (data: Omit<Article, 'id' | 'isArchived'>) => {
@@ -60,6 +64,17 @@ describe('ArticleStore', () => {
       ],
     });
     store = TestBed.inject(ArticleStore);
+  });
+
+  it('toggleSort sends the sort to the API and returns to the first page', async () => {
+    await store.setPage(3);
+    await store.toggleSort('sold_quantity');
+    expect(lastSort).toEqual({ key: 'sold_quantity', order: 'asc' });
+    expect(store.page()).toBe(1);
+    await store.toggleSort('sold_quantity');
+    expect(lastSort).toEqual({ key: 'sold_quantity', order: 'desc' });
+    await store.toggleSort('sold_quantity');
+    expect(lastSort).toBeNull();
   });
 
   it('loads the sales years and filters the sold quantity by year', async () => {

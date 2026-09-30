@@ -10,6 +10,7 @@ import { CustomerFormComponent } from '../customers/customer-form.component';
 import { InvoiceFormComponent } from './invoice-form.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
+import { SortHeaderComponent } from '../../shared/components/sort-header.component';
 
 const STATUS_TABS = ['all', 'draft', 'issued', 'paid', 'cancelled'] as const;
 
@@ -20,7 +21,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, SortHeaderComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -59,13 +60,13 @@ const STATUS_BADGE: Record<string, string> = {
             <table class="table table-zebra w-full">
               <thead>
                 <tr>
-                  <th class="hidden sm:table-cell">{{ t().invoices.number }}</th>
-                  <th>{{ t().invoices.customer }}</th>
-                  <th class="hidden md:table-cell">{{ t().invoices.date }}</th>
-                  <th class="hidden md:table-cell">{{ t().invoices.due }}</th>
-                  <th>{{ t().invoices.paymentDate }}</th>
-                  <th class="text-right">{{ t().invoices.total }}</th>
-                  <th>{{ t().invoices.status }}</th>
+                  <th class="hidden sm:table-cell" appSortHeader="number" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.number }}</th>
+                  <th appSortHeader="customer" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.customer }}</th>
+                  <th class="hidden md:table-cell" appSortHeader="date" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.date }}</th>
+                  <th class="hidden md:table-cell" appSortHeader="due" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.due }}</th>
+                  <th appSortHeader="paid_at" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.paymentDate }}</th>
+                  <th class="text-right" appSortHeader="total" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.total }}</th>
+                  <th appSortHeader="status" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.status }}</th>
                   <th></th>
                 </tr>
               </thead>

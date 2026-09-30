@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
 import { Page } from '../../core/models/page.model';
+import { sortItems } from '../../shared/sort';
 import { Customer } from './customer.model';
 
 const INITIAL: Customer[] = [
@@ -54,8 +55,13 @@ export class MockCustomerService implements ICustomerService {
         (c.email?.toLowerCase().includes(search) ?? false)
       );
     }).reverse();
-    const total = filtered.length;
-    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const sorted = sortItems(filtered, params.sort, {
+      name: (c) => `${c.lastName} ${c.firstName}`.toLowerCase(),
+      email: (c) => c.email?.toLowerCase() ?? null,
+      city: (c) => c.city.toLowerCase(),
+    });
+    const total = sorted.length;
+    const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
     return Promise.resolve({ items, total, page, perPage, pages });
   }

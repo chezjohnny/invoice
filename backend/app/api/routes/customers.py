@@ -2,13 +2,14 @@ import csv
 import io
 import uuid
 from math import ceil
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.api.sorting import SortColumn, SortOrder, sort_clauses
 from app.core.database import get_db
 from app.models.customer import Customer
 from app.models.tenant import User
@@ -17,16 +18,30 @@ from app.schemas.customer import CustomerCreate, CustomerResponse, CustomerUpdat
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
+CustomerSort = Literal["name", "email", "city"]
+
 
 @router.get("", response_model=PagedResponse[CustomerResponse])
 async def list_customers(
     search: str = Query(""),
     archived: bool = Query(False),
+    sort: CustomerSort | None = Query(None),
+    order: SortOrder = Query("asc"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
+    if sort is None:
+        ordering: list[SortColumn] = [Customer.created_at.desc(), Customer.id.desc()]
+    else:
+        columns: dict[str, list[SortColumn]] = {
+            "name": [func.lower(Customer.last_name), func.lower(Customer.first_name)],
+            "email": [func.lower(Customer.email)],
+            "city": [func.lower(Customer.city), Customer.postal_code],
+        }
+        ordering = [*sort_clauses(columns[sort], order), Customer.id]
+
     conditions = [
         Customer.tenant_id == current_user.tenant_id,
         Customer.is_archived.is_(archived),
@@ -46,7 +61,7 @@ async def list_customers(
             await db.execute(
                 select(Customer)
                 .where(*conditions)
-                .order_by(Customer.created_at.desc(), Customer.id.desc())
+                .order_by(*ordering)
                 .offset((page - 1) * per_page)
                 .limit(per_page)
             )

@@ -1,14 +1,15 @@
 import uuid
 from datetime import date, timedelta
 from math import ceil
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
+from app.api.sorting import SortColumn, SortOrder, sort_clauses
 from app.core.database import get_db
 from app.models.article import Article
 from app.models.customer import Customer
@@ -25,12 +26,16 @@ from app.services.pdf import Lang, generate_invoice_pdf
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
+InvoiceSort = Literal["number", "customer", "date", "due", "paid_at", "total", "status"]
+
 
 @router.get("", response_model=PagedResponse[InvoiceResponse])
 async def list_invoices(
     search: str = Query(""),
     status_filter: str = Query("", alias="status"),
     customer_id: uuid.UUID | None = Query(None),
+    sort: InvoiceSort | None = Query(None),
+    order: SortOrder = Query("asc"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -49,18 +54,35 @@ async def list_invoices(
     if search:
         conditions.append(Invoice.invoice_number.ilike(f"%{search}%"))
 
+    query = select(Invoice).where(*conditions)
+    if sort is None:
+        ordering: list[SortColumn] = [
+            func.coalesce(Invoice.issue_date, func.date(Invoice.created_at)).desc(),
+            Invoice.created_at.desc(),
+            Invoice.id.desc(),
+        ]
+    else:
+        if sort == "customer":
+            query = query.join(Customer, Customer.id == Invoice.customer_id)
+        columns: dict[str, list[SortColumn]] = {
+            "number": [Invoice.invoice_number],
+            "customer": [func.lower(Customer.last_name), func.lower(Customer.first_name)],
+            "date": [Invoice.issue_date],
+            "due": [Invoice.due_date],
+            "paid_at": [Invoice.paid_at],
+            "total": [_total_due()],
+            # Workflow order rather than alphabetical.
+            "status": [case(*((Invoice.status == st, rank) for st, rank in _STATUS_RANK.items()))],
+        }
+        ordering = [*sort_clauses(columns[sort], order), Invoice.id]
+
     total = (await db.scalar(select(func.count(Invoice.id)).where(*conditions))) or 0
     items = list(
         (
             await db.execute(
-                select(Invoice)
-                .where(*conditions)
+                query
                 .options(selectinload(Invoice.lines))
-                .order_by(
-                    func.coalesce(Invoice.issue_date, func.date(Invoice.created_at)).desc(),
-                    Invoice.created_at.desc(),
-                    Invoice.id.desc(),
-                )
+                .order_by(*ordering)
                 .offset((page - 1) * per_page)
                 .limit(per_page)
             )
@@ -273,6 +295,35 @@ async def download_pdf(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
+    )
+
+
+# Compared through the column (`status == ...`) so the Enum type binds the stored
+# name; a bare `case(value=...)` mapping would bind the raw value and never match.
+_STATUS_RANK = {
+    InvoiceStatus.DRAFT: 0,
+    InvoiceStatus.ISSUED: 1,
+    InvoiceStatus.PAID: 2,
+    InvoiceStatus.CANCELLED: 3,
+}
+
+
+def _total_due() -> Any:
+    """SQL mirror of the amount due: lines after discount, plus their VAT."""
+    return (
+        select(
+            func.coalesce(
+                func.sum(
+                    InvoiceLine.quantity
+                    * InvoiceLine.unit_price_snapshot
+                    * (1 + func.coalesce(InvoiceLine.vat_rate_snapshot, 0))
+                ),
+                0,
+            )
+            * (1 - Invoice.discount_percent / 100)
+        )
+        .where(InvoiceLine.invoice_id == Invoice.id)
+        .scalar_subquery()
     )
 
 

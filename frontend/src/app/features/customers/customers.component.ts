@@ -4,11 +4,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer } from './customer.model';
 import { CustomerFormComponent } from './customer-form.component';
 import { CustomerStore } from './customer.store';
+import { SortHeaderComponent } from '../../shared/components/sort-header.component';
 
 @Component({
   selector: 'app-customers',
   providers: [CustomerStore],
-  imports: [CustomerFormComponent, RouterLink],
+  imports: [CustomerFormComponent, RouterLink, SortHeaderComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -48,9 +49,9 @@ import { CustomerStore } from './customer.store';
             <table class="table table-zebra w-full">
               <thead>
                 <tr>
-                  <th>{{ t().customers.name }}</th>
-                  <th class="hidden sm:table-cell">{{ t().customers.email }}</th>
-                  <th class="hidden md:table-cell">{{ t().customers.city }}</th>
+                  <th appSortHeader="name" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().customers.name }}</th>
+                  <th class="hidden sm:table-cell" appSortHeader="email" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().customers.email }}</th>
+                  <th class="hidden md:table-cell" appSortHeader="city" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().customers.city }}</th>
                   <th></th>
                 </tr>
               </thead>

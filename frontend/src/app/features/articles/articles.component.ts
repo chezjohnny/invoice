@@ -4,11 +4,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { Article } from './article.model';
 import { ArticleFormComponent } from './article-form.component';
 import { ArticleStore } from './article.store';
+import { SortHeaderComponent } from '../../shared/components/sort-header.component';
 
 @Component({
   selector: 'app-articles',
   providers: [ArticleStore],
-  imports: [CurrencyPipe, ArticleFormComponent],
+  imports: [CurrencyPipe, ArticleFormComponent, SortHeaderComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -52,12 +53,12 @@ import { ArticleStore } from './article.store';
             <table class="table table-zebra w-full">
               <thead>
                 <tr>
-                  <th>{{ t().articles.name }}</th>
-                  <th class="hidden md:table-cell">{{ t().articles.description }}</th>
-                  <th class="text-right">{{ t().articles.unitPrice }}</th>
-                  <th class="hidden sm:table-cell">{{ t().articles.vatOverride }}</th>
-                  <th class="text-right">{{ t().articles.stock }}</th>
-                  <th class="text-right">
+                  <th appSortHeader="name" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().articles.name }}</th>
+                  <th class="hidden md:table-cell" appSortHeader="description" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().articles.description }}</th>
+                  <th class="text-right" appSortHeader="unit_price" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().articles.unitPrice }}</th>
+                  <th class="hidden sm:table-cell" appSortHeader="vat_rate_override" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().articles.vatOverride }}</th>
+                  <th class="text-right" appSortHeader="stock_quantity" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().articles.stock }}</th>
+                  <th class="text-right" appSortHeader="sold_quantity" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">
                     {{ t().articles.sold }}
                     @if (store.salesYear() !== null) {
                       <span class="font-normal opacity-60">{{ store.salesYear() }}</span>

@@ -2,11 +2,13 @@ import { InjectionToken } from '@angular/core';
 import type { Invoice, InvoiceCreate, InvoiceUpdate } from '../../features/invoices/invoice.model';
 import type { Page } from '../models/page.model';
 import type { Locale } from '../i18n/translations';
+import type { Sort } from '../../shared/sort';
 
 export interface InvoiceListParams {
   search?: string;
   status?: string;
   customerId?: string;
+  sort?: Sort | null;
   page?: number;
   perPage?: number;
 }

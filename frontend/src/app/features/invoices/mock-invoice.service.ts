@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
 import { Page } from '../../core/models/page.model';
+import { sortItems } from '../../shared/sort';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
 
 @Injectable()
@@ -25,8 +26,20 @@ export class MockInvoiceService implements IInvoiceService {
         i.invoiceNumber?.toLowerCase().includes(search) ?? false
       );
     }
-    const total = filtered.length;
-    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const statusRank = ['draft', 'issued', 'paid', 'cancelled'];
+    const sorted = sortItems(filtered, params.sort, {
+      number: (i) => i.invoiceNumber,
+      customer: (i) => i.customerName.toLowerCase(),
+      date: (i) => i.issueDate,
+      due: (i) => i.dueDate,
+      paid_at: (i) => i.paidAt,
+      total: (i) => i.lines.reduce(
+        (sum, l) => sum + l.quantity * l.unitPriceSnapshot * (1 + (l.vatRateSnapshot ?? 0)), 0,
+      ) * (1 - i.discountPercent / 100),
+      status: (i) => statusRank.indexOf(i.status),
+    });
+    const total = sorted.length;
+    const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
     return Promise.resolve({ items, total, page, perPage, pages });
   }

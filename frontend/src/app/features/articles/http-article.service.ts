@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
+import { withSort } from '../../shared/sort';
 import { Article, ArticleListItem } from './article.model';
 
 interface ArticleDto {
@@ -42,7 +43,9 @@ export class HttpArticleService implements IArticleService {
       httpParams = httpParams.set('sales_year', String(params.salesYear));
     }
     return firstValueFrom(
-      this.http.get<PageDto<ArticleListItemDto>>('/api/articles', { params: httpParams })
+      this.http.get<PageDto<ArticleListItemDto>>('/api/articles', {
+        params: withSort(httpParams, params.sort),
+      })
     ).then((dto) => ({
       items: dto.items.map((item) => ({ ...this.toArticle(item), soldQuantity: item.sold_quantity })),
       total: dto.total,

@@ -1,11 +1,13 @@
 import { InjectionToken } from '@angular/core';
 import type { Article, ArticleListItem } from '../../features/articles/article.model';
 import type { Page } from '../models/page.model';
+import type { Sort } from '../../shared/sort';
 
 export interface ArticleListParams {
   search?: string;
   archived?: boolean;
   salesYear?: number | null;
+  sort?: Sort | null;
   page?: number;
   perPage?: number;
 }
