@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
-import { Article } from './article.model';
+import { Article, ArticleListItem } from './article.model';
 
 const MOCK_ARTICLES: Article[] = [
   {
@@ -26,11 +26,19 @@ const MOCK_ARTICLES: Article[] = [
   },
 ];
 
+// Quantity sold per article id and year.
+const MOCK_SALES: Record<string, Record<number, number>> = {
+  '1': { 2026: 8, 2025: 14 },
+  '2': { 2026: 36, 2025: 52 },
+  '3': { 2026: 12 },
+  '5': { 2025: 60 },
+};
+
 @Injectable()
 export class MockArticleService implements IArticleService {
   private articles = structuredClone(MOCK_ARTICLES);
 
-  list(params: ArticleListParams): Promise<Page<Article>> {
+  list(params: ArticleListParams): Promise<Page<ArticleListItem>> {
     const search = (params.search ?? '').toLowerCase();
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
@@ -38,9 +46,19 @@ export class MockArticleService implements IArticleService {
       (a) => a.isArchived === (params.archived ?? false) && (!search || a.name.toLowerCase().includes(search))
     ).reverse();
     const total = filtered.length;
-    const items = filtered.slice((page - 1) * perPage, page * perPage);
+    const items = filtered.slice((page - 1) * perPage, page * perPage).map((a) => {
+      const sales = MOCK_SALES[a.id] ?? {};
+      const soldQuantity = params.salesYear != null
+        ? sales[params.salesYear] ?? 0
+        : Object.values(sales).reduce((sum, n) => sum + n, 0);
+      return { ...a, soldQuantity };
+    });
     const pages = Math.max(1, Math.ceil(total / perPage));
     return Promise.resolve({ items, total, page, perPage, pages });
+  }
+
+  salesYears(): Promise<number[]> {
+    return Promise.resolve([2026, 2025]);
   }
 
   getAll(): Promise<Article[]> {

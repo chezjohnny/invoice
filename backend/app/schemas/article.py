@@ -26,3 +26,8 @@ class ArticleResponse(ArticleBase):
     is_archived: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ArticleListItem(ArticleResponse):
+    # Computed on read from issued and paid invoice lines, never stored.
+    sold_quantity: int

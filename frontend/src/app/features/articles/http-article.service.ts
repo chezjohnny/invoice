@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
-import { Article } from './article.model';
+import { Article, ArticleListItem } from './article.model';
 
 interface ArticleDto {
   id: string;
@@ -14,6 +14,10 @@ interface ArticleDto {
   vat_rate_override: string | null;
   stock_quantity: number;
   is_archived: boolean;
+}
+
+interface ArticleListItemDto extends ArticleDto {
+  sold_quantity: number;
 }
 
 interface PageDto<T> {
@@ -28,21 +32,28 @@ interface PageDto<T> {
 export class HttpArticleService implements IArticleService {
   private readonly http = inject(HttpClient);
 
-  list(params: ArticleListParams): Promise<Page<Article>> {
-    const httpParams = new HttpParams()
+  list(params: ArticleListParams): Promise<Page<ArticleListItem>> {
+    let httpParams = new HttpParams()
       .set('search', params.search ?? '')
       .set('archived', String(params.archived ?? false))
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
+    if (params.salesYear != null) {
+      httpParams = httpParams.set('sales_year', String(params.salesYear));
+    }
     return firstValueFrom(
-      this.http.get<PageDto<ArticleDto>>('/api/articles', { params: httpParams })
+      this.http.get<PageDto<ArticleListItemDto>>('/api/articles', { params: httpParams })
     ).then((dto) => ({
-      items: dto.items.map(this.toArticle),
+      items: dto.items.map((item) => ({ ...this.toArticle(item), soldQuantity: item.sold_quantity })),
       total: dto.total,
       page: dto.page,
       perPage: dto.per_page,
       pages: dto.pages,
     }));
+  }
+
+  salesYears(): Promise<number[]> {
+    return firstValueFrom(this.http.get<number[]>('/api/articles/sales-years'));
   }
 
   getAll(): Promise<Article[]> {

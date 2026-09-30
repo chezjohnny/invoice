@@ -7,3 +7,8 @@ export interface Article {
   stockQuantity: number;
   isArchived: boolean;
 }
+
+export interface ArticleListItem extends Article {
+  /** Sold on issued and paid invoices, over `salesYear` or all time. */
+  soldQuantity: number;
+}

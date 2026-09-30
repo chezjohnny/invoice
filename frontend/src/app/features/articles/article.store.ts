@@ -1,16 +1,19 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
-import { Article } from './article.model';
+import { Article, ArticleListItem } from './article.model';
 
 interface ArticleState {
-  items: Article[];
+  items: ArticleListItem[];
   total: number;
   page: number;
   perPage: number;
   pages: number;
   search: string;
   archived: boolean;
+  /** null = all time. */
+  salesYear: number | null;
+  salesYears: number[];
   loading: boolean;
 }
 
@@ -23,6 +26,8 @@ export const ArticleStore = signalStore(
     pages: 1,
     search: '',
     archived: false,
+    salesYear: null,
+    salesYears: [],
     loading: false,
   }),
   withMethods((store, service = inject(ARTICLE_SERVICE)) => {
@@ -31,6 +36,7 @@ export const ArticleStore = signalStore(
       const result = await service.list({
         search: store.search(),
         archived: store.archived(),
+        salesYear: store.salesYear(),
         page: store.page(),
         perPage: store.perPage(),
       });
@@ -38,12 +44,19 @@ export const ArticleStore = signalStore(
     }
     return {
       load,
+      async loadSalesYears(): Promise<void> {
+        patchState(store, { salesYears: await service.salesYears() });
+      },
       setSearch(search: string): Promise<void> {
         patchState(store, { search, page: 1 });
         return load();
       },
       setArchived(archived: boolean): Promise<void> {
         patchState(store, { archived, page: 1 });
+        return load();
+      },
+      setSalesYear(salesYear: number | null): Promise<void> {
+        patchState(store, { salesYear });
         return load();
       },
       setPage(page: number): Promise<void> {
@@ -72,5 +85,5 @@ export const ArticleStore = signalStore(
       },
     };
   }),
-  withHooks({ onInit(store) { store.load(); } })
+  withHooks({ onInit(store) { store.load(); store.loadSalesYears(); } })
 );

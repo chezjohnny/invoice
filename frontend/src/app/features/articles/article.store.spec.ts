@@ -2,7 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
-import { Article } from './article.model';
+import { Article, ArticleListItem } from './article.model';
 import { ArticleStore } from './article.store';
 
 const ARTICLES: Article[] = [
@@ -10,8 +10,11 @@ const ARTICLES: Article[] = [
   { id: '2', name: 'Chardonnay', description: '', unitPrice: 30, vatRateOverride: null, stockQuantity: 5, isArchived: false },
 ];
 
-function makePage(items: Article[]): Page<Article> {
-  return { items, total: items.length, page: 1, perPage: 20, pages: 1 };
+function makePage(items: Article[], soldQuantity = 0): Page<ArticleListItem> {
+  return {
+    items: items.map((a) => ({ ...a, soldQuantity })),
+    total: items.length, page: 1, perPage: 20, pages: 1,
+  };
 }
 
 describe('ArticleStore', () => {
@@ -27,8 +30,12 @@ describe('ArticleStore', () => {
         {
           provide: ARTICLE_SERVICE,
           useValue: {
-            list: async (params: { archived?: boolean }) =>
-              makePage(articles.filter((a) => a.isArchived === (params.archived ?? false))),
+            list: async (params: { archived?: boolean; salesYear?: number | null }) =>
+              makePage(
+                articles.filter((a) => a.isArchived === (params.archived ?? false)),
+                params.salesYear === 2025 ? 4 : 9,
+              ),
+            salesYears: async () => [2026, 2025],
             getAll: async () => [...articles],
             create: async (data: Omit<Article, 'id' | 'isArchived'>) => {
               const a = { ...data, id: 'new-id', isArchived: false };
@@ -53,6 +60,17 @@ describe('ArticleStore', () => {
       ],
     });
     store = TestBed.inject(ArticleStore);
+  });
+
+  it('loads the sales years and filters the sold quantity by year', async () => {
+    await store.loadSalesYears();
+    expect(store.salesYears()).toEqual([2026, 2025]);
+    await store.load();
+    expect(store.items()[0].soldQuantity).toBe(9);
+    await store.setSalesYear(2025);
+    expect(store.items()[0].soldQuantity).toBe(4);
+    await store.setSalesYear(null);
+    expect(store.items()[0].soldQuantity).toBe(9);
   });
 
   it('loads articles on init', async () => {

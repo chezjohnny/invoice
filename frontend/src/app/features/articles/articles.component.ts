@@ -31,6 +31,15 @@ import { ArticleStore } from './article.store';
           [checked]="store.archived()" (change)="onToggleArchived($event)" />
         {{ t().common.showArchived }}
       </label>
+      <label class="select select-sm w-auto">
+        <span class="label">{{ t().articles.salesYear }}</span>
+        <select (change)="onSalesYear($event)">
+          <option value="" [selected]="store.salesYear() === null">{{ t().articles.allYears }}</option>
+          @for (year of store.salesYears(); track year) {
+            <option [value]="year" [selected]="store.salesYear() === year">{{ year }}</option>
+          }
+        </select>
+      </label>
       </div>
 
       @if (store.loading()) {
@@ -48,6 +57,12 @@ import { ArticleStore } from './article.store';
                   <th class="text-right">{{ t().articles.unitPrice }}</th>
                   <th class="hidden sm:table-cell">{{ t().articles.vatOverride }}</th>
                   <th class="text-right">{{ t().articles.stock }}</th>
+                  <th class="text-right">
+                    {{ t().articles.sold }}
+                    @if (store.salesYear() !== null) {
+                      <span class="font-normal opacity-60">{{ store.salesYear() }}</span>
+                    }
+                  </th>
                   <th></th>
                 </tr>
               </thead>
@@ -82,6 +97,10 @@ import { ArticleStore } from './article.store';
                         <span class="badge badge-warning badge-xs ml-1" [title]="t().articles.outOfStock">0</span>
                       }
                     </td>
+                    <td class="text-right tabular-nums"
+                        [class.text-base-content/40]="article.soldQuantity === 0">
+                      {{ article.soldQuantity }}
+                    </td>
                     <td>
                       <div class="flex gap-1 justify-end">
                         @if (article.isArchived) {
@@ -101,7 +120,7 @@ import { ArticleStore } from './article.store';
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="6" class="text-center text-base-content/40 py-10">
+                    <td colspan="7" class="text-center text-base-content/40 py-10">
                       {{ t().articles.noResults }}
                     </td>
                   </tr>
@@ -164,6 +183,11 @@ export class ArticlesComponent {
     const value = (event.target as HTMLInputElement).value;
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
+  }
+
+  onSalesYear(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.store.setSalesYear(value ? Number(value) : null);
   }
 
   onToggleArchived(event: Event): void {

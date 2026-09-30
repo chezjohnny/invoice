@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 import pytest
@@ -7,6 +7,7 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.article import Article
+from app.models.invoice import Invoice
 
 AUTH = "/auth"
 ARTICLES = "/articles"
@@ -136,3 +137,55 @@ async def test_list_archived_and_restore_article(client: AsyncClient, auth_heade
     assert [x["id"] for x in active["items"]] == [article_id]
     archived = (await client.get(f"{ARTICLES}?archived=true", headers=auth_headers)).json()
     assert archived["items"] == []
+
+
+async def _invoice(
+    client: AsyncClient, headers: dict[str, str], customer_id: str, article_id: str,
+    quantity: int, action: str | None = None,
+) -> str:
+    resp = await client.post("/invoices", json={
+        "customer_id": customer_id,
+        "lines": [{
+            "article_id": article_id, "description_snapshot": "Pinot Noir",
+            "quantity": quantity, "unit_price_snapshot": "28.00", "vat_rate_snapshot": None,
+        }],
+    }, headers=headers)
+    invoice_id = str(resp.json()["id"])
+    for step in {"issue": ["issue"], "pay": ["issue", "pay"], "cancel": ["issue", "cancel"]}.get(
+        action or "", []
+    ):
+        assert (await client.post(f"/invoices/{invoice_id}/{step}", headers=headers)).status_code == 200
+    return invoice_id
+
+
+@pytest.mark.anyio
+async def test_sold_quantity_counts_issued_and_paid_invoices_only(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str,
+    complete_profile: None, db_session: AsyncSession,
+):
+    article_id = (await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)).json()["id"]
+    unsold_id = (await client.post(
+        ARTICLES, json={**ARTICLE_PAYLOAD, "name": "Chasselas"}, headers=auth_headers
+    )).json()["id"]
+    await _invoice(client, auth_headers, customer_id, article_id, 3, "issue")
+    last_year = await _invoice(client, auth_headers, customer_id, article_id, 4, "pay")
+    await _invoice(client, auth_headers, customer_id, article_id, 5)            # draft
+    await _invoice(client, auth_headers, customer_id, article_id, 7, "cancel")
+    await db_session.execute(
+        update(Invoice).where(Invoice.id == UUID(last_year)).values(issue_date=date(2025, 6, 1))
+    )
+    await db_session.commit()
+    this_year = date.today().year
+
+    def sold(data: dict) -> dict[str, int]:
+        return {a["id"]: a["sold_quantity"] for a in data["items"]}
+
+    all_time = (await client.get(ARTICLES, headers=auth_headers)).json()
+    assert sold(all_time) == {article_id: 7, unsold_id: 0}
+    in_2025 = (await client.get(f"{ARTICLES}?sales_year=2025", headers=auth_headers)).json()
+    assert sold(in_2025) == {article_id: 4, unsold_id: 0}
+    current = (await client.get(f"{ARTICLES}?sales_year={this_year}", headers=auth_headers)).json()
+    assert sold(current) == {article_id: 3, unsold_id: 0}
+
+    years = (await client.get(f"{ARTICLES}/sales-years", headers=auth_headers)).json()
+    assert years == sorted({this_year, 2025}, reverse=True)

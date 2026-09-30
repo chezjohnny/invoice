@@ -57,7 +57,7 @@ class InvoiceLine(UUIDBase):
         ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False
     )
     article_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("articles.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("articles.id", ondelete="SET NULL"), nullable=True, index=True
     )
     description_snapshot: Mapped[str] = mapped_column(String(500), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
