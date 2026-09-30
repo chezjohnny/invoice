@@ -13,6 +13,7 @@ interface CompanyProfileDto {
   city: string;
   country: string;
   iban: string | null;
+  twint_phone: string | null;
   vat_number: string | null;
   default_vat_rate: string | null;
   invoice_prefix: string;
@@ -49,6 +50,7 @@ export class HttpTenantService implements ITenantService {
       city: dto.city,
       country: dto.country,
       iban: dto.iban,
+      twintPhone: dto.twint_phone,
       vatNumber: dto.vat_number,
       defaultVatRate: dto.default_vat_rate != null ? parseFloat(dto.default_vat_rate) : null,
       invoicePrefix: dto.invoice_prefix,
@@ -67,6 +69,7 @@ export class HttpTenantService implements ITenantService {
       city: data.city,
       country: data.country,
       iban: data.iban,
+      twint_phone: data.twintPhone,
       vat_number: data.vatNumber,
       default_vat_rate: data.defaultVatRate,
       invoice_prefix: data.invoicePrefix,

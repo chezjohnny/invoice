@@ -1,3 +1,5 @@
+import re
+import zlib
 from datetime import date, datetime
 from types import SimpleNamespace
 from uuid import UUID
@@ -273,6 +275,36 @@ async def test_download_pdf(
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert len(resp.content) > 1000
+
+
+def _pdf_text(content: bytes) -> str:
+    streams = re.findall(rb"stream\r?\n(.*?)\r?\nendstream", content, re.DOTALL)
+    return b"".join(zlib.decompress(s) for s in streams if s[:1] == b"x").decode("latin-1")
+
+
+@pytest.mark.anyio
+async def test_pdf_shows_twint_payment_only_when_configured(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    create = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    invoice_id = create.json()["id"]
+    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    pdf_url = f"{INVOICES}/{invoice_id}/pdf"
+
+    without = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "TWINT" not in without
+
+    profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
+    writable = {k: v for k, v in profile.items()
+                if k not in ("id", "tenant_id", "invoice_next_number", "is_complete")}
+    await client.put(
+        "/tenant/profile", json={**writable, "twint_phone": "079 123 45 67"}, headers=auth_headers
+    )
+    text = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "Pay with TWINT" in text
+    assert "079 123 45 67" in text
 
 
 @pytest.mark.anyio

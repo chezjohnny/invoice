@@ -54,6 +54,7 @@ invoice/
 - **InvoiceLines are immutable** once `status = issued`
 - **VAT**: `default_vat_rate` on TenantProfile (nullable = not VAT-registered), overridable per article
 - **IBAN** required on TenantProfile for Swiss QR-bill; validated (CH/LI, mod-97) in `app/schemas/tenant.py` and mirrored client-side in `features/settings/iban.ts`
+- **TWINT**: optional `twint_phone` on TenantProfile (Swiss mobile, stored E.164, validated in `app/schemas/tenant.py` and `features/settings/twint.ts`); when set, the PDF prints a "Pay with TWINT" block (amount + invoice number as message). It is not part of `is_complete`
 - **Profile completeness**: `TenantProfile.is_complete` (address + IBAN) is the single source of truth — it gates `POST /invoices/{id}/issue` (422) and drives the shell warning banner
 - **`PUT /tenant/profile`** replaces the whole profile: a partial payload is rejected (422) instead of being completed with schema defaults, which would silently wipe the omitted fields
 - **`invoice_next_number`** is never client-writable: it is absent from `TenantProfileUpdate`, the counter moves solely on issue

@@ -2,6 +2,7 @@ import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { CompanyStore } from './company.store';
 import { isValidQrBillIban, normalizeIban } from './iban';
+import { isValidTwintPhone, normalizeTwintPhone } from './twint';
 
 @Component({
   selector: 'app-settings',
@@ -88,6 +89,17 @@ import { isValidQrBillIban, normalizeIban } from './iban';
                   <p class="fieldset-label mt-1">{{ t().settings.ibanHint }}</p>
                 }
               </div>
+              <div class="sm:w-64">
+                <label class="fieldset-label">{{ t().settings.twintLabel }}</label>
+                <input class="input w-full font-mono" [class.input-error]="submitted() && errors().twintPhone"
+                  type="tel" placeholder="079 123 45 67"
+                  [value]="twintPhone()" (input)="twintPhone.set(asStr($event))" />
+                @if (submitted() && errors().twintPhone) {
+                  <p class="fieldset-label text-error mt-1">{{ errors().twintPhone }}</p>
+                } @else {
+                  <p class="fieldset-label mt-1">{{ t().settings.twintHint }}</p>
+                }
+              </div>
               <div class="sm:w-48">
                 <label class="fieldset-label">{{ t().settings.vatRateLabel }}</label>
                 <input class="input w-full" [class.input-error]="submitted() && errors().vatRate"
@@ -162,6 +174,7 @@ export class SettingsComponent {
   protected readonly city = linkedSignal(() => this.store.profile()?.city ?? '');
   protected readonly country = linkedSignal(() => this.store.profile()?.country ?? 'CH');
   protected readonly iban = linkedSignal(() => this.store.profile()?.iban ?? '');
+  protected readonly twintPhone = linkedSignal(() => this.store.profile()?.twintPhone ?? '');
   protected readonly vatNumber = linkedSignal(() => this.store.profile()?.vatNumber ?? '');
   protected readonly vatRate = linkedSignal(() => {
     const rate = this.store.profile()?.defaultVatRate;
@@ -188,6 +201,11 @@ export class SettingsComponent {
       const value = normalizeIban(this.iban());
       if (value === '') return null;
       return isValidQrBillIban(value) ? null : this.t().settings.invalidIban;
+    })(),
+    twintPhone: (() => {
+      const value = normalizeTwintPhone(this.twintPhone());
+      if (value === '') return null;
+      return isValidTwintPhone(value) ? null : this.t().settings.invalidTwint;
     })(),
     vatRate: (() => {
       const value = this.vatRate().trim();
@@ -227,6 +245,7 @@ export class SettingsComponent {
     this.submitted.set(true);
     if (!this.isValid()) return;
     const iban = normalizeIban(this.iban());
+    const twintPhone = normalizeTwintPhone(this.twintPhone());
     const vatRate = this.vatRate().trim();
     const addressLine2 = this.addressLine2().trim();
     const vatNumber = this.vatNumber().trim();
@@ -238,6 +257,7 @@ export class SettingsComponent {
       city: this.city().trim(),
       country: this.country().trim().toUpperCase() || 'CH',
       iban: iban !== '' ? iban : null,
+      twintPhone: twintPhone !== '' ? twintPhone : null,
       vatNumber: vatNumber !== '' ? vatNumber : null,
       defaultVatRate: vatRate !== '' ? parseFloat(vatRate) / 100 : null,
       invoicePrefix: this.invoicePrefix().trim(),

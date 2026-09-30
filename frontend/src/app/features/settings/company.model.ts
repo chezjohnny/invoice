@@ -7,6 +7,7 @@ export interface CompanyProfile {
   city: string;
   country: string;
   iban: string | null;
+  twintPhone: string | null;
   vatNumber: string | null;
   defaultVatRate: number | null;
   invoicePrefix: string;

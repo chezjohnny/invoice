@@ -30,6 +30,8 @@ class TenantProfile(UUIDBase):
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     country: Mapped[str] = mapped_column(String(2), nullable=False, default="CH")
     iban: Mapped[str | None] = mapped_column(String(34))
+    # E.164 Swiss mobile number the customer can send the amount to with TWINT.
+    twint_phone: Mapped[str | None] = mapped_column(String(12))
     vat_number: Mapped[str | None] = mapped_column(String(20))
     logo_url: Mapped[str | None] = mapped_column(String(500))
     # null = non-assujetti TVA (CA < CHF 100k)

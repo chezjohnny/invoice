@@ -16,6 +16,7 @@ VALID = {
     "city": "Rolle",
     "country": "CH",
     "iban": "CH93 0076 2011 6238 5295 7",
+    "twint_phone": "079 123 45 67",
     "vat_number": "CHE-123.456.789 TVA",
     "default_vat_rate": "0.081",
     "invoice_prefix": "CDC",
@@ -44,11 +45,24 @@ async def test_update_profile(client: AsyncClient, auth_headers: dict[str, str])
     data = resp.json()
     assert data["is_complete"] is True
     assert data["iban"] == "CH9300762011623852957"  # normalised
+    assert data["twint_phone"] == "+41791234567"
     assert data["default_vat_rate"] == "0.0810"
     assert data["invoice_prefix"] == "CDC"
 
     reread = await client.get(PROFILE, headers=auth_headers)
     assert reread.json() == data
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "phone", ["0791234567", "+41 79 123 45 67", "0041 79 123 45 67", "079/123.45.67"]
+)
+async def test_twint_phone_is_normalised(
+    client: AsyncClient, auth_headers: dict[str, str], phone: str
+):
+    resp = await client.put(PROFILE, json={**VALID, "twint_phone": phone}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["twint_phone"] == "+41791234567"
 
 
 @pytest.mark.anyio
@@ -67,11 +81,12 @@ async def test_blank_optional_fields_are_stored_as_null(
 ):
     resp = await client.put(
         PROFILE,
-        json={**VALID, "iban": "", "vat_number": "  ", "address_line2": ""},
+        json={**VALID, "iban": "", "twint_phone": " ", "vat_number": "  ", "address_line2": ""},
         headers=auth_headers,
     )
     data = resp.json()
     assert data["iban"] is None
+    assert data["twint_phone"] is None
     assert data["vat_number"] is None
     assert data["address_line2"] is None
     assert data["is_complete"] is False
@@ -84,6 +99,9 @@ async def test_blank_optional_fields_are_stored_as_null(
         {"iban": "CH0000000000000000000"},  # bad checksum
         {"iban": "CH930076201162385295"},  # too short
         {"iban": "FR7630006000011234567890189"},  # not CH/LI
+        {"twint_phone": "021 123 45 67"},  # landline
+        {"twint_phone": "+33 6 12 34 56 78"},  # not Swiss
+        {"twint_phone": "079 123 45 6"},  # too short
         {"company_name": "   "},
         {"default_vat_rate": "1.5"},
         {"payment_terms_days": -1},

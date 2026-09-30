@@ -29,7 +29,9 @@ def generate_invoice_pdf(
     y = _header(pdf, profile, invoice)
     y = _customer_block(pdf, customer, y)
     y = _lines_table(pdf, lines, y)
-    _totals_block(pdf, invoice, lines, y)
+    y = _totals_block(pdf, invoice, lines, y)
+    if profile.twint_phone:
+        _twint_block(pdf, invoice, lines, profile.twint_phone, y)
     if profile.iban:
         _qr_slip(pdf, invoice, lines, customer, profile)
 
@@ -114,7 +116,7 @@ def _lines_table(pdf: FPDF, lines: list[InvoiceLine], y: float) -> float:
     return y + 3
 
 
-def _totals_block(pdf: FPDF, invoice: Invoice, lines: list[InvoiceLine], y: float) -> None:
+def _totals_block(pdf: FPDF, invoice: Invoice, lines: list[InvoiceLine], y: float) -> float:
     subtotal = sum(ln.quantity * float(ln.unit_price_snapshot) for ln in lines)
     disc_pct = float(invoice.discount_percent)
     disc_amt = subtotal * disc_pct / 100
@@ -153,6 +155,38 @@ def _totals_block(pdf: FPDF, invoice: Invoice, lines: list[InvoiceLine], y: floa
         pdf.set_xy(_M, y)
         pdf.set_font("Helvetica", "I", 9)
         pdf.multi_cell(_W - 2 * _M, 5, invoice.notes)
+        y = pdf.get_y()
+    return y + 5
+
+
+def _twint_block(
+    pdf: FPDF, invoice: Invoice, lines: list[InvoiceLine], phone: str, y: float
+) -> None:
+    # +41791234567 -> 079 123 45 67, the form customers type into the app.
+    local = f"0{phone[3:5]} {phone[5:8]} {phone[8:10]} {phone[10:]}"
+    pdf.set_xy(_M, y)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.cell(80, 5, "Pay with TWINT")
+    pdf.set_xy(_M, y + 5)
+    pdf.set_font("Helvetica", "", 9)
+    text = f"Send CHF {_amount_due(invoice, lines):,.2f} to {local}"
+    if invoice.invoice_number:
+        text += f", message: {invoice.invoice_number}"
+    pdf.cell(_W - 2 * _M, 5, text)
+
+
+# ---- payment ----------------------------------------------------------------
+
+def _amount_due(invoice: Invoice, lines: list[InvoiceLine]) -> float:
+    subtotal = sum(ln.quantity * float(ln.unit_price_snapshot) for ln in lines)
+    disc_pct = float(invoice.discount_percent)
+    vat = sum(
+        ln.quantity * float(ln.unit_price_snapshot)
+        * (1 - disc_pct / 100) * float(ln.vat_rate_snapshot)
+        for ln in lines
+        if ln.vat_rate_snapshot is not None
+    )
+    return subtotal * (1 - disc_pct / 100) + vat
 
 
 # ---- Swiss QR payment slip --------------------------------------------------
@@ -164,15 +198,7 @@ def _qr_slip(
     customer: Customer,
     profile: TenantProfile,
 ) -> None:
-    subtotal = sum(ln.quantity * float(ln.unit_price_snapshot) for ln in lines)
-    disc_pct = float(invoice.discount_percent)
-    vat = sum(
-        ln.quantity * float(ln.unit_price_snapshot)
-        * (1 - disc_pct / 100) * float(ln.vat_rate_snapshot)
-        for ln in lines
-        if ln.vat_rate_snapshot is not None
-    )
-    amount = subtotal * (1 - disc_pct / 100) + vat
+    amount = _amount_due(invoice, lines)
 
     # Separator line
     pdf.set_draw_color(0, 0, 0)

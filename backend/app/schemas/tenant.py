@@ -1,3 +1,4 @@
+import re
 import uuid
 from decimal import Decimal
 from typing import Annotated
@@ -14,6 +15,20 @@ def _iban_checksum_ok(iban: str) -> bool:
     rearranged = iban[4:] + iban[:4]
     digits = "".join(str(int(c, 36)) for c in rearranged)
     return int(digits) % 97 == 1
+
+
+# TWINT accounts are bound to a Swiss mobile number (07x).
+_TWINT_PHONE = re.compile(r"\+417[5-9]\d{7}")
+
+
+def _normalize_phone(value: str) -> str:
+    """'079 123 45 67', '0041 79 …' or '+41 79 …' -> '+41791234567' (unvalidated)."""
+    phone = re.sub(r"[\s./()-]", "", value)
+    if phone.startswith("0041"):
+        return "+41" + phone[4:]
+    if phone.startswith("0"):
+        return "+41" + phone[1:]
+    return phone
 
 
 # Lengths mirror the columns of TenantProfile: without them an oversize value
@@ -39,6 +54,7 @@ class TenantProfileUpdate(BaseModel):
         str, StringConstraints(strip_whitespace=True, to_upper=True, min_length=2, max_length=2)
     ]
     iban: str | None
+    twint_phone: str | None
     vat_number: Annotated[str, StringConstraints(strip_whitespace=True, max_length=20)] | None
     default_vat_rate: Decimal | None = Field(ge=0, le=1)
     invoice_prefix: Annotated[
@@ -66,6 +82,16 @@ class TenantProfileUpdate(BaseModel):
             raise ValueError("Invalid IBAN: a Swiss or Liechtenstein IBAN is required")
         return iban
 
+    @field_validator("twint_phone", mode="after")
+    @classmethod
+    def _validate_twint_phone(cls, value: str | None) -> str | None:
+        phone = _normalize_phone(value or "")
+        if not phone:
+            return None
+        if not _TWINT_PHONE.fullmatch(phone):
+            raise ValueError("Invalid TWINT number: a Swiss mobile number is required")
+        return phone
+
 
 class TenantProfileResponse(BaseModel):
     """Read model, deliberately free of input validators: a row that predates
@@ -83,6 +109,7 @@ class TenantProfileResponse(BaseModel):
     city: str
     country: str
     iban: str | None
+    twint_phone: str | None
     vat_number: str | None
     default_vat_rate: Decimal | None
     invoice_prefix: str
