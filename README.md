@@ -23,7 +23,7 @@ and a bilingual (EN/FR) interface. One admin user per tenant.
 |---|---|
 | Backend | Python 3.14, FastAPI, SQLAlchemy 2 (async), Alembic, `uv` |
 | Frontend | Angular 22 (zoneless, standalone), Tailwind v4, DaisyUI, `@ngrx/signals` |
-| Database | PostgreSQL (SQLite for zero-setup local dev) |
+| Database | SQLite (dev and production) |
 | Auth | JWT (PyJWT) |
 
 ## Repository layout
@@ -33,7 +33,7 @@ invoice/
 ├── backend/                 FastAPI app, models, migrations, CLI, tests
 ├── frontend/                Angular app (+ nginx.conf for production)
 ├── docker-compose.yml       production stack (SQLite + nginx, Traefik labels)
-├── docker-compose.dev.yml   development stack (PostgreSQL + hot reload)
+├── docker-compose.dev.yml   development stack (SQLite + hot reload)
 └── Makefile                 all dev commands — run `make help`
 ```
 
@@ -41,24 +41,25 @@ invoice/
 
 - [`uv`](https://docs.astral.sh/uv/) (backend, Python 3.14 is fetched automatically)
 - Node **24.18** (see `.nvmrc`) for the frontend
-- Docker (only for the PostgreSQL / full-stack workflow)
+- Docker (optional, only for the Docker dev stack)
 
 ## Quick start
 
-### Option A — no Docker (SQLite)
+Both options use the same SQLite file, `backend/dev.db`, whose schema is
+managed by Alembic exactly as in production.
+
+### Option A — no Docker
 
 ```bash
-make backend-fixtures-sqlite   # create the SQLite dev DB and load demo data
-make dev                       # backend (SQLite) + frontend
+make backend-fixtures          # apply migrations and load demo data
+make dev                       # backend + frontend
 ```
 
-### Option B — full stack (PostgreSQL via Docker)
+### Option B — Docker
 
 ```bash
-make up-db                     # start PostgreSQL
-make backend-migrate           # apply migrations
-make backend-fixtures          # load demo data
-make dev                       # or: make up  (everything in Docker)
+make up                        # backend + frontend, hot reload
+make backend-fixtures          # load demo data (from the host, same file)
 ```
 
 ### Frontend only, fully mocked (no backend/DB)
@@ -87,13 +88,12 @@ cd ../sam-invoice
 uv run python tools/convert_kiv_to_json_minimal.py /chemin/vers/archive.kiv
 ```
 
-Initialise la base SQLite de développement, puis lance l’API dans un premier
-terminal :
+Lance l’API dans un premier terminal (les migrations sont appliquées à la base
+SQLite de développement au démarrage) :
 
 ```bash
 cd ../invoice
-make backend-init-db-sqlite
-make backend-dev-sqlite
+make backend-dev
 ```
 
 Dans un autre terminal, crée le tenant (remplace les valeurs d’exemple), puis
@@ -104,7 +104,7 @@ curl -X POST http://localhost:8000/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"tenant_name":"Saudan Vins","subdomain":"saudan","email":"vous@example.ch","password":"change-me"}'
 
-make backend-import-legacy-sqlite TENANT=saudan \
+make backend-import-legacy TENANT=saudan \
   CUSTOMERS=../sam-invoice/out/customers.json \
   PRODUCTS=../sam-invoice/out/products.json \
   INVOICES=../sam-invoice/out/factures.json
@@ -128,7 +128,7 @@ Settings are read from environment variables (via `pydantic-settings`) with the
 
 | Variable | Default | Notes |
 |---|---|---|
-| `INVOICE_DATABASE_URL` | `postgresql+asyncpg://invoice:invoice@localhost:5432/invoice` | SQLite targets set this via `backend/.env.sqlite` |
+| `INVOICE_DATABASE_URL` | `sqlite+aiosqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db` |
 | `INVOICE_SECRET_KEY` | dev-only placeholder | **must** be overridden in production (≥ 32 bytes) |
 | `INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
 | `INVOICE_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | |
@@ -139,10 +139,11 @@ Run `make help` for the full list.
 
 | Command | Description |
 |---|---|
-| `make dev` | Backend (SQLite) + frontend |
-| `make up` / `make down` | Start / stop the full Docker stack |
-| `make backend-dev` / `make backend-dev-sqlite` | Backend dev server (Postgres / SQLite) |
-| `make backend-shell` / `make backend-shell-sqlite` | Interactive shell with the app and DB preloaded |
+| `make dev` | Backend + frontend, no Docker |
+| `make up` / `make down` | Start / stop the Docker dev stack |
+| `make backend-dev` | Backend dev server (applies migrations first) |
+| `make backend-migrate` | Apply migrations to `backend/dev.db` |
+| `make backend-shell` | Interactive shell with the app and DB preloaded |
 | `make backend-migration MSG="…"` | Generate a new Alembic migration |
 | `make backend-fixtures [ARGS=--reset]` | Load demo fixtures |
 | `make check` | All checks (backend lint + typecheck + tests, frontend build) |
@@ -160,7 +161,7 @@ Two containers, no published ports:
 | `api` | `python:3.14-slim` + uv | FastAPI via uvicorn; applies Alembic migrations on start |
 | `web` | multi-stage → `nginx:1.27-alpine` | serves the Angular bundle, proxies `/api/` to `api:8000` |
 
-Production uses **SQLite**, not PostgreSQL: a single-tenant winery does not need
+The app uses **SQLite** everywhere: a single-tenant winery does not need
 a database server, and a backup is one file. The database lives outside the
 repository, in `INVOICE_DATA_DIR` on the host, so the deployment hook's
 `git checkout -f` can never touch it.
@@ -253,7 +254,7 @@ A Flask-shell-style REPL (IPython) with a live async session and all models in
 scope; top-level `await` works:
 
 ```bash
-make backend-shell-sqlite
+make backend-shell
 ```
 ```python
 (await db.scalars(select(Customer).limit(5))).all()

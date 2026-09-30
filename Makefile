@@ -13,15 +13,11 @@ check-node:
 # ── Docker ──────────────────────────────────────────────────────────────────
 
 .PHONY: up
-up: ## Start all services (PostgreSQL + backend + frontend)
-	$(COMPOSE) up -d
-
-.PHONY: up-db
-up-db: ## Start PostgreSQL only
-	$(COMPOSE) up -d db
+up: ## Start backend + frontend in Docker (SQLite, hot reload)
+	$(COMPOSE) up -d --build
 
 .PHONY: down
-down: ## Stop all services
+down: ## Stop the Docker stack
 	$(COMPOSE) down
 
 .PHONY: logs
@@ -33,21 +29,18 @@ logs-all: ## Follow all service logs
 	$(COMPOSE) logs -f
 
 # ── Backend ─────────────────────────────────────────────────────────────────
+# Every target uses the SQLite dev DB, backend/dev.db.
 
 .PHONY: backend-dev
-backend-dev: ## Start backend dev server (hot reload, requires DB running)
+backend-dev: backend-migrate ## Start backend dev server (hot reload)
 	uv --directory backend run fastapi dev app/main.py
-
-.PHONY: backend-dev-sqlite
-backend-dev-sqlite: ## Start backend dev server with SQLite (no Docker needed)
-	uv --directory backend run --env-file .env.sqlite fastapi dev app/main.py
 
 .PHONY: backend-migrate
 backend-migrate: ## Apply all pending DB migrations
 	uv --directory backend run alembic upgrade head
 
 .PHONY: backend-migration
-backend-migration: ## Create a new migration (usage: make backend-migration MSG="add articles table")
+backend-migration: backend-migrate ## Create a new migration (usage: make backend-migration MSG="add articles table")
 	uv --directory backend run alembic revision --autogenerate -m "$(MSG)"
 
 .PHONY: backend-fixtures-generate
@@ -55,24 +48,12 @@ backend-fixtures-generate: ## Regenerate fixtures/demo.json from the generator s
 	uv --directory backend run python fixtures/generate.py
 
 .PHONY: backend-fixtures
-backend-fixtures: ## Load demo fixtures into the DB (add ARGS=--reset to wipe and reload)
+backend-fixtures: backend-migrate ## Load demo fixtures (add ARGS=--reset to wipe and reload)
 	uv --directory backend run python -m app.cli load-fixtures $(ARGS)
 
-.PHONY: backend-init-db-sqlite
-backend-init-db-sqlite: ## Create SQLite dev DB tables
-	uv --directory backend run --env-file .env.sqlite python -m app.cli init-db
-
-.PHONY: backend-fixtures-sqlite
-backend-fixtures-sqlite: backend-init-db-sqlite ## Load demo fixtures into SQLite dev DB (add ARGS=--reset to wipe and reload)
-	uv --directory backend run --env-file .env.sqlite python -m app.cli load-fixtures $(ARGS)
-
 .PHONY: backend-import-legacy
-backend-import-legacy: ## Import Qt3 KInvoice JSON exports (TENANT=... CUSTOMERS=... PRODUCTS=... INVOICES=...)
+backend-import-legacy: backend-migrate ## Import Qt3 KInvoice JSON exports (TENANT=... CUSTOMERS=... PRODUCTS=... INVOICES=...)
 	uv --directory backend run python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" --customers "$(abspath $(CUSTOMERS))" --products "$(abspath $(PRODUCTS))" --invoices "$(abspath $(INVOICES))"
-
-.PHONY: backend-import-legacy-sqlite
-backend-import-legacy-sqlite: ## Import Qt3 KInvoice JSON exports into SQLite
-	uv --directory backend run --env-file .env.sqlite python -m app.cli import-legacy --tenant-subdomain "$(TENANT)" --customers "$(abspath $(CUSTOMERS))" --products "$(abspath $(PRODUCTS))" --invoices "$(abspath $(INVOICES))"
 
 .PHONY: backend-import-legacy-prod
 backend-import-legacy-prod: ## Run from the production checkout on the VPS; JSON files are mounted read-only
@@ -85,12 +66,8 @@ backend-import-legacy-prod: ## Run from the production checkout on the VPS; JSON
 	  --invoices /legacy/factures.json
 
 .PHONY: backend-shell
-backend-shell: ## Interactive shell with app + DB preloaded (uses default/Postgres)
+backend-shell: ## Interactive shell with app + DB preloaded
 	uv --directory backend run python -m app.cli shell
-
-.PHONY: backend-shell-sqlite
-backend-shell-sqlite: ## Interactive shell with app + DB preloaded (SQLite dev DB)
-	uv --directory backend run --env-file .env.sqlite python -m app.cli shell
 
 .PHONY: backend-test
 backend-test: ## Run backend tests
@@ -136,9 +113,8 @@ frontend-build: check-node ## Build frontend for production
 # ── Full stack ────────────────────────────────────────────────────────────────
 
 .PHONY: dev
-dev: up-db ## Start DB + backend + frontend with real backend
-	@echo "Starting backend and frontend..."
-	@$(MAKE) -j2 backend-dev-sqlite frontend-dev
+dev: ## Start backend + frontend locally (no Docker)
+	@$(MAKE) -j2 backend-dev frontend-dev
 
 .PHONY: dev-mock
 dev-mock: ## Start frontend only with mock services (no backend/DB needed)

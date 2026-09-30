@@ -71,7 +71,7 @@
             },
             "development": {
               "buildTarget": "frontend:build:development",
-              "proxyConfig": "proxy.conf.json"
+              "proxyConfig": "proxy.conf.mjs"
             },
             "mock": {
               "buildTarget": "frontend:build:mock"

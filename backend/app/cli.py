@@ -21,12 +21,6 @@ from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import Tenant, TenantProfile, User
 
 
-async def _init_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("✓ Database tables created")
-
-
 async def _load_fixtures(path: Path, reset: bool) -> None:
     data = json.loads(path.read_text())
 
@@ -286,8 +280,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Invoice backend CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("init-db", help="Create all database tables (SQLite dev only)")
-
     sub.add_parser("shell", help="Interactive shell with the app and DB preloaded")
 
     p_fixtures = sub.add_parser("load-fixtures", help="Load fixture data into the database")
@@ -311,9 +303,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "init-db":
-        asyncio.run(_init_db())
-    elif args.command == "shell":
+    if args.command == "shell":
         run_shell()
     elif args.command == "load-fixtures":
         path = Path(args.file)

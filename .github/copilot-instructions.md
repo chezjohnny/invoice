@@ -29,20 +29,17 @@ invoice/
 
 | Command | Description |
 |---|---|
-| `make up` | Start all services (PostgreSQL + backend + frontend) |
-| `make up-db` | Start PostgreSQL only |
-| `make down` | Stop all services |
-| `make backend-dev` | Backend dev server with hot reload (requires PostgreSQL) |
-| `make backend-dev-sqlite` | Backend dev server with SQLite (no Docker needed) |
-| `make backend-init-db-sqlite` | Create SQLite dev DB tables |
-| `make backend-fixtures-sqlite` | Load demo fixtures into SQLite dev DB |
-| `make backend-migrate` | Apply DB migrations (PostgreSQL) |
+| `make up` | Start backend + frontend in Docker (SQLite, hot reload) |
+| `make down` | Stop the Docker stack |
+| `make backend-dev` | Backend dev server with hot reload (applies migrations first) |
+| `make backend-fixtures` | Load demo fixtures (`ARGS=--reset` to reload) |
+| `make backend-migrate` | Apply DB migrations to `backend/dev.db` |
 | `make backend-migration MSG="..."` | Generate new migration |
 | `make backend-check` | Lint + typecheck + tests |
 | `make frontend-dev` | Frontend with real backend (localhost:8000) |
 | `make frontend-mock` | Frontend with mock services (no backend needed) |
 | `make frontend-test` | Frontend tests (vitest) |
-| `make dev` | Start DB + backend + frontend together |
+| `make dev` | Start backend + frontend locally (no Docker) |
 | `make dev-mock` | Frontend only, all services mocked |
 | `make check` | Run all checks (backend + frontend) |
 
@@ -51,7 +48,7 @@ invoice/
 - `src/environments/environment.mock.ts` — mock mode (`useMock: true`)
 
 ## Architecture decisions
-- **Tenant onboarding**: no self-service signup — tenants are created via `/auth/register` endpoint or `make backend-fixtures-sqlite` with an empty profile, then completed on `/settings`; the UI only exposes login
+- **Tenant onboarding**: no self-service signup — tenants are created via `/auth/register` endpoint or `make backend-fixtures` with an empty profile, then completed on `/settings`; the UI only exposes login
 - **Multi-tenant**: every table has `tenant_id`; auth guard in `backend/app/api/deps.py`
 - **Invoice entity**: single entity, statuses `draft → issued → paid → cancelled`; always CHF (no currency field)
 - **InvoiceLines are immutable** once `status = issued`
@@ -62,12 +59,12 @@ invoice/
 - **`invoice_next_number`** is never client-writable: it is absent from `TenantProfileUpdate`, the counter moves solely on issue
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
-- **SQLite dev mode**: `backend/.env.sqlite` sets `INVOICE_DATABASE_URL=sqlite+aiosqlite:///./dev.db`; `PRAGMA foreign_keys=ON` applied automatically; tables created via `make backend-init-db-sqlite`
+- **SQLite only** (dev, CI and production; PostgreSQL is overkill at this scale): the default `INVOICE_DATABASE_URL` is `backend/dev.db`, shared by `make dev` and the Docker dev stack; its schema comes from Alembic (`make backend-migrate`), never `create_all`, so dev matches production; `PRAGMA foreign_keys=ON` applied automatically
 
 ## Production
 
 - `docker-compose.yml` is the **production** stack (SQLite, Angular build served
-  by nginx, Traefik labels); `docker-compose.dev.yml` is the dev one (PostgreSQL,
+  by nginx, Traefik labels); `docker-compose.dev.yml` is the dev one (SQLite,
   hot reload). The Makefile targets all pass `-f docker-compose.dev.yml`.
 - The deployment hook on the VPS runs a bare `docker compose up -d --build`, so
   the production file must stay the default one.
@@ -79,7 +76,7 @@ invoice/
   push that adds a migration needs no manual step.
 - Frontend `Dockerfile` is multi-stage: `dev` (ng serve) → `build` → `prod`
   (nginx, the default target). Keep the `/api/` proxy in `frontend/nginx.conf`
-  aligned with `proxy.conf.json`: both strip the prefix.
+  aligned with `proxy.conf.mjs`: both strip the prefix.
 - Persistent state lives on the host in `INVOICE_DATA_DIR`, never in the repo
   directory — the hook's `git checkout -f` would wipe it.
 

@@ -1,6 +1,6 @@
 # PRODUCTION stack, deployed on the VPS by the post-receive hook
 # (docker compose up -d --build). Development lives in docker-compose.dev.yml:
-# PostgreSQL and hot reload.
+# SQLite and hot reload.
 #
 # No port is published on the host: Traefik reaches the `web` container through
 # the proxy-network.
