@@ -4,6 +4,8 @@ __pycache__
 *.pyo
 .env
 *.db
+*.db-wal
+*.db-shm
 tests
 fixtures
 .pytest_cache

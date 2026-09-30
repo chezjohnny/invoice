@@ -240,6 +240,10 @@ legacy modification date, creation date, or the invoice date fallback.
 ssh <vps> "sqlite3 /home/johnny/data/invoice/invoice.db .dump" > invoice-$(date +%F).sql
 ```
 
+The database runs in WAL mode: recent writes may still sit in `invoice.db-wal`
+next to it. Never copy `invoice.db` alone while the app runs — go through
+`sqlite3` (`.dump`, `.backup` or `VACUUM INTO`), which reads both.
+
 ## Testing
 
 ```bash
