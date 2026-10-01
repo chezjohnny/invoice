@@ -56,7 +56,7 @@ interface Recommendation {
               [value]="customerSearch()"
               (input)="onCustomerSearch(asStr($event))"
               (blur)="onCustomerBlur()"
-              [placeholder]="t().common.searchCustomer" />
+              [placeholder]="t().common.searchCustomer" autocomplete="off" />
             @if (showDropdown()) {
               @if (customerResults().length > 0) {
                 <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
@@ -133,7 +133,7 @@ interface Recommendation {
                       </span>
                       <input class="grow min-w-0" type="text"
                         [title]="line.descriptionSnapshot"
-                        [placeholder]="t().invoices.searchArticle"
+                        [placeholder]="t().invoices.searchArticle" autocomplete="off"
                         [value]="line.descriptionSnapshot"
                         (focus)="articleSearchLine.set(i)"
                         (input)="onArticleSearch(i, asStr($event))"
