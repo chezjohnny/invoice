@@ -43,6 +43,7 @@ async def test_import_legacy_uses_billed_name_when_source_ids_collide(
         json.dumps([
             {"reference": "nd-75", "name": "Noir Désir 2020", "price": 15.5, "stock": 20},
             {"reference": "nd-75", "name": "Noir Désir 2021", "price": 16.5, "stock": 30},
+            {"reference": "fe-19", "name": "Fendant 2019", "price": 12, "stock": 0},
         ]),
         encoding="utf-8",
     )
@@ -92,9 +93,13 @@ async def test_import_legacy_uses_billed_name_when_source_ids_collide(
     assert article is not None
     assert article.name == "Noir Désir 2021"
     assert article.stock_quantity == 30
+    assert not article.is_archived
+    sold_out = await db_session.scalar(select(Article).where(Article.name == "Fendant 2019"))
+    assert sold_out is not None
+    assert sold_out.is_archived
     assert counts == {
         "customers": 2,
-        "articles": 2,
+        "articles": 3,
         "invoices": 1,
         "unmatched_invoice_customers": 0,
     }

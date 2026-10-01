@@ -191,13 +191,15 @@ async def import_legacy_data(
         name = str(spec.get("name") or spec.get("desc") or reference or "Article importé")
         price = _decimal(spec.get("price", spec.get("prix")), default=Decimal("0"))
         unit_price = price or Decimal("0")
+        stock_quantity = int(spec.get("stock", 0) or 0)
         article = Article(
             id=uuid.uuid4(),
             tenant_id=tenant.id,
             name=name[:200],
             description=str(spec.get("description") or spec.get("desc") or "")[:500],
             unit_price=unit_price,
-            stock_quantity=int(spec.get("stock", 0) or 0),
+            stock_quantity=stock_quantity,
+            is_archived=stock_quantity <= 0,
         )
         db.add(article)
         if reference:
