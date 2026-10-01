@@ -24,7 +24,7 @@ _LABELS: dict[Lang, dict[str, str]] = {
         "description": "Description", "qty": "Qty", "unit_price": "Unit price",
         "total": "Total", "subtotal": "Subtotal", "discount": "Discount", "vat": "VAT",
         "twint_title": "Pay with TWINT", "twint_send": "Send CHF {amount} to {phone}",
-        "twint_message": ", message: {number}",
+        "twint_message": ", message: {number}", "paid_on": "Paid on {date}",
         "receipt": "Receipt", "payment_part": "Payment part",
         "payable_to": "Account / Payable to", "payable_by": "Payable by",
         "acceptance_point": "Acceptance point", "additional_info": "Additional information",
@@ -35,7 +35,7 @@ _LABELS: dict[Lang, dict[str, str]] = {
         "description": "Désignation", "qty": "Qté", "unit_price": "Prix unit.",
         "total": "Total", "subtotal": "Sous-total", "discount": "Rabais", "vat": "TVA",
         "twint_title": "Payer avec TWINT", "twint_send": "Envoyez CHF {amount} au {phone}",
-        "twint_message": ", message : {number}",
+        "twint_message": ", message : {number}", "paid_on": "Acquittée le {date}",
         "receipt": "Récépissé", "payment_part": "Section paiement",
         "payable_to": "Compte / Payable à", "payable_by": "Payable par",
         "acceptance_point": "Point de dépôt", "additional_info": "Informations supplémentaires",
@@ -60,10 +60,12 @@ def generate_invoice_pdf(
     y = _customer_block(pdf, customer, y, t)
     y = _lines_table(pdf, lines, y, t)
     y = _totals_block(pdf, invoice, lines, y, t)
-    if profile.twint_phone:
-        _twint_block(pdf, invoice, lines, profile.twint_phone, y, t)
-    if profile.iban:
-        _qr_slip(pdf, invoice, lines, customer, profile, t)
+    # A paid invoice serves as a receipt: no payment means, so it is not paid twice.
+    if invoice.paid_at is None:
+        if profile.twint_phone:
+            _twint_block(pdf, invoice, lines, profile.twint_phone, y, t)
+        if profile.iban:
+            _qr_slip(pdf, invoice, lines, customer, profile, t)
 
     return bytes(pdf.output())
 
@@ -180,6 +182,16 @@ def _totals_block(
         if bold:
             pdf.set_draw_color(0, 0, 0)
             pdf.line(x_lbl, y, x_lbl + w_lbl + w_amt, y)
+        y += 5
+
+    if invoice.paid_at:
+        y += 2
+        pdf.set_xy(x_lbl, y)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(
+            w_lbl + w_amt, 5,
+            t["paid_on"].format(date=invoice.paid_at.strftime("%d.%m.%Y")), align="R",
+        )
         y += 5
 
     if invoice.notes:

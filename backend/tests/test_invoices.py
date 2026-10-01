@@ -337,6 +337,32 @@ async def test_pdf_shows_twint_payment_only_when_configured(
 
 
 @pytest.mark.anyio
+async def test_pdf_shows_payment_date_once_paid(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    create = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    invoice_id = create.json()["id"]
+    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    pdf_url = f"{INVOICES}/{invoice_id}/pdf"
+    unpaid = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "Acquittée" not in unpaid
+    assert "Récépissé" in unpaid
+
+    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    await client.patch(
+        f"{INVOICES}/{invoice_id}/payment-date", json={"paid_at": "2026-03-12"},
+        headers=auth_headers,
+    )
+    french = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "Acquittée le 12.03.2026" in french
+    assert "Récépissé" not in french
+    english = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+    assert "Paid on 12.03.2026" in english
+
+
+@pytest.mark.anyio
 async def test_pdf_language(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
