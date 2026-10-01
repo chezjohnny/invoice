@@ -209,7 +209,8 @@ container applies any new migration on start.
 ### Import legacy data
 
 Deploy the importer and `paid_at` migration first; the API container applies the
-migration automatically. Back up the production SQLite database before importing.
+migration automatically. Take an on-the-spot copy of the production database
+before importing (see [Backup](#backup)).
 From the local checkout, copy the three generated JSON files to the VPS:
 
 ```bash
@@ -236,13 +237,28 @@ legacy modification date, creation date, or the invoice date fallback.
 
 ### Backup
 
+Backups are handled entirely on the VPS by `vps-infra`, not by this app: every
+night, `vps-backup` takes a consistent snapshot of every `*.db` file under
+`/home/johnny/data/` and sends it, encrypted, to Dropbox, with 30 days of
+history and a mail only on failure. Setup, listing and **restore** procedures
+live in the `vps-infra` README, section « Sauvegarde vers Dropbox ».
+
+What this app has to respect for that to keep working:
+
+- The database stays in `INVOICE_DATA_DIR` (`/home/johnny/data/invoice/`).
+- Its file name keeps the **`.db`** extension (`/data/invoice.db` by default,
+  see `INVOICE_DATABASE_URL`). Under any other name it would be copied raw like
+  an ordinary file — inconsistent, since the database runs in WAL mode and
+  recent writes sit in `invoice.db-wal`.
+
+For an extra, on-the-spot copy (before a risky migration or a legacy import):
+
 ```bash
 ssh <vps> "sqlite3 /home/johnny/data/invoice/invoice.db .dump" > invoice-$(date +%F).sql
 ```
 
-The database runs in WAL mode: recent writes may still sit in `invoice.db-wal`
-next to it. Never copy `invoice.db` alone while the app runs — go through
-`sqlite3` (`.dump`, `.backup` or `VACUUM INTO`), which reads both.
+Never copy `invoice.db` alone while the app runs — go through `sqlite3`
+(`.dump`, `.backup` or `VACUUM INTO`), which reads the WAL too.
 
 ## Testing
 
