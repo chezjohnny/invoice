@@ -9,6 +9,7 @@ export class MockDashboardService implements IDashboardService {
       draft: { count: 1, total: 150 },
       issued: { count: 2, total: 320 },
       paid: { count: 3, total: 890 },
+      invoiceCount: 6,
       customerCount: 4,
       articleCount: 4,
       recentInvoices: [],

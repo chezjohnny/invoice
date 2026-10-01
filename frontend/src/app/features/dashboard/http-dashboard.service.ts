@@ -19,6 +19,7 @@ interface DashboardStatsDto {
   draft: InvoiceKpiDto;
   issued: InvoiceKpiDto;
   paid: InvoiceKpiDto;
+  invoice_count: number;
   customer_count: number;
   article_count: number;
   recent_invoices: RecentInvoiceDto[];
@@ -33,6 +34,7 @@ export class HttpDashboardService implements IDashboardService {
       draft: dto.draft,
       issued: dto.issued,
       paid: dto.paid,
+      invoiceCount: dto.invoice_count,
       customerCount: dto.customer_count,
       articleCount: dto.article_count,
       recentInvoices: dto.recent_invoices.map((r) => ({

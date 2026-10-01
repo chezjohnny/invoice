@@ -34,6 +34,7 @@ class DashboardStats(BaseModel):
     draft: InvoiceKpi
     issued: InvoiceKpi
     paid: InvoiceKpi
+    invoice_count: int
     customer_count: int
     article_count: int
     recent_invoices: list[RecentInvoiceItem]
@@ -117,6 +118,7 @@ async def get_dashboard_stats(
         draft=InvoiceKpi(count=len(draft), total=sum(_invoice_total(i) for i in draft)),
         issued=InvoiceKpi(count=len(issued), total=sum(_invoice_total(i) for i in issued)),
         paid=InvoiceKpi(count=len(paid), total=sum(_invoice_total(i) for i in paid)),
+        invoice_count=len(invoices),
         customer_count=customer_count,
         article_count=article_count,
         recent_invoices=[

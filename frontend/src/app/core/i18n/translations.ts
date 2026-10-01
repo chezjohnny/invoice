@@ -9,7 +9,7 @@ const EN = {
     title: 'Dashboard', draft: 'Draft', outstanding: 'Outstanding',
     paidThisYear: 'Paid this year', customers: 'Customers', articles: 'Articles',
     recentInvoices: 'Recent invoices', noInvoices: 'No invoices yet.',
-    invoices: 'invoices', total: 'Total',
+    invoices: 'Invoices', total: 'Total',
   },
   articles: {
     title: 'Articles', new: 'New article', search: 'Search articles…',
@@ -115,7 +115,7 @@ const FR: typeof EN = {
     title: 'Tableau de bord', draft: 'Brouillons', outstanding: 'En attente',
     paidThisYear: 'Payées cette année', customers: 'Clients', articles: 'Articles',
     recentInvoices: 'Factures récentes', noInvoices: 'Aucune facture.',
-    invoices: 'factures', total: 'Total',
+    invoices: 'Factures', total: 'Total',
   },
   articles: {
     title: 'Articles', new: 'Nouvel article', search: 'Rechercher des articles…',

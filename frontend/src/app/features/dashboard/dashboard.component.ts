@@ -17,48 +17,41 @@ import { DashboardStats } from '../../core/models/page.model';
           <span class="loading loading-spinner loading-lg"></span>
         </div>
       } @else {
-        <!-- KPI cards -->
-        <div class="stats stats-vertical sm:stats-horizontal shadow w-full mb-6 bg-base-100">
-          <div class="stat">
+        <!-- KPI cards: each one opens the matching list -->
+        <div class="stats stats-vertical lg:stats-horizontal shadow w-full mb-6 bg-base-100">
+          <a class="stat hover:bg-base-200" routerLink="/invoices">
+            <div class="stat-title">{{ t().dashboard.invoices }}</div>
+            <div class="stat-value text-2xl">{{ stats().invoiceCount }}</div>
+          </a>
+          <a class="stat hover:bg-base-200" routerLink="/invoices" [queryParams]="{ status: 'draft' }">
             <div class="stat-title">{{ t().dashboard.draft }}</div>
             <div class="stat-value text-2xl">{{ stats().draft.count }}</div>
             <div class="stat-desc">{{ stats().draft.total | currency:'CHF':'code':'1.2-2' }}</div>
-          </div>
-          <div class="stat">
+          </a>
+          <a class="stat hover:bg-base-200" routerLink="/invoices" [queryParams]="{ status: 'issued' }">
             <div class="stat-title">{{ t().dashboard.outstanding }}</div>
             <div class="stat-value text-2xl text-warning">{{ stats().issued.count }}</div>
             <div class="stat-desc">{{ stats().issued.total | currency:'CHF':'code':'1.2-2' }}</div>
-          </div>
-          <div class="stat">
+          </a>
+          <a class="stat hover:bg-base-200" routerLink="/invoices" [queryParams]="{ status: 'paid' }">
             <div class="stat-title">{{ t().dashboard.paidThisYear }}</div>
             <div class="stat-value text-2xl text-success">{{ stats().paid.count }}</div>
             <div class="stat-desc">{{ stats().paid.total | currency:'CHF':'code':'1.2-2' }}</div>
-          </div>
-          <div class="stat">
+          </a>
+          <a class="stat hover:bg-base-200" routerLink="/customers">
             <div class="stat-title">{{ t().dashboard.customers }}</div>
             <div class="stat-value text-2xl">{{ stats().customerCount }}</div>
-            <div class="stat-desc">
-              <a routerLink="/customers" class="link link-primary text-xs">{{ t().nav.customers }}</a>
-            </div>
-          </div>
-          <div class="stat">
+          </a>
+          <a class="stat hover:bg-base-200" routerLink="/articles">
             <div class="stat-title">{{ t().dashboard.articles }}</div>
             <div class="stat-value text-2xl">{{ stats().articleCount }}</div>
-            <div class="stat-desc">
-              <a routerLink="/articles" class="link link-primary text-xs">{{ t().nav.articles }}</a>
-            </div>
-          </div>
+          </a>
         </div>
 
         <!-- Recent invoices -->
         <div class="card bg-base-100 shadow">
           <div class="card-body p-4 md:p-6">
-            <div class="flex justify-between items-center mb-3">
-              <h2 class="font-semibold text-base">{{ t().dashboard.recentInvoices }}</h2>
-              <a routerLink="/invoices" class="btn btn-ghost btn-sm text-xs">
-                {{ t().nav.invoices }} →
-              </a>
-            </div>
+            <h2 class="font-semibold text-base mb-3">{{ t().dashboard.recentInvoices }}</h2>
             @if (stats().recentInvoices.length === 0) {
               <p class="text-base-content/40 text-sm py-4 text-center">{{ t().dashboard.noInvoices }}</p>
             } @else {
@@ -106,6 +99,7 @@ export class DashboardComponent {
     draft: { count: 0, total: 0 },
     issued: { count: 0, total: 0 },
     paid: { count: 0, total: 0 },
+    invoiceCount: 0,
     customerCount: 0,
     articleCount: 0,
     recentInvoices: [],

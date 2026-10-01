@@ -1,9 +1,12 @@
 import { inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Sort, nextSort } from '../../shared/sort';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
+
+const STATUSES = ['draft', 'issued', 'paid', 'cancelled'];
 
 interface InvoiceState {
   items: Invoice[];
@@ -119,5 +122,12 @@ export const InvoiceStore = signalStore(
       downloadPdf: print,
     };
   }),
-  withHooks({ onInit(store) { store.load(); } })
+  withHooks({
+    onInit(store) {
+      // The dashboard links here with ?status=draft|issued|paid.
+      const status = inject(ActivatedRoute, { optional: true })?.snapshot.queryParamMap.get('status');
+      if (status && STATUSES.includes(status)) patchState(store, { statusFilter: status });
+      store.load();
+    },
+  })
 );

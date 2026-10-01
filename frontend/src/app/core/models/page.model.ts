@@ -24,6 +24,7 @@ export interface DashboardStats {
   draft: InvoiceKpi;
   issued: InvoiceKpi;
   paid: InvoiceKpi;
+  invoiceCount: number;
   customerCount: number;
   articleCount: number;
   recentInvoices: RecentInvoiceItem[];
