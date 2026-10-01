@@ -16,6 +16,7 @@ CUSTOMER_PAYLOAD = {
     "first_name": "Jean",
     "last_name": "Dupont",
     "address_line1": "Rue de la Gare 12",
+    "address_line2": "Case postale 34",
     "postal_code": "1110",
     "city": "Morges",
     "country": "CH",
@@ -31,6 +32,7 @@ async def test_create_customer(client: AsyncClient, auth_headers: dict[str, str]
     data = resp.json()
     assert data["first_name"] == "Jean"
     assert data["last_name"] == "Dupont"
+    assert data["address_line2"] == "Case postale 34"
     assert data["phones"] == [{"label": "Mobile", "number": "+41 79 123 45 67"}]
     assert data["is_archived"] is False
 
@@ -102,8 +104,8 @@ async def test_export_csv(client: AsyncClient, auth_headers: dict[str, str]):
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/csv")
     lines = resp.text.strip().split("\n")
-    assert lines[0].startswith("first_name")
-    assert "Jean" in lines[1]
+    assert lines[0].startswith("first_name,last_name,email,address_line1,address_line2,")
+    assert "Case postale 34" in lines[1]
 
 
 @pytest.mark.anyio

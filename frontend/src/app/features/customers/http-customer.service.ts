@@ -17,6 +17,7 @@ interface CustomerDto {
   first_name: string;
   last_name: string;
   address_line1: string;
+  address_line2: string | null;
   postal_code: string;
   city: string;
   country: string;
@@ -94,6 +95,7 @@ export class HttpCustomerService implements ICustomerService {
       firstName: dto.first_name,
       lastName: dto.last_name,
       addressLine1: dto.address_line1,
+      addressLine2: dto.address_line2,
       postalCode: dto.postal_code,
       city: dto.city,
       country: dto.country,
@@ -108,6 +110,7 @@ export class HttpCustomerService implements ICustomerService {
       first_name: data.firstName,
       last_name: data.lastName,
       address_line1: data.addressLine1,
+      address_line2: data.addressLine2,
       postal_code: data.postalCode,
       city: data.city,
       country: data.country,

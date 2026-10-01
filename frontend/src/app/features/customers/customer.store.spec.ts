@@ -8,12 +8,12 @@ import { CustomerStore } from './customer.store';
 const CUSTOMERS: Customer[] = [
   {
     id: '1', firstName: 'Alice', lastName: 'Martin',
-    addressLine1: 'Rue du Lac 1', postalCode: '1000', city: 'Lausanne', country: 'CH',
+    addressLine1: 'Rue du Lac 1', addressLine2: null, postalCode: '1000', city: 'Lausanne', country: 'CH',
     email: 'alice@example.com', phones: [], isArchived: false,
   },
   {
     id: '2', firstName: 'Bob', lastName: 'Dupont',
-    addressLine1: '', postalCode: '1200', city: 'Genève', country: 'CH',
+    addressLine1: '', addressLine2: null, postalCode: '1200', city: 'Genève', country: 'CH',
     email: null, phones: [], isArchived: false,
   },
 ];
@@ -80,7 +80,7 @@ describe('CustomerStore', () => {
     await store.load();
     await store.createCustomer({
       firstName: 'New', lastName: 'Customer',
-      addressLine1: '', postalCode: '', city: '', country: 'CH', email: null, phones: [],
+      addressLine1: '', addressLine2: null, postalCode: '', city: '', country: 'CH', email: null, phones: [],
     });
     expect(store.items().some((c) => c.id === 'new-id')).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('CustomerStore', () => {
     await store.load();
     await store.updateCustomer('1', {
       firstName: 'Alice', lastName: 'Updated',
-      addressLine1: '', postalCode: '', city: '', country: 'CH', email: null, phones: [],
+      addressLine1: '', addressLine2: null, postalCode: '', city: '', country: 'CH', email: null, phones: [],
     });
     expect(store.items().find((c) => c.id === '1')?.lastName).toBe('Updated');
   });

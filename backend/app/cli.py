@@ -159,6 +159,7 @@ async def _load_customers(
             last_name=spec["last_name"],
             email=spec.get("email"),
             address_line1=spec.get("address_line1", ""),
+            address_line2=spec.get("address_line2"),
             postal_code=spec.get("postal_code", ""),
             city=spec.get("city", ""),
             country=spec.get("country", "CH"),

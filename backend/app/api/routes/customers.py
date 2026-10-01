@@ -86,12 +86,13 @@ async def export_customers_csv(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(
-        ["first_name", "last_name", "email", "address_line1", "postal_code", "city", "country"]
+        ["first_name", "last_name", "email", "address_line1", "address_line2",
+         "postal_code", "city", "country"]
     )
     for c in customers:
         writer.writerow(
             [c.first_name, c.last_name, c.email or "",
-             c.address_line1, c.postal_code, c.city, c.country]
+             c.address_line1, c.address_line2 or "", c.postal_code, c.city, c.country]
         )
 
     return Response(

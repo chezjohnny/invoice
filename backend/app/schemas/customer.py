@@ -12,6 +12,7 @@ class CustomerBase(BaseModel):
     first_name: str
     last_name: str
     address_line1: str = ""
+    address_line2: str | None = None
     postal_code: str = ""
     city: str = ""
     country: str = "CH"

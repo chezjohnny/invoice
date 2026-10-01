@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
@@ -45,7 +45,7 @@ const STATUS_BADGE: Record<string, string> = {
                   {{ customer()!.lastName }}, {{ customer()!.firstName }}
                 </h1>
                 <p class="text-base-content/60 text-sm mt-1">
-                  {{ customer()!.addressLine1 }}, {{ customer()!.postalCode }} {{ customer()!.city }}
+                  {{ address() }}
                 </p>
                 @if (customer()!.email) {
                   <p class="text-sm mt-1">{{ customer()!.email }}</p>
@@ -182,6 +182,13 @@ export class CustomerDetailComponent {
   private readonly articleService = inject(ARTICLE_SERVICE);
 
   protected readonly customer = signal<Customer | null>(null);
+  protected readonly address = computed(() => {
+    const c = this.customer();
+    if (!c) return '';
+    return [c.addressLine1, c.addressLine2, `${c.postalCode} ${c.city}`.trim()]
+      .filter(Boolean)
+      .join(', ');
+  });
   protected readonly invoices = signal<Invoice[]>([]);
   protected readonly invoicePage = signal(1);
   protected readonly invoicePages = signal(1);

@@ -40,6 +40,7 @@ def test_qr_payload_contains_all_fields_in_spec_order():
             first_name="Jean",
             last_name="Dupont",
             address_line1="Rue de la Gare 2",
+            address_line2="Case postale 12",
             postal_code="1000",
             city="Lausanne",
         ),
@@ -53,7 +54,7 @@ def test_qr_payload_contains_all_fields_in_spec_order():
     assert fields[11:18] == [""] * 7
     assert fields[18:21] == ["108.10", "CHF", "K"]
     assert fields[21:27] == [
-        "Jean Dupont", "Rue de la Gare 2", "1000 Lausanne", "", "", "CH"
+        "Jean Dupont", "Rue de la Gare 2, Case postale 12", "1000 Lausanne", "", "", "CH"
     ]
     assert fields[27:34] == ["NON", "", "FAC-2026-0001", "EPD", "", "", ""]
 

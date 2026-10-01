@@ -16,6 +16,7 @@ class Customer(UUIDBase):
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     address_line1: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    address_line2: Mapped[str | None] = mapped_column(String(200), nullable=True)
     postal_code: Mapped[str] = mapped_column(String(20), nullable=False, default="")
     city: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     country: Mapped[str] = mapped_column(String(2), nullable=False, default="CH")

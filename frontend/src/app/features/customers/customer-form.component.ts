@@ -47,6 +47,12 @@ type CustomerData = Omit<Customer, 'id' | 'isArchived'>;
             [value]="addressLine1()" (input)="addressLine1.set(asStr($event))" />
         </div>
 
+        <div>
+          <label class="fieldset-label">{{ t().customers.address2Label }}</label>
+          <input class="input w-full" type="text"
+            [value]="addressLine2()" (input)="addressLine2.set(asStr($event))" />
+        </div>
+
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="fieldset-label">{{ t().customers.postalLabel }}</label>
@@ -106,6 +112,7 @@ export class CustomerFormComponent {
   protected readonly lastName = linkedSignal(() => this.customer()?.lastName ?? '');
   protected readonly email = linkedSignal(() => this.customer()?.email ?? '');
   protected readonly addressLine1 = linkedSignal(() => this.customer()?.addressLine1 ?? '');
+  protected readonly addressLine2 = linkedSignal(() => this.customer()?.addressLine2 ?? '');
   protected readonly postalCode = linkedSignal(() => this.customer()?.postalCode ?? '');
   protected readonly city = linkedSignal(() => this.customer()?.city ?? '');
   protected readonly country = linkedSignal(() => this.customer()?.country ?? 'CH');
@@ -149,11 +156,13 @@ export class CustomerFormComponent {
     this.submitted.set(true);
     if (!this.isValid()) return;
     const emailVal = this.email().trim();
+    const addressLine2 = this.addressLine2().trim();
     this.saved.emit({
       firstName: this.firstName().trim(),
       lastName: this.lastName().trim(),
       email: emailVal !== '' ? emailVal : null,
       addressLine1: this.addressLine1().trim(),
+      addressLine2: addressLine2 !== '' ? addressLine2 : null,
       postalCode: this.postalCode().trim(),
       city: this.city().trim(),
       country: this.country().trim() || 'CH',

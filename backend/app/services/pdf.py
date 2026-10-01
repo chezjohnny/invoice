@@ -120,7 +120,11 @@ def _customer_block(pdf: FPDF, customer: Customer, y: float, t: dict[str, str]) 
     pdf.cell(80, 5, f"{customer.first_name} {customer.last_name}")
     y += 5
     pdf.set_font("Helvetica", "", 9)
-    for text in [customer.address_line1, f"{customer.postal_code} {customer.city}"]:
+    for text in [
+        customer.address_line1,
+        customer.address_line2 or "",
+        f"{customer.postal_code} {customer.city}",
+    ]:
         if text.strip():
             pdf.set_xy(_M, y)
             pdf.cell(80, 5, text)
@@ -345,6 +349,7 @@ def _slip_section(
         for text in [
             f"{c.first_name} {c.last_name}",
             c.address_line1,
+            c.address_line2 or "",
             f"{c.postal_code} {c.city}",
         ]:
             if text.strip():
@@ -410,6 +415,10 @@ def _build_qr_payload(
     amount: float,
 ) -> str:
     debtor_postal = f"{customer.postal_code} {customer.city}".strip()
+    # A combined ("K") address has a single 70-character street line.
+    debtor_street = ", ".join(
+        part for part in (customer.address_line1, customer.address_line2) if part
+    )[:70]
     fields = [
         "SPC", "0200", "1",
         profile.iban or "",
@@ -420,7 +429,7 @@ def _build_qr_payload(
         f"{amount:.2f}", "CHF",
         "K",
         f"{customer.first_name} {customer.last_name}",
-        customer.address_line1, debtor_postal, "", "", "CH",
+        debtor_street, debtor_postal, "", "", "CH",
         "NON", "",
         invoice.invoice_number or "",
         "EPD", "", "", "",
