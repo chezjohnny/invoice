@@ -4,13 +4,14 @@ from math import ceil
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.api.sorting import SortColumn, SortOrder, sort_clauses
 from app.core.database import get_db
+from app.core.search import contains, matches_words
 from app.models.article import Article
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
@@ -53,7 +54,23 @@ async def list_invoices(
                 status.HTTP_400_BAD_REQUEST, f"Invalid status: {status_filter}"
             ) from None
     if search:
-        conditions.append(Invoice.invoice_number.ilike(f"%{search}%"))
+        conditions.append(
+            matches_words(
+                search,
+                lambda pattern: or_(
+                    contains(Invoice.invoice_number, pattern),
+                    Invoice.lines.any(contains(InvoiceLine.description_snapshot, pattern)),
+                    Invoice.customer_id.in_(
+                        select(Customer.id).where(
+                            or_(
+                                contains(Customer.first_name, pattern),
+                                contains(Customer.last_name, pattern),
+                            )
+                        )
+                    ),
+                ),
+            )
+        )
 
     query = select(Invoice).where(*conditions)
     if sort is None:

@@ -22,9 +22,12 @@ export class MockInvoiceService implements IInvoiceService {
       filtered = filtered.filter((i) => i.status === statusFilter);
     }
     if (search) {
-      filtered = filtered.filter((i) =>
-        i.invoiceNumber?.toLowerCase().includes(search) ?? false
-      );
+      const words = search.split(/\s+/).filter(Boolean);
+      filtered = filtered.filter((i) => {
+        const haystack = [i.invoiceNumber ?? '', i.customerName, ...i.lines.map((l) => l.descriptionSnapshot)]
+          .join(' ').toLowerCase();
+        return words.every((w) => haystack.includes(w));
+      });
     }
     const statusRank = ['draft', 'issued', 'paid', 'cancelled'];
     const sorted = sortItems(filtered, params.sort, {

@@ -170,6 +170,35 @@ async def test_update_invoice(
 
 
 @pytest.mark.anyio
+async def test_search_matches_number_line_or_customer_words(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    fendant = await client.post(INVOICES, json={
+        "customer_id": customer_id,
+        "lines": [{**LINE, "description_snapshot": "Noir Désir Martigny 75cl 2024"}],
+    }, headers=auth_headers)
+    other = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    issued = await client.post(f"{INVOICES}/{other.json()['id']}/issue", headers=auth_headers)
+
+    async def found(search: str) -> list[str]:
+        resp = await client.get(INVOICES, params={"search": search}, headers=auth_headers)
+        return [i["id"] for i in resp.json()["items"]]
+
+    # Words in any order, regardless of case and accents.
+    assert await found("NOIR desir 2024") == [fendant.json()["id"]]
+    assert await found("2024 désir") == [fendant.json()["id"]]
+    assert await found("desir 2023") == []
+    assert sorted(await found("dupont jean")) == sorted([fendant.json()["id"], other.json()["id"]])
+    assert await found("100%") == []
+    by_number = await client.get(
+        f"{INVOICES}?search={issued.json()['invoice_number']}", headers=auth_headers
+    )
+    assert [i["id"] for i in by_number.json()["items"]] == [other.json()["id"]]
+
+
+@pytest.mark.anyio
 async def test_issue_invoice(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
