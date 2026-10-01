@@ -235,6 +235,45 @@ not copy the JSON into the image. The tenant must have no customers, articles,
 or invoices. Imported invoices are marked paid, with `paid_at` taken from a
 legacy modification date, creation date, or the invoice date fallback.
 
+### Import paper invoices
+
+Invoices that only exist on paper are typed in a text file: new articles with
+a short alias (their quantity is the stock **before** these invoices), then one
+block per invoice — the customer id copied from the UI, a `/`, and the invoice
+reference, whose first 8 digits are the invoice date (`AAAAMMJJ`).
+
+```text
+# blank lines and comments are ignored
+db: Désir Blanc 75cl 2026 Martigny AOC Valais, prix: 15.0, quantité: 150
+fl: Fendant Litre 100cl 2026 Martigny AOC Valais, prix: 15.0, quantité: 150
+
+d0ba83c1-6f64-4a63-b110-5bc018bb106c/202512205763
+- db:12
+- fl:24
+```
+
+The reference is stored as `<invoice_prefix>-<date>-<n>` (`FAC-20251220-5763`),
+like the legacy references and the numbers given on issue. Invoices are created
+paid on their date, at the article price, and their
+quantities are deducted from the stock. An article whose name already exists is
+reused as is (its quantity is ignored), and an invoice whose reference already
+exists is skipped: the same file can be completed and imported again. The file
+is validated as a whole first — any error, reported with its line number,
+aborts the import without writing anything.
+
+```bash
+make backend-import-paper FILE=factures.txt ARGS=--dry-run   # local, validate only
+make backend-import-paper FILE=factures.txt
+```
+
+In production, copy the file to the VPS, take an on-the-spot copy of the
+database (see [Backup](#backup)), then from the production checkout:
+
+```bash
+make backend-import-paper-prod FILE=/tmp/factures.txt ARGS=--dry-run
+make backend-import-paper-prod FILE=/tmp/factures.txt
+```
+
 ### Backup
 
 Backups are handled entirely on the VPS by `vps-infra`, not by this app: every

@@ -35,8 +35,6 @@ async def update_profile(
     )
     profile = result.scalar_one()
 
-    # TenantProfileUpdate carries exactly the client-writable fields, so
-    # invoice_next_number cannot be moved from here.
     for field, value in body.model_dump().items():
         setattr(profile, field, value)
     # Keep the tenant label aligned with the legal name printed on invoices.

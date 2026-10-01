@@ -18,7 +18,6 @@ const INITIAL: CompanyProfile = {
   defaultVatRate: 0.081,
   invoicePrefix: 'FAC',
   paymentTermsDays: 30,
-  invoiceNextNumber: 12,
   isComplete: true,
 };
 

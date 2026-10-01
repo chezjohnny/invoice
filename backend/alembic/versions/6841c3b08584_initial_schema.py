@@ -43,7 +43,6 @@ def upgrade() -> None:
     sa.Column('logo_url', sa.String(length=500), nullable=True),
     sa.Column('default_vat_rate', sa.Numeric(precision=5, scale=4), nullable=True),
     sa.Column('invoice_prefix', sa.String(length=10), nullable=False),
-    sa.Column('invoice_next_number', sa.Integer(), nullable=False),
     sa.Column('payment_terms_days', sa.Integer(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),

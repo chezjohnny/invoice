@@ -23,8 +23,8 @@ const BASE: Omit<Invoice, 'id' | 'status'> = {
 
 const INVOICES: Invoice[] = [
   { ...BASE, id: '1', status: 'draft' },
-  { ...BASE, id: '2', status: 'issued', invoiceNumber: 'INV-2026-0001', issueDate: '2026-01-01', dueDate: '2026-01-31' },
-  { ...BASE, id: '3', status: 'paid', invoiceNumber: 'INV-2025-0001', issueDate: '2025-06-01', dueDate: '2025-06-30' },
+  { ...BASE, id: '2', status: 'issued', invoiceNumber: 'FAC-20260101-0001', issueDate: '2026-01-01', dueDate: '2026-01-31' },
+  { ...BASE, id: '3', status: 'paid', invoiceNumber: 'FAC-20250601-0001', issueDate: '2025-06-01', dueDate: '2025-06-30' },
   { ...BASE, id: '4', status: 'cancelled' },
 ];
 
@@ -73,7 +73,7 @@ describe('InvoiceStore', () => {
               if (failIssue) throw new Error('incomplete company profile');
               const inv = invoices.find((i) => i.id === id)!;
               inv.status = 'issued';
-              inv.invoiceNumber = 'INV-2026-0002';
+              inv.invoiceNumber = 'FAC-20260101-0002';
               inv.issueDate = '2026-06-25';
               inv.dueDate = '2026-07-25';
               return inv;
@@ -124,7 +124,7 @@ describe('InvoiceStore', () => {
     store.setStatusFilter('issued');
     await store.load();
     expect(store.items().length).toBe(1);
-    expect(store.items()[0].invoiceNumber).toBe('INV-2026-0001');
+    expect(store.items()[0].invoiceNumber).toBe('FAC-20260101-0001');
   });
 
   it('createInvoice adds a new draft and reloads', async () => {
@@ -140,7 +140,7 @@ describe('InvoiceStore', () => {
     await store.issue('1');
     const inv = invoices.find((i) => i.id === '1');
     expect(inv?.status).toBe('issued');
-    expect(inv?.invoiceNumber).toBe('INV-2026-0002');
+    expect(inv?.invoiceNumber).toBe('FAC-20260101-0002');
   });
 
   it('clears loading when a mutation is rejected', async () => {

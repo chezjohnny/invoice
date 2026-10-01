@@ -116,7 +116,7 @@ import { isValidTwintPhone, normalizeTwintPhone } from './twint';
           <section class="card bg-base-100 shadow">
             <div class="card-body gap-4">
               <h2 class="card-title text-base">{{ t().settings.numbering }}</h2>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="fieldset-label">{{ t().settings.prefixLabel }}</label>
                   <input class="input w-full" [class.input-error]="submitted() && errors().invoicePrefix"
@@ -125,6 +125,7 @@ import { isValidTwintPhone, normalizeTwintPhone } from './twint';
                   @if (submitted() && errors().invoicePrefix) {
                     <p class="fieldset-label text-error mt-1">{{ errors().invoicePrefix }}</p>
                   }
+                  <p class="fieldset-label mt-1 font-mono">{{ numberFormatHint() }}</p>
                 </div>
                 <div>
                   <label class="fieldset-label">{{ t().settings.termsLabel }}</label>
@@ -134,12 +135,6 @@ import { isValidTwintPhone, normalizeTwintPhone } from './twint';
                   @if (submitted() && errors().paymentTermsDays) {
                     <p class="fieldset-label text-error mt-1">{{ errors().paymentTermsDays }}</p>
                   }
-                </div>
-                <div>
-                  <label class="fieldset-label">{{ t().settings.nextNumberLabel }}</label>
-                  <input class="input w-full" type="text" disabled
-                    [value]="store.profile()?.invoiceNextNumber ?? ''" />
-                  <p class="fieldset-label mt-1 font-mono">{{ nextNumberHint() }}</p>
                 </div>
               </div>
             </div>
@@ -161,9 +156,8 @@ export class SettingsComponent {
   protected readonly t = inject(I18nService).T;
 
   constructor() {
-    // Never edit a stale profile: the shell loads it once at sign-in, while
-    // invoice_next_number moves server-side on every issue — and this is also
-    // what recovers the page when that initial load failed.
+    // Never edit a stale profile: the shell loads it once at sign-in — and this
+    // is also what recovers the page when that initial load failed.
     this.store.load();
   }
 
@@ -182,7 +176,7 @@ export class SettingsComponent {
     return rate != null ? String(Math.round(rate * 1e6) / 1e4) : '';
   });
   protected readonly invoicePrefix = linkedSignal(
-    () => this.store.profile()?.invoicePrefix ?? 'INV'
+    () => this.store.profile()?.invoicePrefix ?? 'FAC'
   );
   protected readonly paymentTermsDays = linkedSignal(() =>
     String(this.store.profile()?.paymentTermsDays ?? 30)
@@ -227,13 +221,10 @@ export class SettingsComponent {
     Object.values(this.errors()).every((e) => e === null)
   );
 
-  protected readonly nextNumberHint = computed(() => {
-    const profile = this.store.profile();
-    if (!profile) return '';
-    const prefix = this.invoicePrefix().trim() || profile.invoicePrefix;
-    const number = String(profile.invoiceNextNumber).padStart(4, '0');
-    const year = new Date().getFullYear();
-    return this.t().settings.nextNumberHint.replace('{n}', `${prefix}-${year}-${number}`);
+  protected readonly numberFormatHint = computed(() => {
+    const prefix = this.invoicePrefix().trim() || 'FAC';
+    const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    return this.t().settings.numberFormatHint.replace('{n}', `${prefix}-${day}-0001`);
   });
 
   protected asStr(event: Event): string {

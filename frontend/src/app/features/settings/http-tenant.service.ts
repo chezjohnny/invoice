@@ -18,7 +18,6 @@ interface CompanyProfileDto {
   default_vat_rate: string | null;
   invoice_prefix: string;
   payment_terms_days: number;
-  invoice_next_number: number;
   is_complete: boolean;
 }
 
@@ -55,7 +54,6 @@ export class HttpTenantService implements ITenantService {
       defaultVatRate: dto.default_vat_rate != null ? parseFloat(dto.default_vat_rate) : null,
       invoicePrefix: dto.invoice_prefix,
       paymentTermsDays: dto.payment_terms_days,
-      invoiceNextNumber: dto.invoice_next_number,
       isComplete: dto.is_complete,
     };
   }

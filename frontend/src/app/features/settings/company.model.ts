@@ -12,11 +12,7 @@ export interface CompanyProfile {
   defaultVatRate: number | null;
   invoicePrefix: string;
   paymentTermsDays: number;
-  invoiceNextNumber: number;
   isComplete: boolean;
 }
 
-export type CompanyProfileData = Omit<
-  CompanyProfile,
-  'id' | 'invoiceNextNumber' | 'isComplete'
->;
+export type CompanyProfileData = Omit<CompanyProfile, 'id' | 'isComplete'>;

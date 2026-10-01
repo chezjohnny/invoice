@@ -19,6 +19,7 @@ from app.core.security import hash_password
 from app.legacy_import import import_legacy_data
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import Tenant, TenantProfile, User
+from app.paper_import import import_paper_invoices
 
 
 async def _load_fixtures(path: Path, reset: bool) -> None:
@@ -47,6 +48,11 @@ async def _import_legacy(
 ) -> dict[str, int]:
     async with AsyncSessionLocal() as db:
         return await import_legacy_data(db, tenant_subdomain, customers, products, invoices)
+
+
+async def _import_paper(path: Path, dry_run: bool) -> dict[str, int]:
+    async with AsyncSessionLocal() as db:
+        return await import_paper_invoices(db, path.read_text(encoding="utf-8"), dry_run=dry_run)
 
 
 async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> bool:
@@ -97,8 +103,7 @@ async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> b
         default_vat_rate=(
             Decimal(str(p["default_vat_rate"])) if p.get("default_vat_rate") is not None else None
         ),
-        invoice_prefix=p.get("invoice_prefix", "INV"),
-        invoice_next_number=p.get("invoice_next_number", 1),
+        invoice_prefix=p.get("invoice_prefix", "FAC"),
         payment_terms_days=p.get("payment_terms_days", 30),
     )
     db.add(profile)
@@ -302,6 +307,12 @@ def main() -> None:
     p_legacy.add_argument("--products", required=True, type=Path)
     p_legacy.add_argument("--invoices", required=True, type=Path)
 
+    p_paper = sub.add_parser("import-paper", help="Import paper invoices typed in a text file")
+    p_paper.add_argument("file", type=Path)
+    p_paper.add_argument(
+        "--dry-run", action="store_true", help="Validate and report without writing"
+    )
+
     args = parser.parse_args()
 
     if args.command == "shell":
@@ -335,6 +346,23 @@ def main() -> None:
                 "  Created separate customers for "
                 f"{counts['unmatched_invoice_customers']} unmatched billed names"
             )
+
+    elif args.command == "import-paper":
+        if not args.file.is_file():
+            print(f"Error: file not found: {args.file}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            counts = asyncio.run(_import_paper(args.file, args.dry_run))
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(
+            f"{'✓ Dry run, nothing written: ' if args.dry_run else '✓ Imported '}"
+            f"{counts['invoices_created']} invoices "
+            f"({counts['invoices_skipped']} already imported), "
+            f"{counts['articles_created']} new articles "
+            f"({counts['articles_reused']} existing)"
+        )
 
 
 if __name__ == "__main__":

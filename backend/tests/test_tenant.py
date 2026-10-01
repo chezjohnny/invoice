@@ -35,7 +35,7 @@ async def test_new_tenant_profile_is_incomplete(
     assert data["iban"] is None
     assert data["city"] == ""
     assert data["is_complete"] is False
-    assert data["invoice_next_number"] == 1
+    assert data["invoice_prefix"] == "FAC"
 
 
 @pytest.mark.anyio
@@ -63,16 +63,6 @@ async def test_twint_phone_is_normalised(
     resp = await client.put(PROFILE, json={**VALID, "twint_phone": phone}, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["twint_phone"] == "+41791234567"
-
-
-@pytest.mark.anyio
-async def test_update_profile_keeps_invoice_counter(
-    client: AsyncClient, auth_headers: dict[str, str]
-):
-    resp = await client.put(
-        PROFILE, json={**VALID, "invoice_next_number": 999}, headers=auth_headers
-    )
-    assert resp.json()["invoice_next_number"] == 1
 
 
 @pytest.mark.anyio

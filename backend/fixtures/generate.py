@@ -174,7 +174,6 @@ def main() -> None:
                 "vat_number": "CHE-123.456.789 TVA",
                 "default_vat_rate": 0.081,
                 "invoice_prefix": "FAC",
-                "invoice_next_number": 1,
                 "payment_terms_days": 30,
             },
         },

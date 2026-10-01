@@ -57,7 +57,7 @@ invoice/
 - **TWINT**: optional `twint_phone` on TenantProfile (Swiss mobile, stored E.164, validated in `app/schemas/tenant.py` and `features/settings/twint.ts`); when set, the PDF prints a "Pay with TWINT" block (amount + invoice number as message). It is not part of `is_complete`
 - **Profile completeness**: `TenantProfile.is_complete` (address + IBAN) is the single source of truth — it gates `POST /invoices/{id}/issue` (422) and drives the shell warning banner
 - **`PUT /tenant/profile`** replaces the whole profile: a partial payload is rejected (422) instead of being completed with schema defaults, which would silently wipe the omitted fields
-- **`invoice_next_number`** is never client-writable: it is absent from `TenantProfileUpdate`, the counter moves solely on issue
+- **Invoice numbers** are `<invoice_prefix>-<YYYYMMDD>-<NNNN>` (default prefix `FAC`), the sequence restarting at `0001` each day; there is no stored counter — issuing takes the day's highest number + 1 (`app/services/invoice_numbers.py`). Legacy and paper imports map their `YYYYMMDD<n>` references to the same shape
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
 - **SQLite only** (dev, CI and production; PostgreSQL is overkill at this scale): the default `INVOICE_DATABASE_URL` is `backend/dev.db`, shared by `make dev` and the Docker dev stack; its schema comes from Alembic (`make backend-migrate`), never `create_all`, so dev matches production; `PRAGMA foreign_keys=ON`, WAL journal, `synchronous=NORMAL` and a 5 s `busy_timeout` applied on every connection (`app/core/database.py`)

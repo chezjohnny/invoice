@@ -1,6 +1,6 @@
 import re
 import zlib
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -181,9 +181,38 @@ async def test_issue_invoice(
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "issued"
-    assert data["invoice_number"] is not None
+    assert data["invoice_number"] == f"FAC-{date.today():%Y%m%d}-0001"
     assert data["issue_date"] is not None
     assert data["due_date"] is not None
+
+
+@pytest.mark.anyio
+async def test_issue_numbers_restart_each_day(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+    customer_id: str,
+    complete_profile: None,
+    db_session: AsyncSession,
+):
+    async def issue() -> dict:
+        create = await client.post(
+            INVOICES, json={"customer_id": customer_id, "lines": [LINE]}, headers=auth_headers
+        )
+        resp = await client.post(f"{INVOICES}/{create.json()['id']}/issue", headers=auth_headers)
+        return resp.json()
+
+    first = await issue()
+    yesterday = date.today() - timedelta(days=1)
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(first["id"]))
+        .values(invoice_number=f"FAC-{yesterday:%Y%m%d}-0001")
+    )
+    await db_session.commit()
+
+    today = f"FAC-{date.today():%Y%m%d}"
+    assert (await issue())["invoice_number"] == f"{today}-0001"
+    assert (await issue())["invoice_number"] == f"{today}-0002"
 
 
 @pytest.mark.anyio
@@ -298,7 +327,7 @@ async def test_pdf_shows_twint_payment_only_when_configured(
 
     profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
     writable = {k: v for k, v in profile.items()
-                if k not in ("id", "tenant_id", "invoice_next_number", "is_complete")}
+                if k not in ("id", "tenant_id", "is_complete")}
     await client.put(
         "/tenant/profile", json={**writable, "twint_phone": "079 123 45 67"}, headers=auth_headers
     )

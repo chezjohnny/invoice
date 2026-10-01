@@ -65,6 +65,16 @@ backend-import-legacy-prod: ## Run from the production checkout on the VPS; JSON
 	  --customers /legacy/customers.json --products /legacy/products.json \
 	  --invoices /legacy/factures.json
 
+.PHONY: backend-import-paper
+backend-import-paper: backend-migrate ## Import paper invoices from a text file (FILE=... [ARGS=--dry-run])
+	uv --directory backend run python -m app.cli import-paper "$(abspath $(FILE))" $(ARGS)
+
+.PHONY: backend-import-paper-prod
+backend-import-paper-prod: ## Run from the production checkout on the VPS (FILE=... [ARGS=--dry-run])
+	docker compose run --rm --no-deps -T \
+	  -v "$(abspath $(FILE)):/paper/invoices.txt:ro" \
+	  api python -m app.cli import-paper /paper/invoices.txt $(ARGS)
+
 .PHONY: backend-shell
 backend-shell: ## Interactive shell with app + DB preloaded
 	uv --directory backend run python -m app.cli shell

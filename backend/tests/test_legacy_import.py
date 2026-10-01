@@ -76,7 +76,7 @@ async def test_import_legacy_uses_billed_name_when_source_ids_collide(
         db_session, "cave-test", customers_path, products_path, invoices_path
     )
 
-    invoice = await db_session.scalar(select(Invoice).where(Invoice.invoice_number == "2007020201"))
+    invoice = await db_session.scalar(select(Invoice).where(Invoice.invoice_number == "FAC-20070202-01"))
     assert invoice is not None
     assert invoice.status.value == "paid"
     assert invoice.paid_at.isoformat() == "2007-01-05"

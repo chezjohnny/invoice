@@ -18,6 +18,7 @@ from app.models.article import Article
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus
 from app.models.tenant import Tenant, TenantProfile
+from app.services.invoice_numbers import from_reference
 
 
 def _read_array(path: Path) -> list[dict[str, Any]]:
@@ -245,7 +246,11 @@ async def import_legacy_data(
             id=uuid.uuid4(),
             tenant_id=tenant.id,
             customer_id=customer_id,
-            invoice_number=str(spec.get("ref") or "").strip() or None,
+            invoice_number=(
+                from_reference(profile.invoice_prefix, str(spec["ref"]).strip())
+                if str(spec.get("ref") or "").strip()
+                else None
+            ),
             status=InvoiceStatus.PAID,
             issue_date=issue_date,
             due_date=due_date,

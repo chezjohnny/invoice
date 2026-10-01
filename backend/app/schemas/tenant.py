@@ -114,5 +114,4 @@ class TenantProfileResponse(BaseModel):
     default_vat_rate: Decimal | None
     invoice_prefix: str
     payment_terms_days: int
-    invoice_next_number: int
     is_complete: bool

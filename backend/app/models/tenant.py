@@ -36,8 +36,7 @@ class TenantProfile(UUIDBase):
     logo_url: Mapped[str | None] = mapped_column(String(500))
     # null = non-assujetti TVA (CA < CHF 100k)
     default_vat_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
-    invoice_prefix: Mapped[str] = mapped_column(String(10), nullable=False, default="INV")
-    invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    invoice_prefix: Mapped[str] = mapped_column(String(10), nullable=False, default="FAC")
     payment_terms_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
 
     tenant: Mapped[Tenant] = relationship(back_populates="profile")

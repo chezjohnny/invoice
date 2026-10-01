@@ -22,6 +22,7 @@ from app.schemas.invoice import (
     InvoiceResponse,
     InvoiceUpdate,
 )
+from app.services.invoice_numbers import next_invoice_number
 from app.services.pdf import Lang, generate_invoice_pdf
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
@@ -185,13 +186,12 @@ async def issue_invoice(
         )
 
     today = date.today()
-    invoice.invoice_number = (
-        f"{profile.invoice_prefix}-{today.year}-{profile.invoice_next_number:04d}"
+    invoice.invoice_number = await next_invoice_number(
+        db, current_user.tenant_id, profile.invoice_prefix, today
     )
     invoice.issue_date = today
     invoice.due_date = today + timedelta(days=profile.payment_terms_days)
     invoice.status = InvoiceStatus.ISSUED
-    profile.invoice_next_number += 1
 
     lines_result = await db.execute(
         select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id)

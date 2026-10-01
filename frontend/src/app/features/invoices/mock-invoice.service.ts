@@ -97,7 +97,9 @@ export class MockInvoiceService implements IInvoiceService {
     const today = new Date().toISOString().slice(0, 10);
     inv.status = 'issued';
     inv.issueDate = today;
-    inv.invoiceNumber = `INV-${new Date().getFullYear()}-${String(this.nextNum).padStart(4, '0')}`;
+    const stem = `FAC-${today.replaceAll('-', '')}-`;
+    const sequence = this.invoices.filter((i) => i.invoiceNumber?.startsWith(stem)).length + 1;
+    inv.invoiceNumber = `${stem}${String(sequence).padStart(4, '0')}`;
     return Promise.resolve(inv);
   }
 

@@ -17,9 +17,8 @@ const INCOMPLETE: CompanyProfile = {
   twintPhone: null,
   vatNumber: null,
   defaultVatRate: null,
-  invoicePrefix: 'INV',
+  invoicePrefix: 'FAC',
   paymentTermsDays: 30,
-  invoiceNextNumber: 1,
   isComplete: false,
 };
 
