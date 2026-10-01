@@ -170,13 +170,17 @@ describe('InvoiceStore', () => {
     expect(invoices.find((i) => i.id === '1')?.status).toBe('cancelled');
   });
 
-  it('downloads the PDF in the UI language', async () => {
+  it('downloads the PDF in the UI language, named after the invoice number', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    let filename = '';
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      filename = this.download;
+    });
     TestBed.inject(I18nService).locale.set('fr');
-    await store.downloadPdf('2');
+    await store.downloadPdf(INVOICES[1]);
     expect(pdfLocale).toBe('fr');
+    expect(filename).toBe('FAC-20260101-0001.pdf');
   });
 
   it('setPage updates the page signal', () => {

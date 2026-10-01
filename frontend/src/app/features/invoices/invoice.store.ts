@@ -4,7 +4,8 @@ import { patchState, signalStore, withHooks, withMethods, withState } from '@ngr
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Sort, nextSort } from '../../shared/sort';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { Invoice, InvoiceCreate, InvoiceUpdate } from './invoice.model';
+import { saveFile } from '../../shared/download';
+import { Invoice, InvoiceCreate, InvoiceUpdate, invoicePdfName } from './invoice.model';
 
 const STATUSES = ['draft', 'issued', 'paid', 'cancelled'];
 
@@ -67,14 +68,8 @@ export const InvoiceStore = signalStore(
       }
     }
 
-    async function print(id: string): Promise<void> {
-      const blob = await service.downloadPdf(id, i18n.locale());
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'invoice.pdf';
-      a.click();
-      URL.revokeObjectURL(url);
+    async function print(invoice: Invoice): Promise<void> {
+      saveFile(await service.downloadPdf(invoice.id, i18n.locale()), invoicePdfName(invoice));
     }
 
     return {
@@ -100,8 +95,7 @@ export const InvoiceStore = signalStore(
       },
       async issueAndPrint(id: string): Promise<void> {
         await mutate(async () => {
-          await service.issue(id);
-          await print(id);
+          await print(await service.issue(id));
         });
       },
       async updateInvoice(id: string, data: InvoiceUpdate): Promise<void> {

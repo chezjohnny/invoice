@@ -6,7 +6,8 @@ import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Article } from '../articles/article.model';
-import { Invoice, InvoiceCreate } from '../invoices/invoice.model';
+import { saveFile } from '../../shared/download';
+import { Invoice, InvoiceCreate, invoicePdfName } from '../invoices/invoice.model';
 import { InvoiceFormComponent } from '../invoices/invoice-form.component';
 import { InvoiceLinesComponent } from '../invoices/invoice-lines.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
@@ -236,13 +237,7 @@ export class CustomerDetailComponent {
   protected async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
     const invoice = await this.invoiceService.create(data);
     const issued = await this.invoiceService.issue(invoice.id);
-    const blob = await this.invoiceService.downloadPdf(issued.id, this.i18n.locale());
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${issued.invoiceNumber ?? 'invoice'}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    saveFile(await this.invoiceService.downloadPdf(issued.id, this.i18n.locale()), invoicePdfName(issued));
     await this.loadInvoices(1);
     this.showInvoiceForm.set(false);
   }
@@ -272,12 +267,6 @@ export class CustomerDetailComponent {
 
   protected async downloadPdf(event: Event, inv: Invoice): Promise<void> {
     event.stopPropagation();
-    const blob = await this.invoiceService.downloadPdf(inv.id, this.i18n.locale());
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${inv.invoiceNumber ?? 'invoice'}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    saveFile(await this.invoiceService.downloadPdf(inv.id, this.i18n.locale()), invoicePdfName(inv));
   }
 }

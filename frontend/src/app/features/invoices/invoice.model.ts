@@ -42,3 +42,8 @@ export interface InvoiceCreate {
 }
 
 export type InvoiceUpdate = InvoiceCreate;
+
+/** A draft has no number yet: its PDF falls back to a generic name. */
+export function invoicePdfName(invoice: Pick<Invoice, 'invoiceNumber'>): string {
+  return `${invoice.invoiceNumber ?? 'invoice'}.pdf`;
+}

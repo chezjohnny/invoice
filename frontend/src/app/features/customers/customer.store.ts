@@ -1,4 +1,5 @@
 import { inject } from '@angular/core';
+import { saveFile } from '../../shared/download';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Sort, nextSort } from '../../shared/sort';
@@ -80,13 +81,7 @@ export const CustomerStore = signalStore(
         await load();
       },
       async exportCsv(): Promise<void> {
-        const blob = await service.exportCsv();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'customers.csv';
-        a.click();
-        URL.revokeObjectURL(url);
+        saveFile(await service.exportCsv(), 'customers.csv');
       },
     };
   }),

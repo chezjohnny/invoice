@@ -129,12 +129,12 @@ const STATUS_BADGE: Record<string, string> = {
                           <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
                             {{ t().common.cancel }}
                           </button>
-                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv.id)">
+                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv)">
                             {{ t().invoices.pdf }}
                           </button>
                         }
                         @if (inv.status === 'paid') {
-                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv.id)">
+                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv)">
                             {{ t().invoices.pdf }}
                           </button>
                         }
