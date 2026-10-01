@@ -52,6 +52,9 @@ def _invoice_total(invoice: Invoice) -> float:
     return sub - disc + vat
 
 
+RECENT_INVOICES = 10
+
+
 @router.get("/stats", response_model=DashboardStats)
 async def get_dashboard_stats(
     current_user: User = Depends(get_current_user),
@@ -82,7 +85,7 @@ async def get_dashboard_stats(
         and i.issue_date.year == current_year
     ]
 
-    recent = invoices[:5]
+    recent = invoices[:RECENT_INVOICES]
     customer_ids = list({i.customer_id for i in recent})
     cust_rows = (
         await db.execute(
