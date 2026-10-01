@@ -271,7 +271,7 @@ async def cancel_invoice(
 @router.get("/{invoice_id}/pdf")
 async def download_pdf(
     invoice_id: uuid.UUID,
-    lang: Lang = Query("en"),
+    lang: Lang = Query("fr"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:

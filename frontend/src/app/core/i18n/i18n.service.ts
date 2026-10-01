@@ -4,7 +4,7 @@ import { Locale, TRANSLATIONS, Translations } from './translations';
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   readonly locale = signal<Locale>(
-    (localStorage.getItem('locale') as Locale | null) ?? 'en'
+    (localStorage.getItem('locale') as Locale | null) ?? 'fr'
   );
 
   readonly T: import('@angular/core').Signal<Translations> = computed(

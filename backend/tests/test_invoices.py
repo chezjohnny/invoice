@@ -331,7 +331,7 @@ async def test_pdf_shows_twint_payment_only_when_configured(
     await client.put(
         "/tenant/profile", json={**writable, "twint_phone": "079 123 45 67"}, headers=auth_headers
     )
-    text = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    text = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
     assert "Pay with TWINT" in text
     assert "079 123 45 67" in text
 
@@ -345,12 +345,12 @@ async def test_pdf_language(
     }, headers=auth_headers)
     pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
 
-    english = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
-    assert "Invoice" in english and "Receipt" in english
-
-    french = _pdf_text((await client.get(f"{pdf_url}?lang=fr", headers=auth_headers)).content)
+    french = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
     assert "Facture" in french and "Récépissé" in french
     assert "Invoice" not in french
+
+    english = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+    assert "Invoice" in english and "Receipt" in english
 
     resp = await client.get(f"{pdf_url}?lang=de", headers=auth_headers)
     assert resp.status_code == 422
