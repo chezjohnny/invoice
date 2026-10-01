@@ -21,7 +21,7 @@ export class AuthService {
       this.http.post<TokenResponse>('/api/auth/login', { email, password })
     );
     this._storeTokens(resp);
-    await this.router.navigate(['/articles']);
+    await this.router.navigate(['/dashboard']);
   }
 
   async refresh(): Promise<boolean> {
