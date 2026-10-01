@@ -113,6 +113,9 @@ export const InvoiceStore = signalStore(
       async cancel(id: string): Promise<void> {
         await mutate(() => service.cancel(id));
       },
+      async delete(id: string): Promise<void> {
+        await mutate(() => service.delete(id));
+      },
       downloadPdf: print,
     };
   }),

@@ -21,6 +21,7 @@ export interface IInvoiceService {
   pay(id: string): Promise<Invoice>;
   updatePaymentDate(id: string, paidAt: string): Promise<Invoice>;
   cancel(id: string): Promise<Invoice>;
+  delete(id: string): Promise<void>;
   downloadPdf(id: string, locale: Locale): Promise<Blob>;
 }
 

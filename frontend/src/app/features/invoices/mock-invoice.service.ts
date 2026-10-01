@@ -125,6 +125,11 @@ export class MockInvoiceService implements IInvoiceService {
     return Promise.resolve(inv);
   }
 
+  delete(id: string): Promise<void> {
+    this.invoices = this.invoices.filter((i) => i.id !== id);
+    return Promise.resolve();
+  }
+
   downloadPdf(_id: string): Promise<Blob> {
     return Promise.resolve(new Blob(['mock-pdf'], { type: 'application/pdf' }));
   }

@@ -285,6 +285,24 @@ async def cancel_invoice(
     return await _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
+@router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_invoice(
+    invoice_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    invoice = await _get_invoice(invoice_id, current_user.tenant_id, db)
+    # Only a draft cancelled before issue: an issued invoice is an accounting
+    # record to keep, and deleting the day's last number would hand it out again.
+    if invoice.status != InvoiceStatus.CANCELLED or invoice.invoice_number is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Only invoices cancelled before being issued can be deleted",
+        )
+    await db.delete(invoice)
+    await db.commit()
+
+
 @router.get("/{invoice_id}/pdf")
 async def download_pdf(
     invoice_id: uuid.UUID,

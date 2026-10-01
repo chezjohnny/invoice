@@ -105,6 +105,10 @@ export class HttpInvoiceService implements IInvoiceService {
     ).then(this.toInvoice);
   }
 
+  delete(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/invoices/${id}`));
+  }
+
   downloadPdf(id: string, locale: Locale): Promise<Blob> {
     return firstValueFrom(
       this.http.get(`/api/invoices/${id}/pdf`, {

@@ -309,6 +309,31 @@ async def test_cancel_draft(
 
 
 @pytest.mark.anyio
+async def test_delete_only_drafts_cancelled_before_issue(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    async def invoice(*steps: str) -> str:
+        create = await client.post(
+            INVOICES, json={"customer_id": customer_id, "lines": [LINE]}, headers=auth_headers
+        )
+        invoice_id = create.json()["id"]
+        for step in steps:
+            await client.post(f"{INVOICES}/{invoice_id}/{step}", headers=auth_headers)
+        return invoice_id
+
+    for kept in (await invoice(), await invoice("issue"), await invoice("issue", "cancel")):
+        resp = await client.delete(f"{INVOICES}/{kept}", headers=auth_headers)
+        assert resp.status_code == 409
+
+    cancelled_draft = await invoice("cancel")
+    resp = await client.delete(f"{INVOICES}/{cancelled_draft}", headers=auth_headers)
+    assert resp.status_code == 204
+    listed = await client.get(INVOICES, headers=auth_headers)
+    assert cancelled_draft not in [i["id"] for i in listed.json()["items"]]
+    assert listed.json()["total"] == 3
+
+
+@pytest.mark.anyio
 async def test_cancel_issued(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):

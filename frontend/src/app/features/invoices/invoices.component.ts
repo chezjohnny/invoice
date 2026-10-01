@@ -12,6 +12,7 @@ import { InvoiceFormComponent } from './invoice-form.component';
 import { InvoiceLinesComponent } from './invoice-lines.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { IconComponent } from '../../shared/components/icon.component';
 import { PagerComponent } from '../../shared/components/pager.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
@@ -26,7 +27,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent, IconComponent],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent, IconComponent, ConfirmDialogComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -107,35 +108,54 @@ const STATUS_BADGE: Record<string, string> = {
                       </span>
                     </td>
                     <td (click)="$event.stopPropagation()">
-                      <div class="flex gap-1 justify-end flex-wrap">
+                      <div class="flex gap-1 justify-end items-center whitespace-nowrap">
                         @if (inv.status === 'draft') {
                           <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" (click)="openEdit(inv)"
                             [attr.data-tip]="t().common.edit" [attr.aria-label]="t().common.edit">
                             <app-icon name="edit" />
                           </button>
-                          <button class="btn btn-ghost btn-sm text-info" (click)="store.issue(inv.id)"
-                            [disabled]="company.isIncomplete()"
-                            [title]="company.isIncomplete() ? t().invoices.issueBlocked : ''">
-                            {{ t().invoices.issue }}
-                          </button>
-                          <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
-                            {{ t().common.cancel }}
+                          <!-- The tooltip sits on a wrapper: a disabled button gets no hover -->
+                          <span class="tooltip tooltip-left"
+                            [attr.data-tip]="company.isIncomplete() ? t().invoices.issueBlocked : t().invoices.issue">
+                            <button class="btn btn-ghost btn-sm btn-square text-info" (click)="store.issue(inv.id)"
+                              [disabled]="company.isIncomplete()" [attr.aria-label]="t().invoices.issue">
+                              <app-icon name="issue" />
+                            </button>
+                          </span>
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
+                            [attr.data-tip]="t().invoices.cancelInvoice" [attr.aria-label]="t().invoices.cancelInvoice"
+                            (click)="store.cancel(inv.id)">
+                            <app-icon name="cancel" />
                           </button>
                         }
                         @if (inv.status === 'issued') {
                           <button class="btn btn-ghost btn-sm text-success" (click)="store.pay(inv.id)">
                             {{ t().invoices.pay }}
                           </button>
-                          <button class="btn btn-ghost btn-sm text-error" (click)="store.cancel(inv.id)">
-                            {{ t().common.cancel }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
+                            [attr.data-tip]="t().invoices.cancelInvoice" [attr.aria-label]="t().invoices.cancelInvoice"
+                            (click)="store.cancel(inv.id)">
+                            <app-icon name="cancel" />
                           </button>
-                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv)">
-                            {{ t().invoices.pdf }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left"
+                            [attr.data-tip]="t().invoices.downloadPdf" [attr.aria-label]="t().invoices.downloadPdf"
+                            (click)="store.downloadPdf(inv)">
+                            <app-icon name="pdf" />
                           </button>
                         }
                         @if (inv.status === 'paid') {
-                          <button class="btn btn-ghost btn-sm" (click)="store.downloadPdf(inv)">
-                            {{ t().invoices.pdf }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left"
+                            [attr.data-tip]="t().invoices.downloadPdf" [attr.aria-label]="t().invoices.downloadPdf"
+                            (click)="store.downloadPdf(inv)">
+                            <app-icon name="pdf" />
+                          </button>
+                        }
+                        <!-- Only a draft cancelled before issue: issued invoices are kept -->
+                        @if (inv.status === 'cancelled' && !inv.invoiceNumber) {
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
+                            [attr.data-tip]="t().common.delete" [attr.aria-label]="t().common.delete"
+                            (click)="pendingDelete.set(inv)">
+                            <app-icon name="delete" />
                           </button>
                         }
                       </div>
@@ -194,6 +214,15 @@ const STATUS_BADGE: Record<string, string> = {
         <div class="modal-backdrop" (click)="showCustomerForm.set(false)"></div>
       </dialog>
     }
+
+    @if (pendingDelete(); as invoice) {
+      <app-confirm-dialog
+        [title]="t().invoices.deleteTitle"
+        [message]="deleteMessage(invoice)"
+        [confirmLabel]="t().common.delete"
+        (confirmed)="onDeleteConfirmed(invoice)"
+        (cancelled)="pendingDelete.set(null)" />
+    }
   `,
 })
 export class InvoicesComponent {
@@ -210,6 +239,7 @@ export class InvoicesComponent {
   protected readonly pendingCustomer = signal<Customer | null>(null);
   protected readonly statusTabs = STATUS_TABS;
   protected readonly expandedInvoiceId = signal<string | null>(null);
+  protected readonly pendingDelete = signal<Invoice | null>(null);
 
   protected readonly company = inject(CompanyStore);
 
@@ -228,6 +258,15 @@ export class InvoicesComponent {
       0
     );
     return sub - disc + vat;
+  }
+
+  protected async onDeleteConfirmed(invoice: Invoice): Promise<void> {
+    this.pendingDelete.set(null);
+    await this.store.delete(invoice.id);
+  }
+
+  protected deleteMessage(invoice: Invoice): string {
+    return this.t().invoices.deleteConfirm.replace('{customer}', invoice.customerName || '—');
   }
 
   protected toggleInvoice(id: string): void {

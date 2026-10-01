@@ -94,6 +94,9 @@ describe('InvoiceStore', () => {
               inv.status = 'cancelled';
               return inv;
             },
+            delete: async (id: string): Promise<void> => {
+              invoices = invoices.filter((i) => i.id !== id);
+            },
             downloadPdf: async (_id: string, locale: Locale) => {
               pdfLocale = locale;
               return new Blob(['%PDF'], { type: 'application/pdf' });
@@ -168,6 +171,13 @@ describe('InvoiceStore', () => {
     await store.load();
     await store.cancel('1');
     expect(invoices.find((i) => i.id === '1')?.status).toBe('cancelled');
+  });
+
+  it('delete removes the invoice and reloads the list', async () => {
+    await store.load();
+    await store.cancel('1');
+    await store.delete('1');
+    expect(store.items().some((i) => i.id === '1')).toBe(false);
   });
 
   it('downloads the PDF in the UI language, named after the invoice number', async () => {
