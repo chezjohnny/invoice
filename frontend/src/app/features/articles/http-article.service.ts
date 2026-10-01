@@ -59,12 +59,18 @@ export class HttpArticleService implements IArticleService {
     return firstValueFrom(this.http.get<number[]>('/api/articles/sales-years'));
   }
 
-  getAll(): Promise<Article[]> {
-    return firstValueFrom(
-      this.http.get<PageDto<ArticleDto>>('/api/articles', {
-        params: new HttpParams().set('per_page', '100'),
-      })
-    ).then((dto) => dto.items.map(this.toArticle));
+  async getAll(): Promise<Article[]> {
+    // per_page is capped at 100 server-side: walk the pages to get every article.
+    const articles: Article[] = [];
+    for (let page = 1; ; page++) {
+      const dto = await firstValueFrom(
+        this.http.get<PageDto<ArticleDto>>('/api/articles', {
+          params: new HttpParams().set('per_page', '100').set('page', String(page)),
+        })
+      );
+      articles.push(...dto.items.map(this.toArticle));
+      if (page >= dto.pages) return articles;
+    }
   }
 
   create(data: Omit<Article, 'id' | 'isArchived'>): Promise<Article> {

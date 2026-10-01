@@ -16,6 +16,15 @@ interface LineForm {
   vatRateSnapshot: string;
 }
 
+const MAX_RECOMMENDATIONS = 10;
+// Enough recent invoices to usually find MAX_RECOMMENDATIONS distinct articles.
+const RECENT_INVOICES = 20;
+const MAX_ARTICLE_RESULTS = 20;
+
+function searchKey(value: string): string {
+  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 interface Recommendation {
   articleId: string | null;
   description: string;
@@ -100,7 +109,7 @@ interface Recommendation {
           <label class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</label>
 
           @if (lines().length > 0) {
-            <div class="overflow-x-auto">
+            <div>
               <!-- Column headers -->
               <div class="grid items-end gap-x-2 px-0.5 mb-1 text-xs text-base-content/50"
                    style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
@@ -114,24 +123,35 @@ interface Recommendation {
               @for (line of lines(); track $index; let i = $index) {
                 <div class="grid items-center gap-x-2 px-0.5 mb-1"
                      style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
-                  <!-- Article select (with description tooltip) or free-text description -->
-                  <div class="flex gap-1 min-w-0">
-                    <select class="select select-bordered select-sm"
-                      [class.flex-1]="line.articleId !== null"
-                      [class.w-32]="line.articleId === null"
-                      [class.shrink-0]="line.articleId === null"
-                      [title]="line.descriptionSnapshot"
-                      (change)="selectArticle(i, asStr($event))">
-                      <option value="" [selected]="!line.articleId">—</option>
-                      @for (a of articles(); track a.id) {
-                        <option [value]="a.id" [selected]="a.id === line.articleId">{{ a.name }}</option>
-                      }
-                    </select>
-                    @if (line.articleId === null) {
-                      <input class="input input-sm flex-1 min-w-0" type="text"
-                        [placeholder]="t().invoices.descLabel"
+                  <!-- Article search; text that matches no picked article stays a free-text line -->
+                  <div class="relative min-w-0">
+                    <label class="input input-sm w-full" [class.input-primary]="line.articleId !== null">
+                      <span class="badge badge-xs shrink-0"
+                        [class.badge-primary]="line.articleId !== null"
+                        [class.badge-ghost]="line.articleId === null">
+                        {{ line.articleId !== null ? t().invoices.articleLabel : t().invoices.freeText }}
+                      </span>
+                      <input class="grow min-w-0" type="text"
+                        [title]="line.descriptionSnapshot"
+                        [placeholder]="t().invoices.searchArticle"
                         [value]="line.descriptionSnapshot"
-                        (input)="updateLine(i, 'descriptionSnapshot', asStr($event))" />
+                        (focus)="articleSearchLine.set(i)"
+                        (input)="onArticleSearch(i, asStr($event))"
+                        (blur)="onArticleBlur()" />
+                    </label>
+                    @if (articleSearchLine() === i && articleResults(line.descriptionSnapshot).length > 0) {
+                      <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
+                        @for (a of articleResults(line.descriptionSnapshot); track a.id) {
+                          <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm flex justify-between gap-2"
+                            [class.font-medium]="a.id === line.articleId"
+                            (mousedown)="selectArticle(i, a.id)">
+                            <span class="truncate">{{ a.name }}</span>
+                            <span class="text-base-content/50 text-xs shrink-0 tabular-nums">
+                              {{ a.unitPrice | currency:'CHF':'code':'1.2-2' }} · {{ a.stockQuantity }}
+                            </span>
+                          </li>
+                        }
+                      </ul>
                     }
                   </div>
                   <!-- Qty -->
@@ -235,24 +255,37 @@ export class InvoiceFormComponent {
   protected readonly showDropdown = signal(false);
   protected readonly recentInvoices = signal<Invoice[]>([]);
   private searchTimer?: ReturnType<typeof setTimeout>;
+  protected readonly articleSearchLine = signal<number | null>(null);
 
   protected readonly articleRecommendations = computed<Recommendation[]>(() => {
     const seen = new Set<string>();
     const recs: Recommendation[] = [];
-    const activeIds = new Set(this.articles().map((a) => a.id));
+    const articles = new Map(this.articles().map((a) => [a.id, a]));
     for (const inv of this.recentInvoices()) {
       for (const line of inv.lines) {
         const key = line.articleId ?? line.descriptionSnapshot;
-        if (!seen.has(key)) {
-          seen.add(key);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (line.articleId) {
+          // An archived (sold out) or deleted article is no longer offered:
+          // suggesting it as free text would bill it outside the stock.
+          const article = articles.get(line.articleId);
+          if (!article) continue;
           recs.push({
-            articleId: line.articleId && activeIds.has(line.articleId) ? line.articleId : null,
+            articleId: article.id,
+            description: article.name,
+            unitPrice: article.unitPrice,
+            vatRate: article.vatRateOverride,
+          });
+        } else {
+          recs.push({
+            articleId: null,
             description: line.descriptionSnapshot,
             unitPrice: line.unitPriceSnapshot,
             vatRate: line.vatRateSnapshot,
           });
-          if (recs.length >= 5) return recs;
         }
+        if (recs.length >= MAX_RECOMMENDATIONS) return recs;
       }
     }
     return recs;
@@ -291,7 +324,7 @@ export class InvoiceFormComponent {
       const customer = this.externalCustomer();
       if (customer) {
         this.invoiceService
-          .list({ customerId: customer.id, perPage: 5 })
+          .list({ customerId: customer.id, perPage: RECENT_INVOICES })
           .then((page) => this.recentInvoices.set(page.items));
       }
     });
@@ -320,7 +353,7 @@ export class InvoiceFormComponent {
     this.showDropdown.set(false);
     this.customerResults.set([]);
     this.invoiceService
-      .list({ customerId: customer.id, perPage: 5 })
+      .list({ customerId: customer.id, perPage: RECENT_INVOICES })
       .then((page) => this.recentInvoices.set(page.items));
   }
 
@@ -376,6 +409,33 @@ export class InvoiceFormComponent {
           : l
       )
     );
+  }
+
+  protected articleResults(query: string): Article[] {
+    const words = searchKey(query).split(/\s+/).filter(Boolean);
+    return this.articles()
+      .filter((a) => {
+        const name = searchKey(a.name);
+        return words.every((w) => name.includes(w));
+      })
+      .slice(0, MAX_ARTICLE_RESULTS);
+  }
+
+  protected onArticleSearch(index: number, value: string): void {
+    this.articleSearchLine.set(index);
+    // Typing detaches the line from its article: unless one is picked again,
+    // it is billed as free text, so the article's price and VAT go with it.
+    this.lines.update((ls) =>
+      ls.map((l, i) => {
+        if (i !== index) return l;
+        const detached = l.articleId !== null ? { unitPriceSnapshot: '', vatRateSnapshot: '' } : {};
+        return { ...l, ...detached, articleId: null, descriptionSnapshot: value };
+      })
+    );
+  }
+
+  protected onArticleBlur(): void {
+    setTimeout(() => this.articleSearchLine.set(null), 200);
   }
 
   protected lineStockWarning(line: LineForm): boolean {
