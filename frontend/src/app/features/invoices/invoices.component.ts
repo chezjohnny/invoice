@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
@@ -8,8 +9,11 @@ import { Customer } from '../customers/customer.model';
 import { CompanyStore } from '../settings/company.store';
 import { CustomerFormComponent } from '../customers/customer-form.component';
 import { InvoiceFormComponent } from './invoice-form.component';
+import { InvoiceLinesComponent } from './invoice-lines.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
+import { PagerComponent } from '../../shared/components/pager.component';
+import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
 
 const STATUS_TABS = ['all', 'draft', 'issued', 'paid', 'cancelled'] as const;
@@ -21,7 +25,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, SortHeaderComponent],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -32,7 +36,9 @@ const STATUS_BADGE: Record<string, string> = {
       </div>
 
       <!-- Filters row -->
-      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+        <app-search-input [placeholder]="t().invoices.search" [value]="store.search()"
+          (search)="store.setSearch($event)" />
         <div class="tabs tabs-bordered overflow-x-auto flex-1 min-w-0">
           @for (tab of statusTabs; track tab) {
             <button class="tab whitespace-nowrap"
@@ -42,12 +48,6 @@ const STATUS_BADGE: Record<string, string> = {
             </button>
           }
         </div>
-        <label class="input input-sm flex items-center gap-2 w-full sm:w-48 shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-40 shrink-0" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
-          </svg>
-          <input type="text" placeholder="FAC-…" [value]="store.search()" (input)="onSearch($event)" />
-        </label>
       </div>
 
       @if (store.loading()) {
@@ -57,9 +57,10 @@ const STATUS_BADGE: Record<string, string> = {
       } @else {
         <div class="card bg-base-100 shadow overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table class="table w-full">
               <thead>
                 <tr>
+                  <th class="w-8"></th>
                   <th class="hidden sm:table-cell" appSortHeader="number" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.number }}</th>
                   <th appSortHeader="customer" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.customer }}</th>
                   <th class="hidden md:table-cell" appSortHeader="date" [sort]="store.sort()" (sortChange)="store.toggleSort($event)">{{ t().invoices.date }}</th>
@@ -72,12 +73,20 @@ const STATUS_BADGE: Record<string, string> = {
               </thead>
               <tbody>
                 @for (inv of store.items(); track inv.id) {
-                  <tr>
+                  <tr class="cursor-pointer hover:bg-base-200" (click)="toggleInvoice(inv.id)">
+                    <td class="text-base-content/40 text-xs pl-4">
+                      {{ expandedInvoiceId() === inv.id ? '▲' : '▼' }}
+                    </td>
                     <td class="font-mono text-sm hidden sm:table-cell">{{ inv.invoiceNumber ?? '—' }}</td>
-                    <td class="font-medium">{{ inv.customerName || '—' }}</td>
+                    <td class="font-medium">
+                      <a [routerLink]="['/customers', inv.customerId]" class="hover:text-primary hover:underline"
+                        (click)="$event.stopPropagation()">
+                        {{ inv.customerName || '—' }}
+                      </a>
+                    </td>
                     <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.issueDate ?? '—' }}</td>
                     <td class="text-sm text-base-content/60 hidden md:table-cell">{{ inv.dueDate ?? '—' }}</td>
-                    <td>
+                    <td (click)="$event.stopPropagation()">
                       @if (inv.status === 'paid') {
                         <input type="date" class="input input-bordered input-xs w-36"
                           [value]="inv.paidAt ?? ''"
@@ -92,7 +101,7 @@ const STATUS_BADGE: Record<string, string> = {
                         {{ statusLabel(inv.status) }}
                       </span>
                     </td>
-                    <td>
+                    <td (click)="$event.stopPropagation()">
                       <div class="flex gap-1 justify-end flex-wrap">
                         @if (inv.status === 'draft') {
                           <button class="btn btn-ghost btn-sm" (click)="openEdit(inv)">
@@ -126,9 +135,16 @@ const STATUS_BADGE: Record<string, string> = {
                       </div>
                     </td>
                   </tr>
+                  @if (expandedInvoiceId() === inv.id) {
+                    <tr>
+                      <td colspan="9" class="bg-base-200/60 p-0">
+                        <app-invoice-lines [invoice]="inv" />
+                      </td>
+                    </tr>
+                  }
                 } @empty {
                   <tr>
-                    <td colspan="8" class="text-center text-base-content/40 py-10">
+                    <td colspan="9" class="text-center text-base-content/40 py-10">
                       {{ t().invoices.noResults }}
                     </td>
                   </tr>
@@ -138,20 +154,8 @@ const STATUS_BADGE: Record<string, string> = {
           </div>
         </div>
 
-        @if (store.pages() > 1) {
-          <div class="flex justify-center items-center gap-4 mt-4">
-            <div class="join">
-              @for (p of pageRange(); track p) {
-                <button class="join-item btn btn-sm"
-                  [class.btn-active]="store.page() === p"
-                  (click)="store.setPage(p)">{{ p }}</button>
-              }
-            </div>
-            <span class="text-sm text-base-content/50">
-              {{ store.total() }} {{ t().common.results }}
-            </span>
-          </div>
-        }
+        <app-pager [page]="store.page()" [pages]="store.pages()" [total]="store.total()"
+          (pageChange)="store.setPage($event)" />
       }
     </div>
 
@@ -199,18 +203,7 @@ export class InvoicesComponent {
   protected readonly editingInvoice = signal<Invoice | null>(null);
   protected readonly pendingCustomer = signal<Customer | null>(null);
   protected readonly statusTabs = STATUS_TABS;
-
-  private searchTimer?: ReturnType<typeof setTimeout>;
-
-  protected readonly pageRange = computed(() => {
-    const total = this.store.pages();
-    const current = this.store.page();
-    const range: number[] = [];
-    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
-      range.push(i);
-    }
-    return range;
-  });
+  protected readonly expandedInvoiceId = signal<string | null>(null);
 
   protected readonly company = inject(CompanyStore);
 
@@ -231,6 +224,10 @@ export class InvoicesComponent {
     return sub - disc + vat;
   }
 
+  protected toggleInvoice(id: string): void {
+    this.expandedInvoiceId.update((current) => (current === id ? null : id));
+  }
+
   protected statusLabel(status: string): string {
     return (this.t().status as Record<string, string>)[status] ?? status;
   }
@@ -239,11 +236,6 @@ export class InvoicesComponent {
     return STATUS_BADGE[status] ?? 'badge-neutral';
   }
 
-  onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
-  }
 
   async onPaymentDateChange(id: string, event: Event): Promise<void> {
     const paidAt = (event.target as HTMLInputElement).value;

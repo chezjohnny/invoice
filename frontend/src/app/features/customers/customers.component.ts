@@ -1,15 +1,17 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer } from './customer.model';
 import { CustomerFormComponent } from './customer-form.component';
 import { CustomerStore } from './customer.store';
+import { PagerComponent } from '../../shared/components/pager.component';
+import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
 
 @Component({
   selector: 'app-customers',
   providers: [CustomerStore],
-  imports: [CustomerFormComponent, RouterLink, SortHeaderComponent],
+  imports: [CustomerFormComponent, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -25,13 +27,8 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
       </div>
 
       <div class="flex flex-wrap items-center gap-4 mb-4">
-      <label class="input w-full sm:max-w-xs flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40 shrink-0" viewBox="0 0 16 16">
-          <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
-        </svg>
-        <input type="text" [placeholder]="t().customers.search"
-          [value]="store.search()" (input)="onSearch($event)" />
-      </label>
+      <app-search-input [placeholder]="t().customers.search" [value]="store.search()"
+        (search)="store.setSearch($event)" />
       <label class="label cursor-pointer gap-2 text-sm">
         <input type="checkbox" class="toggle toggle-sm"
           [checked]="store.archived()" (change)="onToggleArchived($event)" />
@@ -98,20 +95,8 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
           </div>
         </div>
 
-        @if (store.pages() > 1) {
-          <div class="flex justify-center items-center gap-4 mt-4">
-            <div class="join">
-              @for (p of pageRange(); track p) {
-                <button class="join-item btn btn-sm"
-                  [class.btn-active]="store.page() === p"
-                  (click)="store.setPage(p)">{{ p }}</button>
-              }
-            </div>
-            <span class="text-sm text-base-content/50">
-              {{ store.total() }} {{ t().common.results }}
-            </span>
-          </div>
-        }
+        <app-pager [page]="store.page()" [pages]="store.pages()" [total]="store.total()"
+          (pageChange)="store.setPage($event)" />
       }
     </div>
 
@@ -135,23 +120,6 @@ export class CustomersComponent {
   protected readonly showForm = signal(false);
   protected readonly editingCustomer = signal<Customer | null>(null);
 
-  private searchTimer?: ReturnType<typeof setTimeout>;
-
-  protected readonly pageRange = computed(() => {
-    const total = this.store.pages();
-    const current = this.store.page();
-    const range: number[] = [];
-    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
-      range.push(i);
-    }
-    return range;
-  });
-
-  onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.store.setSearch(value), 300);
-  }
 
   onToggleArchived(event: Event): void {
     this.store.setArchived((event.target as HTMLInputElement).checked);

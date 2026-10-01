@@ -8,8 +8,13 @@ import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Article } from '../articles/article.model';
 import { Invoice, InvoiceCreate } from '../invoices/invoice.model';
 import { InvoiceFormComponent } from '../invoices/invoice-form.component';
+import { InvoiceLinesComponent } from '../invoices/invoice-lines.component';
+import { SearchInputComponent } from '../../shared/components/search-input.component';
+import { PagerComponent } from '../../shared/components/pager.component';
 import { CustomerFormComponent } from './customer-form.component';
 import { Customer } from './customer.model';
+
+const INVOICES_PER_PAGE = 20;
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'badge-neutral', issued: 'badge-info', paid: 'badge-success', cancelled: 'badge-error',
@@ -17,7 +22,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 @Component({
   selector: 'app-customer-detail',
-  imports: [RouterLink, DecimalPipe, InvoiceFormComponent, CustomerFormComponent],
+  imports: [RouterLink, DecimalPipe, InvoiceFormComponent, CustomerFormComponent, PagerComponent, SearchInputComponent, InvoiceLinesComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <a routerLink="/customers" class="btn btn-ghost btn-sm mb-5 -ml-2">
@@ -65,6 +70,11 @@ const STATUS_BADGE: Record<string, string> = {
           </button>
         </div>
 
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+          <app-search-input [placeholder]="t().invoices.search" [value]="search()"
+            (search)="onSearch($event)" />
+        </div>
+
         <!-- New invoice form (inline) -->
         @if (showInvoiceForm()) {
           <div class="card bg-base-100 shadow mb-6">
@@ -84,7 +94,7 @@ const STATUS_BADGE: Record<string, string> = {
         @if (invoices().length === 0) {
           <div class="card bg-base-100 shadow">
             <div class="card-body text-center text-base-content/40 py-10">
-              <p>{{ t().customers.noInvoices }}</p>
+              <p>{{ search() ? t().invoices.noResults : t().customers.noInvoices }}</p>
             </div>
           </div>
         } @else {
@@ -123,55 +133,14 @@ const STATUS_BADGE: Record<string, string> = {
                     @if (expandedInvoiceId() === inv.id) {
                       <tr>
                         <td colspan="6" class="bg-base-200/60 p-0">
-                          <div class="px-4 py-3">
-                            <!-- Invoice number on mobile (since column is hidden) -->
-                            <p class="text-xs text-base-content/50 font-mono mb-2 sm:hidden">
-                              {{ inv.invoiceNumber ?? '—' }}
-                              @if (inv.issueDate) { · {{ inv.issueDate }} }
-                            </p>
-                            @if (inv.lines.length === 0) {
-                              <p class="text-sm text-base-content/40">{{ t().invoices.noLines }}</p>
-                            } @else {
-                              <div class="overflow-x-auto">
-                                <table class="table table-sm w-full mb-3">
-                                  <thead>
-                                    <tr>
-                                      <th>{{ t().invoices.descLabel }}</th>
-                                      <th class="text-right">{{ t().invoices.qtyLabel }}</th>
-                                      <th class="text-right hidden sm:table-cell">{{ t().invoices.priceLabel }}</th>
-                                      <th class="text-right hidden sm:table-cell">{{ t().invoices.vatLabel }}</th>
-                                      <th class="text-right">{{ t().invoices.total }}</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    @for (line of inv.lines; track line.id) {
-                                      <tr>
-                                        <td>{{ line.descriptionSnapshot }}</td>
-                                        <td class="text-right tabular-nums">{{ line.quantity }}</td>
-                                        <td class="text-right tabular-nums hidden sm:table-cell">
-                                          {{ line.unitPriceSnapshot | number:'1.2-2' }}
-                                        </td>
-                                        <td class="text-right hidden sm:table-cell">
-                                          @if (line.vatRateSnapshot != null) {
-                                            {{ (line.vatRateSnapshot * 100) | number:'1.1-1' }}%
-                                          } @else { — }
-                                        </td>
-                                        <td class="text-right font-medium tabular-nums">
-                                          {{ (line.quantity * line.unitPriceSnapshot) | number:'1.2-2' }}
-                                        </td>
-                                      </tr>
-                                    }
-                                  </tbody>
-                                </table>
-                              </div>
-                            }
+                          <app-invoice-lines [invoice]="inv">
                             @if (inv.status === 'issued' || inv.status === 'paid') {
                               <button class="btn btn-sm btn-outline"
                                 (click)="downloadPdf($event, inv)">
                                 ↓ PDF
                               </button>
                             }
-                          </div>
+                          </app-invoice-lines>
                         </td>
                       </tr>
                     }
@@ -180,6 +149,8 @@ const STATUS_BADGE: Record<string, string> = {
               </table>
             </div>
           </div>
+          <app-pager [page]="invoicePage()" [pages]="invoicePages()" [total]="invoiceTotal()"
+            (pageChange)="loadInvoices($event)" />
         }
       }
     </div>
@@ -208,6 +179,10 @@ export class CustomerDetailComponent {
 
   protected readonly customer = signal<Customer | null>(null);
   protected readonly invoices = signal<Invoice[]>([]);
+  protected readonly invoicePage = signal(1);
+  protected readonly invoicePages = signal(1);
+  protected readonly invoiceTotal = signal(0);
+  protected readonly search = signal('');
   protected readonly articles = signal<Article[]>([]);
   protected readonly loading = signal(true);
   protected readonly showInvoiceForm = signal(false);
@@ -221,28 +196,37 @@ export class CustomerDetailComponent {
 
   private async _load(id: string): Promise<void> {
     this.loading.set(true);
-    const [customer, invoicePage, articles] = await Promise.all([
+    const [customer, articles] = await Promise.all([
       this.customerService.getById(id),
-      this.invoiceService.list({ customerId: id, perPage: 50 }),
       this.articleService.getAll(),
+      this.loadInvoices(1),
     ]);
     this.customer.set(customer);
-    this.invoices.set(invoicePage.items);
     this.articles.set(articles);
-    this.expandedInvoiceId.set(invoicePage.items[0]?.id ?? null);
     this.loading.set(false);
   }
 
-  private async _reloadInvoices(): Promise<void> {
+  protected onSearch(value: string): void {
+    this.search.set(value);
+    this.loadInvoices(1);
+  }
+
+  protected async loadInvoices(page: number): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id')!;
-    const page = await this.invoiceService.list({ customerId: id, perPage: 50 });
-    this.invoices.set(page.items);
-    this.expandedInvoiceId.set(page.items[0]?.id ?? null);
+    const result = await this.invoiceService.list({
+      customerId: id, search: this.search(), page, perPage: INVOICES_PER_PAGE,
+    });
+    this.invoices.set(result.items);
+    this.invoicePage.set(result.page);
+    this.invoicePages.set(result.pages);
+    this.invoiceTotal.set(result.total);
+    this.expandedInvoiceId.set(result.items[0]?.id ?? null);
   }
 
   protected async onInvoiceSaved(data: InvoiceCreate): Promise<void> {
     await this.invoiceService.create(data);
-    await this._reloadInvoices();
+    // The new invoice is the most recent one: it opens page 1.
+    await this.loadInvoices(1);
     this.showInvoiceForm.set(false);
   }
 
@@ -256,7 +240,7 @@ export class CustomerDetailComponent {
     a.download = `${issued.invoiceNumber ?? 'invoice'}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
-    await this._reloadInvoices();
+    await this.loadInvoices(1);
     this.showInvoiceForm.set(false);
   }
 
