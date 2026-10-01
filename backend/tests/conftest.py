@@ -58,7 +58,7 @@ async def complete_profile(client: AsyncClient, auth_headers: dict[str, str]) ->
         "company_name": "Cave Test",
         "address_line1": "Route du Vignoble 4", "address_line2": None,
         "postal_code": "1180", "city": "Rolle", "country": "CH",
-        "iban": "CH9300762011623852957", "twint_phone": None, "vat_number": None,
+        "iban": "CH9300762011623852957", "twint_phone": None, "phone": None, "vat_number": None,
         "default_vat_rate": "0.081",
         "invoice_prefix": "FAC", "payment_terms_days": 30,
     }, headers=auth_headers)

@@ -171,6 +171,7 @@ def main() -> None:
                 "country": "CH",
                 "iban": "CH56 0483 5012 3456 7800 9",
                 "twint_phone": "+41791234567",
+                "phone": "+41241234567",
                 "vat_number": "CHE-123.456.789 TVA",
                 "default_vat_rate": 0.081,
                 "invoice_prefix": "FAC",

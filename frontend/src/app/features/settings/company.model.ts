@@ -8,6 +8,7 @@ export interface CompanyProfile {
   country: string;
   iban: string | null;
   twintPhone: string | null;
+  phone: string | null;
   vatNumber: string | null;
   defaultVatRate: number | null;
   invoicePrefix: string;

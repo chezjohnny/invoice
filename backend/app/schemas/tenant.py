@@ -19,6 +19,8 @@ def _iban_checksum_ok(iban: str) -> bool:
 
 # TWINT accounts are bound to a Swiss mobile number (07x).
 _TWINT_PHONE = re.compile(r"\+417[5-9]\d{7}")
+# Any E.164 number: the contact phone may be a landline or a foreign line.
+_PHONE = re.compile(r"\+[1-9]\d{7,14}")
 
 
 def _normalize_phone(value: str) -> str:
@@ -55,6 +57,7 @@ class TenantProfileUpdate(BaseModel):
     ]
     iban: str | None
     twint_phone: str | None
+    phone: str | None
     vat_number: Annotated[str, StringConstraints(strip_whitespace=True, max_length=20)] | None
     default_vat_rate: Decimal | None = Field(ge=0, le=1)
     invoice_prefix: Annotated[
@@ -81,6 +84,16 @@ class TenantProfileUpdate(BaseModel):
         ):
             raise ValueError("Invalid IBAN: a Swiss or Liechtenstein IBAN is required")
         return iban
+
+    @field_validator("phone", mode="after")
+    @classmethod
+    def _validate_phone(cls, value: str | None) -> str | None:
+        phone = _normalize_phone(value or "")
+        if not phone:
+            return None
+        if not _PHONE.fullmatch(phone):
+            raise ValueError("Invalid phone number")
+        return phone
 
     @field_validator("twint_phone", mode="after")
     @classmethod
@@ -110,6 +123,7 @@ class TenantProfileResponse(BaseModel):
     country: str
     iban: str | None
     twint_phone: str | None
+    phone: str | None
     vat_number: str | None
     default_vat_rate: Decimal | None
     invoice_prefix: str

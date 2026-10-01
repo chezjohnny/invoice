@@ -392,6 +392,26 @@ async def test_pdf_shows_payment_date_once_paid(
 
 
 @pytest.mark.anyio
+async def test_pdf_header_shows_company_phone(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    create = await client.post(INVOICES, json={
+        "customer_id": customer_id, "lines": [LINE],
+    }, headers=auth_headers)
+    pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
+    assert "Tél." not in _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+
+    profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
+    writable = {k: v for k, v in profile.items() if k not in ("id", "tenant_id", "is_complete")}
+    await client.put(
+        "/tenant/profile", json={**writable, "phone": "024 123 45 67"}, headers=auth_headers
+    )
+    assert "Tél. : 024 123 45 67" in _pdf_text(
+        (await client.get(pdf_url, headers=auth_headers)).content
+    )
+
+
+@pytest.mark.anyio
 async def test_pdf_language(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):

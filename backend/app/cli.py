@@ -99,6 +99,7 @@ async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> b
         country=p.get("country", "CH"),
         iban=p.get("iban"),
         twint_phone=p.get("twint_phone"),
+        phone=p.get("phone"),
         vat_number=p.get("vat_number"),
         default_vat_rate=(
             Decimal(str(p["default_vat_rate"])) if p.get("default_vat_rate") is not None else None

@@ -32,6 +32,8 @@ class TenantProfile(UUIDBase):
     iban: Mapped[str | None] = mapped_column(String(34))
     # E.164 Swiss mobile number the customer can send the amount to with TWINT.
     twint_phone: Mapped[str | None] = mapped_column(String(12))
+    # E.164 contact number printed in the invoice header.
+    phone: Mapped[str | None] = mapped_column(String(16))
     vat_number: Mapped[str | None] = mapped_column(String(20))
     logo_url: Mapped[str | None] = mapped_column(String(500))
     # null = non-assujetti TVA (CA < CHF 100k)

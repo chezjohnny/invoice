@@ -17,6 +17,7 @@ VALID = {
     "country": "CH",
     "iban": "CH93 0076 2011 6238 5295 7",
     "twint_phone": "079 123 45 67",
+    "phone": "024 123 45 67",
     "vat_number": "CHE-123.456.789 TVA",
     "default_vat_rate": "0.081",
     "invoice_prefix": "CDC",
@@ -63,6 +64,25 @@ async def test_twint_phone_is_normalised(
     resp = await client.put(PROFILE, json={**VALID, "twint_phone": phone}, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["twint_phone"] == "+41791234567"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("phone", "expected"),
+    [("024 123 45 67", "+41241234567"), ("+33 1 23 45 67 89", "+33123456789")],
+)
+async def test_phone_is_normalised(
+    client: AsyncClient, auth_headers: dict[str, str], phone: str, expected: str
+):
+    resp = await client.put(PROFILE, json={**VALID, "phone": phone}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["phone"] == expected
+
+
+@pytest.mark.anyio
+async def test_invalid_phone_is_rejected(client: AsyncClient, auth_headers: dict[str, str]):
+    resp = await client.put(PROFILE, json={**VALID, "phone": "12"}, headers=auth_headers)
+    assert resp.status_code == 422
 
 
 @pytest.mark.anyio

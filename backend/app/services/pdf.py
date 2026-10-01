@@ -20,7 +20,8 @@ Lang = Literal["en", "fr"]
 # QR slip wording follows the SIX Swiss Payment Standards for each language.
 _LABELS: dict[Lang, dict[str, str]] = {
     "en": {
-        "invoice": "Invoice", "date": "Date:", "due": "Due:", "bill_to": "Bill to:",
+        "invoice": "Invoice", "phone": "Phone: {phone}",
+        "date": "Date:", "due": "Due:", "bill_to": "Bill to:",
         "description": "Description", "qty": "Qty", "unit_price": "Unit price",
         "total": "Total", "subtotal": "Subtotal", "discount": "Discount", "vat": "VAT",
         "twint_title": "Pay with TWINT", "twint_send": "Send CHF {amount} to {phone}",
@@ -31,7 +32,8 @@ _LABELS: dict[Lang, dict[str, str]] = {
         "currency": "Currency", "amount": "Amount",
     },
     "fr": {
-        "invoice": "Facture", "date": "Date :", "due": "Échéance :", "bill_to": "Facturé à :",
+        "invoice": "Facture", "phone": "Tél. : {phone}",
+        "date": "Date :", "due": "Échéance :", "bill_to": "Facturé à :",
         "description": "Désignation", "qty": "Qté", "unit_price": "Prix unit.",
         "total": "Total", "subtotal": "Sous-total", "discount": "Rabais", "vat": "TVA",
         "twint_title": "Payer avec TWINT", "twint_send": "Envoyez CHF {amount} au {phone}",
@@ -82,7 +84,10 @@ def _header(pdf: FPDF, profile: TenantProfile, invoice: Invoice, t: dict[str, st
 
     pdf.set_font("Helvetica", "", 9)
     y_left = 24.0
-    for text in [profile.address_line1, f"{profile.postal_code} {profile.city}"]:
+    lines = [profile.address_line1, f"{profile.postal_code} {profile.city}"]
+    if profile.phone:
+        lines.append(t["phone"].format(phone=_local_phone(profile.phone)))
+    for text in lines:
         if text.strip():
             pdf.set_xy(_M, y_left)
             pdf.cell(80, 5, text)
@@ -211,8 +216,7 @@ def _twint_block(
     y: float,
     t: dict[str, str],
 ) -> None:
-    # +41791234567 -> 079 123 45 67, the form customers type into the app.
-    local = f"0{phone[3:5]} {phone[5:8]} {phone[8:10]} {phone[10:]}"
+    local = _local_phone(phone)
     pdf.set_xy(_M, y)
     pdf.set_font("Helvetica", "B", 9)
     pdf.cell(80, 5, t["twint_title"])
@@ -222,6 +226,13 @@ def _twint_block(
     if invoice.invoice_number:
         text += t["twint_message"].format(number=invoice.invoice_number)
     pdf.cell(_W - 2 * _M, 5, text)
+
+
+def _local_phone(phone: str) -> str:
+    """+41791234567 -> 079 123 45 67, the form Swiss customers dial; others stay E.164."""
+    if phone.startswith("+41") and len(phone) == 12:
+        return f"0{phone[3:5]} {phone[5:8]} {phone[8:10]} {phone[10:]}"
+    return phone
 
 
 # ---- payment ----------------------------------------------------------------
