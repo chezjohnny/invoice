@@ -86,7 +86,7 @@ const EN = {
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', restore: 'Restore',
     showArchived: 'Show archived', app: 'Invoice',
-    loading: 'Loading…', results: 'results', searchCustomer: 'Search customer…',
+    loading: 'Loading…', results: 'results', firstPage: 'First page', lastPage: 'Last page', searchCustomer: 'Search customer…',
     retry: 'Retry',
   },
   login: {
@@ -192,7 +192,7 @@ const FR: typeof EN = {
   common: {
     save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', restore: 'Restaurer',
     showArchived: 'Afficher les archivés', app: 'Factures',
-    loading: 'Chargement…', results: 'résultats', searchCustomer: 'Rechercher un client…',
+    loading: 'Chargement…', results: 'résultats', firstPage: 'Première page', lastPage: 'Dernière page', searchCustomer: 'Rechercher un client…',
     retry: 'Réessayer',
   },
   login: {

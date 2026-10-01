@@ -12,6 +12,7 @@ import { InvoiceFormComponent } from './invoice-form.component';
 import { InvoiceLinesComponent } from './invoice-lines.component';
 import { Invoice, InvoiceCreate } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
+import { IconComponent } from '../../shared/components/icon.component';
 import { PagerComponent } from '../../shared/components/pager.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
@@ -25,7 +26,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent, IconComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -48,6 +49,10 @@ const STATUS_BADGE: Record<string, string> = {
             </button>
           }
         </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <span class="text-sm text-base-content/50">{{ store.total() }} {{ t().common.results }}</span>
       </div>
 
       @if (store.loading()) {
@@ -104,8 +109,9 @@ const STATUS_BADGE: Record<string, string> = {
                     <td (click)="$event.stopPropagation()">
                       <div class="flex gap-1 justify-end flex-wrap">
                         @if (inv.status === 'draft') {
-                          <button class="btn btn-ghost btn-sm" (click)="openEdit(inv)">
-                            {{ t().common.edit }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" (click)="openEdit(inv)"
+                            [attr.data-tip]="t().common.edit" [attr.aria-label]="t().common.edit">
+                            <app-icon name="edit" />
                           </button>
                           <button class="btn btn-ghost btn-sm text-info" (click)="store.issue(inv.id)"
                             [disabled]="company.isIncomplete()"
@@ -154,7 +160,7 @@ const STATUS_BADGE: Record<string, string> = {
           </div>
         </div>
 
-        <app-pager [page]="store.page()" [pages]="store.pages()" [total]="store.total()"
+        <app-pager [page]="store.page()" [pages]="store.pages()"
           (pageChange)="store.setPage($event)" />
       }
     </div>

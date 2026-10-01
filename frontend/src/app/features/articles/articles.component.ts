@@ -1,9 +1,10 @@
-import { CurrencyPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Article } from './article.model';
 import { ArticleFormComponent } from './article-form.component';
 import { ArticleStore } from './article.store';
+import { IconComponent } from '../../shared/components/icon.component';
 import { PagerComponent } from '../../shared/components/pager.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
@@ -11,7 +12,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
 @Component({
   selector: 'app-articles',
   providers: [ArticleStore],
-  imports: [CurrencyPipe, ArticleFormComponent, PagerComponent, SortHeaderComponent, SearchInputComponent],
+  imports: [DecimalPipe, ArticleFormComponent, PagerComponent, SortHeaderComponent, SearchInputComponent, IconComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -38,6 +39,10 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
           }
         </select>
       </label>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <span class="text-sm text-base-content/50">{{ store.total() }} {{ t().common.results }}</span>
       </div>
 
       @if (store.loading()) {
@@ -72,7 +77,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
                       {{ article.description || '—' }}
                     </td>
                     <td class="text-right tabular-nums">
-                      {{ article.unitPrice | currency:'CHF':'code':'1.2-2' }}
+                      {{ article.unitPrice | number:'1.2-2' }}
                     </td>
                     <td class="hidden sm:table-cell">
                       @if (article.vatRateOverride != null) {
@@ -102,15 +107,18 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
                     <td>
                       <div class="flex gap-1 justify-end">
                         @if (article.isArchived) {
-                          <button class="btn btn-ghost btn-sm text-success" (click)="store.restore(article.id)">
-                            {{ t().common.restore }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-success" (click)="store.restore(article.id)"
+                            [attr.data-tip]="t().common.restore" [attr.aria-label]="t().common.restore">
+                            <app-icon name="restore" />
                           </button>
                         } @else {
-                          <button class="btn btn-ghost btn-sm" (click)="openEdit(article)">
-                            {{ t().common.edit }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" (click)="openEdit(article)"
+                            [attr.data-tip]="t().common.edit" [attr.aria-label]="t().common.edit">
+                            <app-icon name="edit" />
                           </button>
-                          <button class="btn btn-ghost btn-sm text-error" (click)="store.archive(article.id)">
-                            {{ t().common.archive }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error" (click)="store.archive(article.id)"
+                            [attr.data-tip]="t().common.archive" [attr.aria-label]="t().common.archive">
+                            <app-icon name="archive" />
                           </button>
                         }
                       </div>
@@ -128,7 +136,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
           </div>
         </div>
 
-        <app-pager [page]="store.page()" [pages]="store.pages()" [total]="store.total()"
+        <app-pager [page]="store.page()" [pages]="store.pages()"
           (pageChange)="store.setPage($event)" />
       }
     </div>

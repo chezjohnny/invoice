@@ -4,6 +4,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { Customer } from './customer.model';
 import { CustomerFormComponent } from './customer-form.component';
 import { CustomerStore } from './customer.store';
+import { IconComponent } from '../../shared/components/icon.component';
 import { PagerComponent } from '../../shared/components/pager.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
@@ -11,19 +12,14 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
 @Component({
   selector: 'app-customers',
   providers: [CustomerStore],
-  imports: [CustomerFormComponent, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent],
+  imports: [CustomerFormComponent, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, IconComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-xl font-bold sm:text-2xl">{{ t().customers.title }}</h1>
-        <div class="flex gap-2">
-          <button class="btn btn-outline btn-sm hidden sm:flex" (click)="store.exportCsv()">
-            {{ t().customers.exportCsv }}
-          </button>
-          <button class="btn btn-primary btn-sm sm:btn-md" (click)="openNew()">
-            {{ t().customers.new }}
-          </button>
-        </div>
+        <button class="btn btn-primary btn-sm sm:btn-md" (click)="openNew()">
+          {{ t().customers.new }}
+        </button>
       </div>
 
       <div class="flex flex-wrap items-center gap-4 mb-4">
@@ -34,6 +30,13 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
           [checked]="store.archived()" (change)="onToggleArchived($event)" />
         {{ t().common.showArchived }}
       </label>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <span class="text-sm text-base-content/50">{{ store.total() }} {{ t().common.results }}</span>
+        <button class="btn btn-ghost btn-xs hidden sm:inline-flex" (click)="store.exportCsv()">
+          ↓ {{ t().customers.exportCsv }}
+        </button>
       </div>
 
       @if (store.loading()) {
@@ -69,15 +72,18 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
                     <td>
                       <div class="flex gap-1 justify-end">
                         @if (customer.isArchived) {
-                          <button class="btn btn-ghost btn-sm text-success" (click)="store.restore(customer.id)">
-                            {{ t().common.restore }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-success" (click)="store.restore(customer.id)"
+                            [attr.data-tip]="t().common.restore" [attr.aria-label]="t().common.restore">
+                            <app-icon name="restore" />
                           </button>
                         } @else {
-                          <button class="btn btn-ghost btn-sm" (click)="openEdit(customer)">
-                            {{ t().common.edit }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" (click)="openEdit(customer)"
+                            [attr.data-tip]="t().common.edit" [attr.aria-label]="t().common.edit">
+                            <app-icon name="edit" />
                           </button>
-                          <button class="btn btn-ghost btn-sm text-error" (click)="store.archive(customer.id)">
-                            {{ t().common.archive }}
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error" (click)="store.archive(customer.id)"
+                            [attr.data-tip]="t().common.archive" [attr.aria-label]="t().common.archive">
+                            <app-icon name="archive" />
                           </button>
                         }
                       </div>
@@ -95,7 +101,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
           </div>
         </div>
 
-        <app-pager [page]="store.page()" [pages]="store.pages()" [total]="store.total()"
+        <app-pager [page]="store.page()" [pages]="store.pages()"
           (pageChange)="store.setPage($event)" />
       }
     </div>

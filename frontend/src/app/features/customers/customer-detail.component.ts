@@ -91,6 +91,9 @@ const STATUS_BADGE: Record<string, string> = {
         }
 
         <!-- Invoice list -->
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-sm text-base-content/50">{{ invoiceTotal() }} {{ t().common.results }}</span>
+        </div>
         @if (invoices().length === 0) {
           <div class="card bg-base-100 shadow">
             <div class="card-body text-center text-base-content/40 py-10">
@@ -149,7 +152,7 @@ const STATUS_BADGE: Record<string, string> = {
               </table>
             </div>
           </div>
-          <app-pager [page]="invoicePage()" [pages]="invoicePages()" [total]="invoiceTotal()"
+          <app-pager [page]="invoicePage()" [pages]="invoicePages()"
             (pageChange)="loadInvoices($event)" />
         }
       }
