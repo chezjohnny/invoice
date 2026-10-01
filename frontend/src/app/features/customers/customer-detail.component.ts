@@ -7,11 +7,14 @@ import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Article } from '../articles/article.model';
 import { saveFile } from '../../shared/download';
-import { Invoice, InvoiceCreate, invoicePdfName } from '../invoices/invoice.model';
+import { Invoice, InvoiceCreate, invoicePdfName, invoiceTotal } from '../invoices/invoice.model';
+import { InvoiceActionsComponent } from '../invoices/invoice-actions.component';
 import { InvoiceFormComponent } from '../invoices/invoice-form.component';
 import { InvoiceLinesComponent } from '../invoices/invoice-lines.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { PagerComponent } from '../../shared/components/pager.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { CompanyStore } from '../settings/company.store';
 import { CustomerFormComponent } from './customer-form.component';
 import { Customer } from './customer.model';
 
@@ -23,7 +26,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 @Component({
   selector: 'app-customer-detail',
-  imports: [RouterLink, DecimalPipe, InvoiceFormComponent, CustomerFormComponent, PagerComponent, SearchInputComponent, InvoiceLinesComponent],
+  imports: [RouterLink, DecimalPipe, InvoiceFormComponent, CustomerFormComponent, PagerComponent, SearchInputComponent, InvoiceLinesComponent, InvoiceActionsComponent, ConfirmDialogComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <a routerLink="/customers" class="btn btn-ghost btn-sm mb-5 -ml-2">
@@ -83,6 +86,7 @@ const STATUS_BADGE: Record<string, string> = {
               <app-invoice-form
                 [externalCustomer]="customer()"
                 [articles]="articles()"
+                [canIssue]="!company.isIncomplete()"
                 (saved)="onInvoiceSaved($event)"
                 (cancelled)="showInvoiceForm.set(false)"
                 (issuedAndPrinted)="onIssuedAndPrinted($event)"
@@ -93,7 +97,7 @@ const STATUS_BADGE: Record<string, string> = {
 
         <!-- Invoice list -->
         <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-sm text-base-content/50">{{ invoiceTotal() }} {{ t().common.results }}</span>
+          <span class="text-sm text-base-content/50">{{ invoiceCount() }} {{ t().common.results }}</span>
         </div>
         @if (invoices().length === 0) {
           <div class="card bg-base-100 shadow">
@@ -113,6 +117,7 @@ const STATUS_BADGE: Record<string, string> = {
                     <th class="hidden md:table-cell">{{ t().invoices.due }}</th>
                     <th>{{ t().invoices.status }}</th>
                     <th class="text-right">{{ t().invoices.total }}</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,20 +136,22 @@ const STATUS_BADGE: Record<string, string> = {
                         </span>
                       </td>
                       <td class="text-right font-semibold tabular-nums">
-                        CHF {{ lineTotal(inv) | number:'1.2-2' }}
+                        CHF {{ invoiceTotal(inv) | number:'1.2-2' }}
+                      </td>
+                      <td (click)="$event.stopPropagation()">
+                        <app-invoice-actions [invoice]="inv" [canIssue]="!company.isIncomplete()"
+                          (edit)="editingInvoice.set(inv)"
+                          (issue)="mutate(invoiceService.issue(inv.id))"
+                          (pay)="mutate(invoiceService.pay(inv.id))"
+                          (cancel)="mutate(invoiceService.cancel(inv.id))"
+                          (pdf)="downloadPdf(inv)"
+                          (delete)="pendingDelete.set(inv)" />
                       </td>
                     </tr>
                     @if (expandedInvoiceId() === inv.id) {
                       <tr>
-                        <td colspan="6" class="bg-base-200/60 p-0">
-                          <app-invoice-lines [invoice]="inv">
-                            @if (inv.status === 'issued' || inv.status === 'paid') {
-                              <button class="btn btn-sm btn-outline"
-                                (click)="downloadPdf($event, inv)">
-                                ↓ PDF
-                              </button>
-                            }
-                          </app-invoice-lines>
+                        <td colspan="7" class="bg-base-200/60 p-0">
+                          <app-invoice-lines [invoice]="inv" />
                         </td>
                       </tr>
                     }
@@ -171,6 +178,32 @@ const STATUS_BADGE: Record<string, string> = {
         <div class="modal-backdrop" (click)="showEditForm.set(false)"></div>
       </dialog>
     }
+
+    @if (editingInvoice(); as invoice) {
+      <dialog class="modal modal-open">
+        <div class="modal-box w-full max-w-3xl">
+          <app-invoice-form
+            [invoice]="invoice"
+            [externalCustomer]="customer()"
+            [articles]="articles()"
+            [canIssue]="!company.isIncomplete()"
+            (saved)="onInvoiceUpdated(invoice, $event)"
+            (cancelled)="editingInvoice.set(null)"
+            (issuedAndPrinted)="onEditIssuedAndPrinted(invoice, $event)"
+          />
+        </div>
+        <div class="modal-backdrop" (click)="editingInvoice.set(null)"></div>
+      </dialog>
+    }
+
+    @if (pendingDelete(); as invoice) {
+      <app-confirm-dialog
+        [title]="t().invoices.deleteTitle"
+        [message]="deleteMessage(invoice)"
+        [confirmLabel]="t().common.delete"
+        (confirmed)="onDeleteConfirmed(invoice)"
+        (cancelled)="pendingDelete.set(null)" />
+    }
   `,
 })
 export class CustomerDetailComponent {
@@ -178,8 +211,10 @@ export class CustomerDetailComponent {
   protected readonly t = this.i18n.T;
   private readonly route = inject(ActivatedRoute);
   private readonly customerService = inject(CUSTOMER_SERVICE);
-  private readonly invoiceService = inject(INVOICE_SERVICE);
+  protected readonly invoiceService = inject(INVOICE_SERVICE);
   private readonly articleService = inject(ARTICLE_SERVICE);
+  protected readonly company = inject(CompanyStore);
+  protected readonly invoiceTotal = invoiceTotal;
 
   protected readonly customer = signal<Customer | null>(null);
   protected readonly address = computed(() => {
@@ -192,13 +227,15 @@ export class CustomerDetailComponent {
   protected readonly invoices = signal<Invoice[]>([]);
   protected readonly invoicePage = signal(1);
   protected readonly invoicePages = signal(1);
-  protected readonly invoiceTotal = signal(0);
+  protected readonly invoiceCount = signal(0);
   protected readonly search = signal('');
   protected readonly articles = signal<Article[]>([]);
   protected readonly loading = signal(true);
   protected readonly showInvoiceForm = signal(false);
   protected readonly showEditForm = signal(false);
   protected readonly expandedInvoiceId = signal<string | null>(null);
+  protected readonly editingInvoice = signal<Invoice | null>(null);
+  protected readonly pendingDelete = signal<Invoice | null>(null);
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -230,7 +267,7 @@ export class CustomerDetailComponent {
     this.invoices.set(result.items);
     this.invoicePage.set(result.page);
     this.invoicePages.set(result.pages);
-    this.invoiceTotal.set(result.total);
+    this.invoiceCount.set(result.total);
     this.expandedInvoiceId.set(result.items[0]?.id ?? null);
   }
 
@@ -249,15 +286,42 @@ export class CustomerDetailComponent {
     this.showInvoiceForm.set(false);
   }
 
+  protected async mutate(action: Promise<unknown>): Promise<void> {
+    await action;
+    await this.loadInvoices(this.invoicePage());
+  }
+
+  protected async onInvoiceUpdated(invoice: Invoice, data: InvoiceCreate): Promise<void> {
+    await this.mutate(this.invoiceService.update(invoice.id, data));
+    this.editingInvoice.set(null);
+  }
+
+  protected async onEditIssuedAndPrinted(invoice: Invoice, data: InvoiceCreate): Promise<void> {
+    await this.invoiceService.update(invoice.id, data);
+    // The changes are persisted: close the modal before issuing so a failure
+    // there leaves a consistent draft behind.
+    this.editingInvoice.set(null);
+    const issued = await this.invoiceService.issue(invoice.id);
+    await this.downloadPdf(issued);
+    await this.loadInvoices(this.invoicePage());
+  }
+
+  protected async onDeleteConfirmed(invoice: Invoice): Promise<void> {
+    this.pendingDelete.set(null);
+    await this.invoiceService.delete(invoice.id);
+    // Deleting the last invoice of a page moves back to the previous one.
+    const page = this.invoices().length === 1 ? Math.max(1, this.invoicePage() - 1) : this.invoicePage();
+    await this.loadInvoices(page);
+  }
+
+  protected deleteMessage(invoice: Invoice): string {
+    return this.t().invoices.deleteConfirm.replace('{customer}', invoice.customerName || '—');
+  }
+
   protected async onCustomerSaved(data: Omit<Customer, 'id' | 'isArchived'>): Promise<void> {
     const updated = await this.customerService.update(this.customer()!.id, data);
     this.customer.set(updated);
     this.showEditForm.set(false);
-  }
-
-  protected lineTotal(inv: Invoice): number {
-    const sub = inv.lines.reduce((s, l) => s + l.quantity * l.unitPriceSnapshot, 0);
-    return sub - (sub * inv.discountPercent) / 100;
   }
 
   protected statusBadge(status: string): string {
@@ -272,8 +336,7 @@ export class CustomerDetailComponent {
     this.expandedInvoiceId.update((current) => (current === id ? null : id));
   }
 
-  protected async downloadPdf(event: Event, inv: Invoice): Promise<void> {
-    event.stopPropagation();
+  protected async downloadPdf(inv: Invoice): Promise<void> {
     saveFile(await this.invoiceService.downloadPdf(inv.id, this.i18n.locale()), invoicePdfName(inv));
   }
 }

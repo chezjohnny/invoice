@@ -47,3 +47,12 @@ export type InvoiceUpdate = InvoiceCreate;
 export function invoicePdfName(invoice: Pick<Invoice, 'invoiceNumber'>): string {
   return `${invoice.invoiceNumber ?? 'invoice'}.pdf`;
 }
+
+/** Total including VAT: the discount applies to every line before its VAT. */
+export function invoiceTotal(invoice: Pick<Invoice, 'lines' | 'discountPercent'>): number {
+  const factor = 1 - invoice.discountPercent / 100;
+  return invoice.lines.reduce(
+    (sum, l) => sum + l.quantity * l.unitPriceSnapshot * factor * (1 + (l.vatRateSnapshot ?? 0)),
+    0,
+  );
+}

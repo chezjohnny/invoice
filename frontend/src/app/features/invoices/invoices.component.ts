@@ -8,12 +8,12 @@ import { Article } from '../articles/article.model';
 import { Customer } from '../customers/customer.model';
 import { CompanyStore } from '../settings/company.store';
 import { CustomerFormComponent } from '../customers/customer-form.component';
+import { InvoiceActionsComponent } from './invoice-actions.component';
 import { InvoiceFormComponent } from './invoice-form.component';
 import { InvoiceLinesComponent } from './invoice-lines.component';
-import { Invoice, InvoiceCreate } from './invoice.model';
+import { Invoice, InvoiceCreate, invoiceTotal } from './invoice.model';
 import { InvoiceStore } from './invoice.store';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
-import { IconComponent } from '../../shared/components/icon.component';
 import { PagerComponent } from '../../shared/components/pager.component';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { SortHeaderComponent } from '../../shared/components/sort-header.component';
@@ -27,7 +27,7 @@ const STATUS_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-invoices',
   providers: [InvoiceStore],
-  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent, IconComponent, ConfirmDialogComponent],
+  imports: [InvoiceFormComponent, CustomerFormComponent, DecimalPipe, RouterLink, PagerComponent, SortHeaderComponent, SearchInputComponent, InvoiceLinesComponent, InvoiceActionsComponent, ConfirmDialogComponent],
   template: `
     <div class="p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-6">
@@ -101,64 +101,17 @@ const STATUS_BADGE: Record<string, string> = {
                           (change)="onPaymentDateChange(inv.id, $event)" />
                       } @else { — }
                     </td>
-                    <td class="text-right font-medium tabular-nums">{{ lineTotal(inv) | number:'1.2-2' }}</td>
+                    <td class="text-right font-medium tabular-nums">{{ invoiceTotal(inv) | number:'1.2-2' }}</td>
                     <td>
                       <span class="badge badge-sm" [class]="statusBadge(inv.status)">
                         {{ statusLabel(inv.status) }}
                       </span>
                     </td>
                     <td (click)="$event.stopPropagation()">
-                      <div class="flex gap-1 justify-end items-center whitespace-nowrap">
-                        @if (inv.status === 'draft') {
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" (click)="openEdit(inv)"
-                            [attr.data-tip]="t().common.edit" [attr.aria-label]="t().common.edit">
-                            <app-icon name="edit" />
-                          </button>
-                          <!-- The tooltip sits on a wrapper: a disabled button gets no hover -->
-                          <span class="tooltip tooltip-left"
-                            [attr.data-tip]="company.isIncomplete() ? t().invoices.issueBlocked : t().invoices.issue">
-                            <button class="btn btn-ghost btn-sm btn-square text-info" (click)="store.issue(inv.id)"
-                              [disabled]="company.isIncomplete()" [attr.aria-label]="t().invoices.issue">
-                              <app-icon name="issue" />
-                            </button>
-                          </span>
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
-                            [attr.data-tip]="t().invoices.cancelInvoice" [attr.aria-label]="t().invoices.cancelInvoice"
-                            (click)="store.cancel(inv.id)">
-                            <app-icon name="cancel" />
-                          </button>
-                        }
-                        @if (inv.status === 'issued') {
-                          <button class="btn btn-ghost btn-sm text-success" (click)="store.pay(inv.id)">
-                            {{ t().invoices.pay }}
-                          </button>
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
-                            [attr.data-tip]="t().invoices.cancelInvoice" [attr.aria-label]="t().invoices.cancelInvoice"
-                            (click)="store.cancel(inv.id)">
-                            <app-icon name="cancel" />
-                          </button>
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left"
-                            [attr.data-tip]="t().invoices.downloadPdf" [attr.aria-label]="t().invoices.downloadPdf"
-                            (click)="store.downloadPdf(inv)">
-                            <app-icon name="pdf" />
-                          </button>
-                        }
-                        @if (inv.status === 'paid') {
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left"
-                            [attr.data-tip]="t().invoices.downloadPdf" [attr.aria-label]="t().invoices.downloadPdf"
-                            (click)="store.downloadPdf(inv)">
-                            <app-icon name="pdf" />
-                          </button>
-                        }
-                        <!-- Only a draft cancelled before issue: issued invoices are kept -->
-                        @if (inv.status === 'cancelled' && !inv.invoiceNumber) {
-                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
-                            [attr.data-tip]="t().common.delete" [attr.aria-label]="t().common.delete"
-                            (click)="pendingDelete.set(inv)">
-                            <app-icon name="delete" />
-                          </button>
-                        }
-                      </div>
+                      <app-invoice-actions [invoice]="inv" [canIssue]="!company.isIncomplete()"
+                        (edit)="openEdit(inv)" (issue)="store.issue(inv.id)" (pay)="store.pay(inv.id)"
+                        (cancel)="store.cancel(inv.id)" (pdf)="store.downloadPdf(inv)"
+                        (delete)="pendingDelete.set(inv)" />
                     </td>
                   </tr>
                   @if (expandedInvoiceId() === inv.id) {
@@ -242,22 +195,10 @@ export class InvoicesComponent {
   protected readonly pendingDelete = signal<Invoice | null>(null);
 
   protected readonly company = inject(CompanyStore);
+  protected readonly invoiceTotal = invoiceTotal;
 
   constructor() {
     this.articleService.getAll().then((a) => this.articles.set(a));
-  }
-
-  protected lineTotal(inv: Invoice): number {
-    const sub = inv.lines.reduce((s, l) => s + l.quantity * l.unitPriceSnapshot, 0);
-    const disc = sub * inv.discountPercent / 100;
-    const vat = inv.lines.reduce(
-      (s, l) =>
-        l.vatRateSnapshot != null
-          ? s + l.quantity * l.unitPriceSnapshot * (1 - inv.discountPercent / 100) * l.vatRateSnapshot
-          : s,
-      0
-    );
-    return sub - disc + vat;
   }
 
   protected async onDeleteConfirmed(invoice: Invoice): Promise<void> {
@@ -313,11 +254,18 @@ export class InvoicesComponent {
   }
 
   async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
-    const invoice = await this.store.createInvoice(data);
+    const editing = this.editingInvoice();
+    let id: string;
+    if (editing) {
+      await this.store.updateInvoice(editing.id, data);
+      id = editing.id;
+    } else {
+      id = (await this.store.createInvoice(data)).id;
+    }
     // The draft is persisted: close the modal before issuing so a failure
     // there cannot be retried into a second draft.
     this.closeForm();
-    await this.store.issueAndPrint(invoice.id);
+    await this.store.issueAndPrint(id);
   }
 
   onCreateCustomerRequested(): void {
