@@ -13,12 +13,17 @@ import { I18nService } from '../../core/i18n/i18n.service';
   template: `
     <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">{{ t().common.cancel }}</button>
     <ng-content />
-    <button type="submit" class="btn btn-primary">{{ submitLabel() ?? t().common.save }}</button>
+    <button type="submit" class="btn btn-primary" [disabled]="busy()">
+      @if (busy()) { <span class="loading loading-spinner loading-xs"></span> }
+      {{ submitLabel() ?? t().common.save }}
+    </button>
   `,
 })
 export class FormActionsComponent {
   /** Defaults to "Save". */
   readonly submitLabel = input<string>();
+  /** While the submitted data is being saved: the submit button is disabled. */
+  readonly busy = input(false);
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;

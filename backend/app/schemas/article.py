@@ -1,14 +1,14 @@
 import uuid
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ArticleBase(BaseModel):
     name: str
     description: str = ""
-    unit_price: Decimal
-    vat_rate_override: Decimal | None = None
+    unit_price: Decimal = Field(ge=0)
+    vat_rate_override: Decimal | None = Field(None, ge=0, le=1)
     stock_quantity: int = 0
 
 

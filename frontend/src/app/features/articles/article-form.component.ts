@@ -2,6 +2,7 @@ import { Component, computed, inject, input, linkedSignal, output } from '@angul
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { inputValue } from '../../shared/events';
+import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
 import { Article, ArticleData } from './article.model';
 
 
@@ -42,8 +43,12 @@ import { Article, ArticleData } from './article.model';
           </div>
           <div>
             <label class="fieldset-label" for="article-vat">{{ t().articles.vatLabel }}</label>
-            <input id="article-vat" class="input w-full" type="number" min="0" max="100" step="0.1"
+            <input id="article-vat" class="input w-full" [class.input-error]="submitted() && errors().vatRateOverride"
+              type="number" min="0" max="100" step="0.1"
               [value]="vatRateOverride()" (input)="vatRateOverride.set(inputValue($event))" />
+            @if (submitted() && errors().vatRateOverride) {
+              <p class="fieldset-label text-error mt-1">{{ errors().vatRateOverride }}</p>
+            }
           </div>
         </div>
 
@@ -54,12 +59,13 @@ import { Article, ArticleData } from './article.model';
         </div>
       </fieldset>
 
-      <app-form-actions (cancelled)="cancelled.emit()" />
+      <app-form-actions [busy]="busy()" (cancelled)="cancelled.emit()" />
     </form>
   `,
 })
 export class ArticleFormComponent {
   readonly article = input<Article | null>(null);
+  readonly busy = input(false);
   readonly saved = output<ArticleData>();
   readonly cancelled = output<void>();
 
@@ -71,11 +77,7 @@ export class ArticleFormComponent {
   protected readonly unitPrice = linkedSignal(() =>
     this.article() != null ? String(this.article()!.unitPrice) : ''
   );
-  protected readonly vatRateOverride = linkedSignal(() =>
-    this.article()?.vatRateOverride != null
-      ? String(this.article()!.vatRateOverride! * 100)
-      : ''
-  );
+  protected readonly vatRateOverride = linkedSignal(() => percentFromRate(this.article()?.vatRateOverride));
   protected readonly stockQuantity = linkedSignal(() =>
     this.article() != null ? String(this.article()!.stockQuantity) : '0'
   );
@@ -90,6 +92,7 @@ export class ArticleFormComponent {
       if (v < 0) return this.t().articles.pricePositive;
       return null;
     })(),
+    vatRateOverride: isPercent(this.vatRateOverride()) ? null : this.t().common.invalidPercent,
   }));
 
   protected readonly isValid = computed(() =>
@@ -100,12 +103,11 @@ export class ArticleFormComponent {
     event.preventDefault();
     this.submitted.set(true);
     if (!this.isValid()) return;
-    const vat = this.vatRateOverride().trim();
     this.saved.emit({
       name: this.name().trim(),
       description: this.description().trim(),
       unitPrice: parseFloat(this.unitPrice()),
-      vatRateOverride: vat !== '' ? parseFloat(vat) / 100 : null,
+      vatRateOverride: rateFromPercent(this.vatRateOverride()),
       stockQuantity: parseInt(this.stockQuantity(), 10) || 0,
     });
   }

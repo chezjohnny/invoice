@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EditorPageComponent } from '../../shared/components/editor-page.component';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
+import { once } from '../../shared/busy';
 import { injectEditorExit } from '../../shared/editor-exit';
 import { ArticleFormComponent } from './article-form.component';
 import { Article, ArticleData } from './article.model';
@@ -13,7 +14,7 @@ import { Article, ArticleData } from './article.model';
   imports: [EditorPageComponent, ArticleFormComponent],
   template: `
     <app-editor-page [loading]="loading()" (back)="leave()">
-      <app-article-form [article]="article()" (saved)="onSaved($event)" (cancelled)="leave()" />
+      <app-article-form [article]="article()" [busy]="saving()" (saved)="onSaved($event)" (cancelled)="leave()" />
     </app-editor-page>
   `,
 })
@@ -25,6 +26,7 @@ export class ArticleEditorComponent {
   /** null while creating. */
   protected readonly article = signal<Article | null>(null);
   protected readonly loading = signal(this.articleId !== null);
+  protected readonly saving = signal(false);
 
   constructor() {
     if (this.articleId) {
@@ -35,9 +37,11 @@ export class ArticleEditorComponent {
     }
   }
 
-  protected async onSaved(data: ArticleData): Promise<void> {
-    if (this.articleId) await this.articleService.update(this.articleId, data);
-    else await this.articleService.create(data);
-    this.leave();
+  protected onSaved(data: ArticleData): Promise<void> {
+    return once(this.saving, async () => {
+      if (this.articleId) await this.articleService.update(this.articleId, data);
+      else await this.articleService.create(data);
+      this.leave();
+    });
   }
 }

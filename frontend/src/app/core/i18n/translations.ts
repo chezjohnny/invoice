@@ -83,7 +83,6 @@ const EN = {
     companyNameRequired: 'Company name is required',
     invalidIban: 'Invalid IBAN (a Swiss or Liechtenstein IBAN is required)',
     invalidTwint: 'Invalid number (a Swiss mobile number is required)',
-    invalidVatRate: 'Must be between 0 and 100',
     invalidTerms: 'Must be between 0 and 365',
     saved: 'Company settings saved.',
     loadError: 'Your company settings could not be loaded.',
@@ -110,6 +109,7 @@ const EN = {
     tasting: 'Tasting', promotion: 'Promotion / gift', loss: 'Loss / breakage', other: 'Other',
   },
   common: {
+    invalidPercent: 'Must be between 0 and 100',
     save: 'Save', cancel: 'Cancel', edit: 'Edit', archive: 'Archive', restore: 'Restore', delete: 'Delete',
     showArchived: 'Show archived', app: 'Invoice',
     results: 'results', firstPage: 'First page', lastPage: 'Last page',
@@ -217,7 +217,6 @@ const FR: typeof EN = {
     companyNameRequired: 'La raison sociale est requise',
     invalidIban: 'IBAN invalide (un IBAN suisse ou liechtensteinois est requis)',
     invalidTwint: 'Numéro invalide (un numéro de mobile suisse est requis)',
-    invalidVatRate: 'Doit être compris entre 0 et 100',
     invalidTerms: 'Doit être compris entre 0 et 365',
     saved: 'Paramètres de l\'entreprise enregistrés.',
     loadError: 'Impossible de charger les paramètres de l\'entreprise.',
@@ -244,6 +243,7 @@ const FR: typeof EN = {
     tasting: 'Dégustation', promotion: 'Promotion / cadeau', loss: 'Perte / casse', other: 'Autre',
   },
   common: {
+    invalidPercent: 'Doit être compris entre 0 et 100',
     save: 'Enregistrer', cancel: 'Annuler', edit: 'Modifier', archive: 'Archiver', restore: 'Restaurer', delete: 'Supprimer',
     showArchived: 'Afficher les archivés', app: 'Factures',
     results: 'résultats', firstPage: 'Première page', lastPage: 'Dernière page',

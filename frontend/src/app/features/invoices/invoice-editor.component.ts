@@ -1,7 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { EditorPageComponent } from '../../shared/components/editor-page.component';
+import { once } from '../../shared/busy';
 import { injectEditorExit } from '../../shared/editor-exit';
 import { CompanyStore } from '../settings/company.store';
 import { InvoiceFormComponent } from './invoice-form.component';
@@ -28,6 +29,8 @@ import { InvoiceEditorStore } from './invoice-editor.store';
             [customer]="customer"
             [articles]="store.articles()"
             [canIssue]="!company.isIncomplete()"
+            [defaultVatRate]="company.profile()?.defaultVatRate ?? null"
+            [busy]="saving()"
             (saved)="onSaved($event)"
             (cancelled)="leave()"
             (issuedAndPrinted)="onIssuedAndPrinted($event)"
@@ -41,6 +44,7 @@ export class InvoiceEditorComponent {
   protected readonly store = inject(InvoiceEditorStore);
   protected readonly company = inject(CompanyStore);
   protected readonly t = inject(I18nService).T;
+  protected readonly saving = signal(false);
   private readonly route = inject(ActivatedRoute);
   protected readonly leave = injectEditorExit(() => this.returnTo());
 
@@ -60,13 +64,17 @@ export class InvoiceEditorComponent {
     );
   }
 
-  protected async onSaved(data: InvoiceCreate): Promise<void> {
-    await this.store.saveDraft(data);
-    this.leave();
+  protected onSaved(data: InvoiceCreate): Promise<void> {
+    return once(this.saving, async () => {
+      await this.store.saveDraft(data);
+      this.leave();
+    });
   }
 
-  protected async onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
-    await this.store.issueAndPrint(data);
-    this.leave();
+  protected onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
+    return once(this.saving, async () => {
+      await this.store.issueAndPrint(data);
+      this.leave();
+    });
   }
 }

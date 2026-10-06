@@ -64,12 +64,13 @@ import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason 
         </div>
       </fieldset>
 
-      <app-form-actions (cancelled)="cancelled.emit()" />
+      <app-form-actions [busy]="busy()" (cancelled)="cancelled.emit()" />
     </form>
   `,
 })
 export class StockWithdrawalFormComponent {
   readonly articles = input<Article[]>([]);
+  readonly busy = input(false);
   readonly saved = output<StockWithdrawalCreate>();
   readonly cancelled = output<void>();
 

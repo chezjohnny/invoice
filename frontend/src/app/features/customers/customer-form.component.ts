@@ -91,10 +91,10 @@ import { Customer, PhoneEntry, CustomerData } from './customer.model';
         </div>
       </fieldset>
 
-      <app-form-actions (cancelled)="cancelled.emit()">
+      <app-form-actions [busy]="busy()" (cancelled)="cancelled.emit()">
         <!-- A new customer usually calls to order: straight on to the invoice -->
         @if (!customer()) {
-          <button type="button" class="btn btn-outline" (click)="submitForInvoice()">
+          <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="submitForInvoice()">
             {{ t().customers.saveAndInvoice }}
           </button>
         }
@@ -104,6 +104,7 @@ import { Customer, PhoneEntry, CustomerData } from './customer.model';
 })
 export class CustomerFormComponent {
   readonly customer = input<Customer | null>(null);
+  readonly busy = input(false);
   readonly saved = output<CustomerData>();
   /** Saved from "Save & create invoice": only offered for a new customer. */
   readonly savedForInvoice = output<CustomerData>();

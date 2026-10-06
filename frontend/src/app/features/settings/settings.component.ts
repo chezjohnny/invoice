@@ -1,6 +1,7 @@
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { inputValue } from '../../shared/events';
+import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
 import { CompanyStore } from './company.store';
 import { isValidQrBillIban, normalizeIban } from './iban';
 import { isValidPhone, isValidTwintPhone, normalizePhone } from './phone';
@@ -188,11 +189,7 @@ export class SettingsComponent {
   protected readonly twintPhone = linkedSignal(() => this.store.profile()?.twintPhone ?? '');
   protected readonly phone = linkedSignal(() => this.store.profile()?.phone ?? '');
   protected readonly vatNumber = linkedSignal(() => this.store.profile()?.vatNumber ?? '');
-  protected readonly vatRate = linkedSignal(() => {
-    const rate = this.store.profile()?.defaultVatRate;
-    // The rate is a 4-decimal fraction; *100 alone shows 0.037 as 3.6999999999999997.
-    return rate != null ? String(Math.round(rate * 1e6) / 1e4) : '';
-  });
+  protected readonly vatRate = linkedSignal(() => percentFromRate(this.store.profile()?.defaultVatRate));
   protected readonly paymentTermsDays = linkedSignal(() =>
     String(this.store.profile()?.paymentTermsDays ?? 30)
   );
@@ -222,14 +219,7 @@ export class SettingsComponent {
       if (value === '') return null;
       return isValidTwintPhone(value) ? null : this.t().settings.invalidTwint;
     })(),
-    vatRate: (() => {
-      const value = this.vatRate().trim();
-      if (value === '') return null;
-      const rate = parseFloat(value);
-      return Number.isFinite(rate) && rate >= 0 && rate <= 100
-        ? null
-        : this.t().settings.invalidVatRate;
-    })(),
+    vatRate: isPercent(this.vatRate()) ? null : this.t().common.invalidPercent,
     paymentTermsDays: validTerms(this.paymentTermsDays()) ? null : this.t().settings.invalidTerms,
     reminderTermsDays: validTerms(this.reminderTermsDays()) ? null : this.t().settings.invalidTerms,
   }));
@@ -245,7 +235,6 @@ export class SettingsComponent {
     const iban = normalizeIban(this.iban());
     const twintPhone = normalizePhone(this.twintPhone());
     const phone = normalizePhone(this.phone());
-    const vatRate = this.vatRate().trim();
     const addressLine2 = this.addressLine2().trim();
     const vatNumber = this.vatNumber().trim();
     await this.store.save({
@@ -259,7 +248,7 @@ export class SettingsComponent {
       twintPhone: twintPhone !== '' ? twintPhone : null,
       phone: phone !== '' ? phone : null,
       vatNumber: vatNumber !== '' ? vatNumber : null,
-      defaultVatRate: vatRate !== '' ? parseFloat(vatRate) / 100 : null,
+      defaultVatRate: rateFromPercent(this.vatRate()),
       paymentTermsDays: parseInt(this.paymentTermsDays(), 10),
       reminderTermsDays: parseInt(this.reminderTermsDays(), 10),
     });

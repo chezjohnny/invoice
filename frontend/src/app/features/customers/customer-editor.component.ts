@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EditorPageComponent } from '../../shared/components/editor-page.component';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
+import { once } from '../../shared/busy';
 import { injectEditorExit } from '../../shared/editor-exit';
 import { CustomerFormComponent } from './customer-form.component';
 import { Customer, CustomerData } from './customer.model';
@@ -18,6 +19,7 @@ import { Customer, CustomerData } from './customer.model';
     <app-editor-page [loading]="loading()" (back)="leave()">
       <app-customer-form
         [customer]="customer()"
+        [busy]="saving()"
         (saved)="onSaved($event)"
         (savedForInvoice)="onSavedForInvoice($event)"
         (cancelled)="leave()"
@@ -35,6 +37,7 @@ export class CustomerEditorComponent {
   /** null while creating. */
   protected readonly customer = signal<Customer | null>(null);
   protected readonly loading = signal(this.customerId !== null);
+  protected readonly saving = signal(false);
 
   constructor() {
     if (this.customerId) {
@@ -45,21 +48,25 @@ export class CustomerEditorComponent {
     }
   }
 
-  protected async onSaved(data: CustomerData): Promise<void> {
-    if (this.customerId) {
-      await this.customerService.update(this.customerId, data);
-      this.leave();
-    } else {
-      // Straight to the new customer's page: the next step is usually their invoice.
-      await this.openCreated(data);
-    }
+  protected onSaved(data: CustomerData): Promise<void> {
+    return once(this.saving, async () => {
+      if (this.customerId) {
+        await this.customerService.update(this.customerId, data);
+        this.leave();
+      } else {
+        // Straight to the new customer's page: the next step is usually their invoice.
+        await this.openCreated(data);
+      }
+    });
   }
 
-  protected async onSavedForInvoice(data: CustomerData): Promise<void> {
-    const customer = await this.openCreated(data);
-    // On top of the customer's page, so that leaving the invoice lands there.
-    await this.router.navigate(['/invoices/new'], {
-      queryParams: { customer: customer.id, returnTo: `/customers/${customer.id}` },
+  protected onSavedForInvoice(data: CustomerData): Promise<void> {
+    return once(this.saving, async () => {
+      const customer = await this.openCreated(data);
+      // On top of the customer's page, so that leaving the invoice lands there.
+      await this.router.navigate(['/invoices/new'], {
+        queryParams: { customer: customer.id, returnTo: `/customers/${customer.id}` },
+      });
     });
   }
 

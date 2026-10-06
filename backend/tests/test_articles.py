@@ -24,6 +24,15 @@ ARTICLE_PAYLOAD = {
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("change", [{"unit_price": "-1.00"}, {"vat_rate_override": "1.2"}])
+async def test_article_price_and_vat_are_bounded(
+    client: AsyncClient, auth_headers: dict[str, str], change: dict[str, str]
+):
+    resp = await client.post(ARTICLES, json=ARTICLE_PAYLOAD | change, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_create_article(client: AsyncClient, auth_headers: dict[str, str]):
     resp = await client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers)
     assert resp.status_code == 201

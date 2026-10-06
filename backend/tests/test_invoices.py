@@ -203,6 +203,26 @@ def test_address_puts_a_contact_above_the_street_and_a_po_box_below():
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"lines": [LINE | {"quantity": 0}]},
+        {"lines": [LINE | {"quantity": -2}]},
+        {"lines": [LINE | {"unit_price_snapshot": "-1.00"}]},
+        {"lines": [LINE | {"vat_rate_snapshot": "1.5"}]},
+        {"discount_percent": "150"},
+        {"discount_percent": "-5"},
+    ],
+)
+async def test_invoice_amounts_are_bounded(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, change: dict[str, Any]
+):
+    payload = {"customer_id": customer_id, "lines": [LINE]} | change
+    resp = await client.post(INVOICES, json=payload, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_create_invoice(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
     resp = await client.post(
         INVOICES,

@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.invoice import InvoiceStatus, PaymentMethod
 
@@ -10,9 +10,11 @@ from app.models.invoice import InvoiceStatus, PaymentMethod
 class InvoiceLineBase(BaseModel):
     article_id: uuid.UUID | None = None
     description_snapshot: str
-    quantity: int = 1
-    unit_price_snapshot: Decimal
-    vat_rate_snapshot: Decimal | None = None
+    # Bounded: a negative amount makes an invalid QR-bill, a negative quantity
+    # would put stock back on issue.
+    quantity: int = Field(1, ge=1)
+    unit_price_snapshot: Decimal = Field(ge=0)
+    vat_rate_snapshot: Decimal | None = Field(None, ge=0, le=1)
 
 
 class InvoiceLineCreate(InvoiceLineBase):
@@ -28,7 +30,7 @@ class InvoiceLineResponse(InvoiceLineBase):
 
 class InvoiceBase(BaseModel):
     customer_id: uuid.UUID
-    discount_percent: Decimal = Decimal("0")
+    discount_percent: Decimal = Field(Decimal("0"), ge=0, le=100)
     notes: str = ""
     payment_method: PaymentMethod | None = None
 

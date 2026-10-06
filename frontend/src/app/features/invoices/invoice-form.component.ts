@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, input, linkedSignal, output, signa
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { inputValue } from '../../shared/events';
+import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Customer, customerDisplayName } from '../customers/customer.model';
 import { Article } from '../articles/article.model';
@@ -115,15 +116,21 @@ interface Recommendation {
                   </div>
                   <!-- Qty -->
                   <input class="input input-sm w-full" type="number" min="1" step="1"
+                    [class.input-error]="submitted() && lineErrors()[i].quantity"
+                    [attr.aria-invalid]="submitted() && lineErrors()[i].quantity"
                     [value]="line.quantity"
                     (input)="updateLine(i, 'quantity', inputValue($event))" />
                   <!-- Price -->
                   <input class="input input-sm w-full" type="number" min="0" step="0.01"
+                    [class.input-error]="submitted() && lineErrors()[i].price"
+                    [attr.aria-invalid]="submitted() && lineErrors()[i].price"
                     [value]="line.unitPriceSnapshot"
                     (input)="updateLine(i, 'unitPriceSnapshot', inputValue($event))" />
                   <!-- VAT% -->
                   <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
                     placeholder="—"
+                    [class.input-error]="submitted() && lineErrors()[i].vat"
+                    [attr.aria-invalid]="submitted() && lineErrors()[i].vat"
                     [value]="line.vatRateSnapshot"
                     (input)="updateLine(i, 'vatRateSnapshot', inputValue($event))" />
                   <!-- Delete + warning -->
@@ -188,16 +195,20 @@ interface Recommendation {
           <!-- Discount -->
           <div class="w-full sm:max-w-48">
             <label class="fieldset-label" for="invoice-discount">{{ t().invoices.discountLabel }}</label>
-            <input id="invoice-discount" class="input w-full" type="number" min="0" max="100" step="0.1"
+            <input id="invoice-discount" class="input w-full" [class.input-error]="submitted() && discountError()"
+              type="number" min="0" max="100" step="0.1"
               [value]="discountPercent()" (input)="discountPercent.set(inputValue($event))" />
+            @if (submitted() && discountError()) {
+              <p class="fieldset-label text-error mt-1">{{ t().common.invalidPercent }}</p>
+            }
           </div>
         </div>
       </fieldset>
 
-      <app-form-actions [submitLabel]="t().invoices.saveDraft" (cancelled)="cancelled.emit()">
+      <app-form-actions [submitLabel]="t().invoices.saveDraft" [busy]="busy()" (cancelled)="cancelled.emit()">
         <span class="tooltip-left" [class.tooltip]="!!issueBlockedReason()" [attr.data-tip]="issueBlockedReason()">
           <button type="button" class="btn btn-outline" (click)="submitAndIssue()"
-            [disabled]="!!issueBlockedReason()">
+            [disabled]="busy() || !!issueBlockedReason()">
             {{ paymentMethod() === 'cash' ? t().invoices.payAndPrint : t().invoices.issueAndPrint }}
           </button>
         </span>
@@ -211,6 +222,9 @@ export class InvoiceFormComponent {
   readonly customer = input.required<Customer>();
   // Issuing needs a complete company profile (address + IBAN) for the QR-bill.
   readonly canIssue = input(true);
+  /** The company's rate, for the articles without one of their own; null when not VAT-registered. */
+  readonly defaultVatRate = input<number | null>(null);
+  readonly busy = input(false);
   readonly saved = output<InvoiceCreate>();
   readonly cancelled = output<void>();
   readonly issuedAndPrinted = output<InvoiceCreate>();
@@ -248,7 +262,7 @@ export class InvoiceFormComponent {
             articleId: article.id,
             description: article.name,
             unitPrice: article.unitPrice,
-            vatRate: article.vatRateOverride,
+            vatRate: article.vatRateOverride ?? this.defaultVatRate(),
           });
         } else {
           recs.push({
@@ -271,7 +285,7 @@ export class InvoiceFormComponent {
       descriptionSnapshot: l.descriptionSnapshot,
       quantity: String(l.quantity),
       unitPriceSnapshot: String(l.unitPriceSnapshot),
-      vatRateSnapshot: l.vatRateSnapshot != null ? String(l.vatRateSnapshot * 100) : '',
+      vatRateSnapshot: percentFromRate(l.vatRateSnapshot),
     })) ?? []
   );
 
@@ -299,7 +313,7 @@ export class InvoiceFormComponent {
         descriptionSnapshot: rec.description,
         quantity: '1',
         unitPriceSnapshot: String(rec.unitPrice),
-        vatRateSnapshot: rec.vatRate != null ? String(rec.vatRate * 100) : '',
+        vatRateSnapshot: percentFromRate(rec.vatRate),
       },
     ]);
   }
@@ -331,9 +345,7 @@ export class InvoiceFormComponent {
               articleId: article ? articleId : null,
               descriptionSnapshot: article ? article.name : '',
               unitPriceSnapshot: article ? String(article.unitPrice) : '',
-              vatRateSnapshot: article?.vatRateOverride != null
-                ? String(article.vatRateOverride * 100)
-                : '',
+              vatRateSnapshot: article ? percentFromRate(article.vatRateOverride ?? this.defaultVatRate()) : '',
             }
           : l
       )
@@ -373,6 +385,20 @@ export class InvoiceFormComponent {
     return article != null && article.stockQuantity <= 0;
   }
 
+  protected readonly submitted = linkedSignal(() => { this.invoice(); return false; });
+
+  protected readonly lineErrors = computed(() =>
+    this.lines().map((l) => ({
+      quantity: !/^\d+$/.test(l.quantity.trim()) || parseInt(l.quantity, 10) < 1,
+      price: l.unitPriceSnapshot.trim() === '' || !(Number(l.unitPriceSnapshot) >= 0),
+      vat: !isPercent(l.vatRateSnapshot),
+    }))
+  );
+  protected readonly discountError = computed(() => !isPercent(this.discountPercent()));
+  private readonly isValid = computed(
+    () => !this.discountError() && this.lineErrors().every((e) => !e.quantity && !e.price && !e.vat)
+  );
+
   // A draft may be saved empty, but an invoice without any article is never issued.
   protected readonly issueBlockedReason = computed(() => {
     if (this.lines().length === 0) return this.t().invoices.noLinesBlocked;
@@ -380,28 +406,32 @@ export class InvoiceFormComponent {
   });
 
   protected submitAndIssue(): void {
-    if (this.issueBlockedReason()) return;
+    this.submitted.set(true);
+    if (this.issueBlockedReason() || !this.isValid()) return;
     this.issuedAndPrinted.emit(this._buildPayload());
   }
 
   submit(event: Event): void {
     event.preventDefault();
+    this.submitted.set(true);
+    if (!this.isValid()) return;
     this.saved.emit(this._buildPayload());
   }
 
+  // Also run while typing, for the totals: anything not yet a number counts as 0.
   private _buildPayload(): InvoiceCreate {
+    const num = (text: string) => (Number.isFinite(Number(text)) ? Number(text) : 0);
     return {
       customerId: this.customer().id,
-      discountPercent: parseFloat(this.discountPercent()) || 0,
+      discountPercent: num(this.discountPercent()),
       notes: this.notes().trim(),
       paymentMethod: this.paymentMethod(),
       lines: this.lines().map((l) => ({
         articleId: l.articleId,
         descriptionSnapshot: l.descriptionSnapshot.trim(),
-        quantity: parseInt(l.quantity) || 1,
-        unitPriceSnapshot: parseFloat(l.unitPriceSnapshot) || 0,
-        vatRateSnapshot:
-          l.vatRateSnapshot.trim() !== '' ? parseFloat(l.vatRateSnapshot) / 100 : null,
+        quantity: Math.trunc(num(l.quantity)),
+        unitPriceSnapshot: num(l.unitPriceSnapshot),
+        vatRateSnapshot: isPercent(l.vatRateSnapshot) ? rateFromPercent(l.vatRateSnapshot) : null,
       })),
     };
   }
