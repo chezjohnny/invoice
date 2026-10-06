@@ -1,4 +1,4 @@
-import { InvoiceLine, invoiceTotal, isOverdue } from './invoice.model';
+import { InvoiceLine, invoiceAmounts, invoiceTotal, isOverdue } from './invoice.model';
 
 function line(quantity: number, unitPriceSnapshot: number, vatRateSnapshot: number | null): InvoiceLine {
   return {
@@ -16,6 +16,25 @@ describe('invoiceTotal', () => {
 
   it('is zero without lines', () => {
     expect(invoiceTotal({ lines: [], discountPercent: 0 })).toBe(0);
+  });
+});
+
+// The same cases as the backend's test_amounts_*: both sides must agree to the cent.
+describe('invoiceAmounts', () => {
+  it('rounds each rate once to the cent, half up', () => {
+    // 5.00 + 8.1 % is 5.405: floats would make it 5.40, the PDF and QR-bill say 5.41.
+    const amounts = invoiceAmounts({ lines: [line(1, 5, 0.081)], discountPercent: 0 });
+    expect(amounts.vat).toEqual([{ rate: 0.081, amount: 0.41 }]);
+    expect(amounts.total).toBe(5.41);
+  });
+
+  it('takes the VAT on the discounted lines', () => {
+    const lines = [line(2, 50, 0.081), line(1, 100, null), line(3, 9.9, 0.026)];
+    const amounts = invoiceAmounts({ lines, discountPercent: 10 });
+    expect(amounts.subtotal).toBe(229.7);
+    expect(amounts.discount).toBe(22.97);
+    expect(amounts.vat).toEqual([{ rate: 0.026, amount: 0.69 }, { rate: 0.081, amount: 7.29 }]);
+    expect(amounts.total).toBe(214.71);
   });
 });
 

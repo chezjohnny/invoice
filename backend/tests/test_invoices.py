@@ -1,6 +1,7 @@
 import re
 import zlib
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -11,9 +12,10 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.customer import Customer
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceLine
 from app.models.tenant import TenantProfile
 from app.services.customers import full_name
+from app.services.invoices import invoice_amounts
 from app.services.pdf import _build_qr_payload, _chf, _party_lines, _street_and_number
 from tests.conftest import MakeInvoice
 
@@ -28,6 +30,38 @@ LINE = {
     "unit_price_snapshot": "50.00",
     "vat_rate_snapshot": "0.081",
 }
+
+
+def _invoice(discount: str, *lines: tuple[int, str, str | None]) -> Invoice:
+    return Invoice(
+        discount_percent=Decimal(discount),
+        lines=[
+            InvoiceLine(
+                quantity=quantity,
+                unit_price_snapshot=Decimal(price),
+                vat_rate_snapshot=Decimal(rate) if rate else None,
+            )
+            for quantity, price, rate in lines
+        ],
+    )
+
+
+def test_amounts_round_each_rate_once_to_the_cent():
+    # 5.00 + 8.1 % is 5.405: one rounding, half up, for the PDF and the QR-bill alike.
+    amounts = invoice_amounts(_invoice("0", (1, "5.00", "0.081")))
+    assert amounts.vat == {Decimal("0.081"): Decimal("0.41")}
+    assert amounts.total == Decimal("5.41")
+
+
+def test_amounts_take_the_vat_on_the_discounted_lines():
+    amounts = invoice_amounts(
+        _invoice("10", (2, "50.00", "0.081"), (1, "100.00", None), (3, "9.90", "0.026"))
+    )
+    assert amounts.subtotal == Decimal("229.70")
+    assert amounts.discount == Decimal("22.97")
+    # 100 × 0.9 × 8.1 % = 7.29; 29.70 × 0.9 × 2.6 % = 0.69498
+    assert amounts.vat == {Decimal("0.026"): Decimal("0.69"), Decimal("0.081"): Decimal("7.29")}
+    assert amounts.total == Decimal("214.71")
 
 
 def test_qr_payload_contains_all_fields_in_spec_order():
@@ -51,7 +85,7 @@ def test_qr_payload_contains_all_fields_in_spec_order():
             city="Vaduz",
             country="LI",
         ),
-        amount=108.10,
+        amount=Decimal("108.10"),
     )
 
     fields = payload.split("\r\n")
@@ -109,7 +143,7 @@ def test_qr_payload_matches_the_qrbill_reference(customer: dict[str, str]):
     debtor = Customer(
         **{"first_name": "", "postal_code": "1004", "city": "Lausanne", "country": "CH"} | customer
     )
-    ours = _build_qr_payload(Invoice(invoice_number="2610051"), profile, debtor, 1234.5)
+    ours = _build_qr_payload(Invoice(invoice_number="2610051"), profile, debtor, Decimal("1234.50"))
 
     reference = QRBill(
         account=profile.iban,
@@ -145,7 +179,7 @@ def test_qr_payload_leaves_out_a_debtor_without_postal_code():
         customer=Customer(
             first_name="", last_name="Lunabar", address_line1="", postal_code="", city=""
         ),
-        amount=10,
+        amount=Decimal("10.00"),
     )
     assert payload.split("\r\n")[20:27] == [""] * 7
 
@@ -904,9 +938,9 @@ async def test_invoice_tenant_isolation(
 
 
 def test_chf_uses_swiss_thousands_separator():
-    assert _chf(1234.5) == "1'234.50"
-    assert _chf(-13.5) == "-13.50"
-    assert _chf(1234567.891, " ") == "1 234 567.89"
+    assert _chf(Decimal("1234.50")) == "1'234.50"
+    assert _chf(Decimal("-13.50")) == "-13.50"
+    assert _chf(Decimal("1234567.89"), " ") == "1 234 567.89"
 
 
 @pytest.mark.anyio

@@ -4,7 +4,7 @@ import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-se
 import { Page } from '../../core/models/page.model';
 import { sortItems } from '../../shared/sort';
 import { customerDisplayName } from '../customers/customer.model';
-import { Invoice, InvoiceCreate, InvoiceUpdate, Payment, PaymentMethod } from './invoice.model';
+import { Invoice, InvoiceCreate, InvoiceUpdate, Payment, PaymentMethod, invoiceTotal } from './invoice.model';
 import { localIsoDate } from '../../shared/dates';
 
 @Injectable()
@@ -40,9 +40,7 @@ export class MockInvoiceService implements IInvoiceService {
       date: (i) => i.issueDate,
       due: (i) => i.dueDate,
       paid_at: (i) => i.paidAt,
-      total: (i) => i.lines.reduce(
-        (sum, l) => sum + l.quantity * l.unitPriceSnapshot * (1 + (l.vatRateSnapshot ?? 0)), 0,
-      ) * (1 - i.discountPercent / 100),
+      total: invoiceTotal,
       status: (i) => statusRank.indexOf(i.status),
     });
     const total = sorted.length;

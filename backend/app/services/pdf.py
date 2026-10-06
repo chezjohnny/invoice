@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import io
 import re
+from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
 
 from fpdf import FPDF
 
 from app.services.customers import full_name
-from app.services.invoices import invoice_total
+from app.services.invoices import invoice_amounts, invoice_total
 
 if TYPE_CHECKING:
     from datetime import date
@@ -127,7 +128,7 @@ def generate_invoice_pdf(
     if reminder is not None and invoice.due_date is not None:
         y = _reminder_text(pdf, invoice.due_date, reminder.due_on, y, t)
     y = _lines_table(pdf, lines, y, t)
-    y = _totals_block(pdf, invoice, lines, y, t)
+    y = _totals_block(pdf, invoice, y, t)
     # A paid invoice serves as a receipt: no payment means, so it is not paid twice.
     if invoice.paid_at is None:
         if profile.twint_phone:
@@ -241,12 +242,12 @@ def _lines_table(pdf: FPDF, lines: list[InvoiceLine], y: float, t: dict[str, str
 
     pdf.set_font("Helvetica", "", 9)
     for ln in lines:
-        total = ln.quantity * float(ln.unit_price_snapshot)
+        price = Decimal(ln.unit_price_snapshot)
         cells = [
             ln.description_snapshot,
             str(ln.quantity),
-            _chf(float(ln.unit_price_snapshot)),
-            _chf(total),
+            _chf(price),
+            _chf(ln.quantity * price),
         ]
         pdf.set_xy(_M, y)
         for w, text in zip(_CW, cells, strict=True):
@@ -255,31 +256,18 @@ def _lines_table(pdf: FPDF, lines: list[InvoiceLine], y: float, t: dict[str, str
     return y + 3
 
 
-def _totals_block(
-    pdf: FPDF, invoice: Invoice, lines: list[InvoiceLine], y: float, t: dict[str, str]
-) -> float:
-    subtotal = sum(ln.quantity * float(ln.unit_price_snapshot) for ln in lines)
-    disc_pct = float(invoice.discount_percent)
-    disc_amt = subtotal * disc_pct / 100
-
-    vat_groups: dict[str, float] = {}
-    for ln in lines:
-        if ln.vat_rate_snapshot is not None:
-            rate = float(ln.vat_rate_snapshot)
-            base = ln.quantity * float(ln.unit_price_snapshot) * (1 - disc_pct / 100)
-            key = f"{t['vat']} {rate * 100:.1f} %"
-            vat_groups[key] = vat_groups.get(key, 0) + base * rate
-    vat_total = sum(vat_groups.values())
-    grand_total = subtotal - disc_amt + vat_total
+def _totals_block(pdf: FPDF, invoice: Invoice, y: float, t: dict[str, str]) -> float:
+    amounts = invoice_amounts(invoice)
+    percent = float(invoice.discount_percent)
 
     x_lbl = _M + _CW[0] + _CW[1]
     w_lbl, w_amt = _CW[2], _CW[3]
 
-    rows: list[tuple[str, float, bool]] = [(t["subtotal"], subtotal, False)]
-    if disc_amt:
-        rows.append((f"{t['discount']} ({disc_pct:.1f} %)", -disc_amt, False))
-    rows.extend((k, v, False) for k, v in vat_groups.items())
-    rows.append(("TOTAL CHF", grand_total, True))
+    rows: list[tuple[str, Decimal, bool]] = [(t["subtotal"], amounts.subtotal, False)]
+    if amounts.discount:
+        rows.append((f"{t['discount']} ({percent:.1f} %)", -amounts.discount, False))
+    rows.extend((f"{t['vat']} {rate * 100:.1f} %", vat, False) for rate, vat in amounts.vat.items())
+    rows.append(("TOTAL CHF", amounts.total, True))
 
     for label, amount, bold in rows:
         pdf.set_xy(x_lbl, y)
@@ -343,7 +331,7 @@ def _local_phone(phone: str) -> str:
 # ---- payment ----------------------------------------------------------------
 
 
-def _chf(amount: float, sep: str = "'") -> str:
+def _chf(amount: Decimal, sep: str = "'") -> str:
     """1234.5 -> 1'234.50, the Swiss convention; the QR slip mandates a space."""
     return f"{amount:,.2f}".replace(",", sep)
 
@@ -497,7 +485,7 @@ def _corner_marks(pdf: FPDF, x: float, y: float, width: float, height: float) ->
     pdf.set_line_width(previous)
 
 
-def _slip_amount(pdf: FPDF, x: float, amount: float, t: dict[str, str], size: int) -> None:
+def _slip_amount(pdf: FPDF, x: float, amount: Decimal, t: dict[str, str], size: int) -> None:
     line = (size + 3) * _PT
     currency = 2 * size  # mm, wide enough for "Currency" / "Monnaie"
     pdf.set_xy(x, _SLIP_Y + 68)
@@ -547,7 +535,7 @@ def _draw_qr_code(
     invoice: Invoice,
     profile: TenantProfile,
     customer: Customer,
-    amount: float,
+    amount: Decimal,
     x: float,
     y: float,
 ) -> None:
@@ -619,7 +607,7 @@ def _build_qr_payload(
     invoice: Invoice,
     profile: TenantProfile,
     customer: Customer,
-    amount: float,
+    amount: Decimal,
 ) -> str:
     fields = [
         "SPC",

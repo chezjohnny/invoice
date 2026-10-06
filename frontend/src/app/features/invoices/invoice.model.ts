@@ -75,15 +75,58 @@ export function invoicePdfName(invoice: Pick<Invoice, 'invoiceNumber'>): string 
 }
 
 /** Total including VAT: the discount applies to every line before its VAT. */
-export function invoiceTotal(invoice: {
+export interface InvoiceAmounts {
+  subtotal: number;
+  discount: number;
+  /** Per rate, ascending. */
+  vat: { rate: number; amount: number }[];
+  total: number;
+}
+
+interface AmountsInput {
   discountPercent: number;
   lines: Pick<InvoiceLine, 'quantity' | 'unitPriceSnapshot' | 'vatRateSnapshot'>[];
-}): number {
-  const factor = 1 - invoice.discountPercent / 100;
-  return invoice.lines.reduce(
-    (sum, l) => sum + l.quantity * l.unitPriceSnapshot * factor * (1 + (l.vatRateSnapshot ?? 0)),
-    0,
-  );
+}
+
+/** n / d rounded half away from zero, in exact integers. */
+function divRound(n: bigint, d: bigint): bigint {
+  const q = (2n * (n < 0n ? -n : n) + d) / (2n * d);
+  return n < 0n ? -q : q;
+}
+
+/**
+ * The backend's invoice_amounts(), to the cent: the discount and each rate's VAT
+ * (on the discounted lines) rounded once. In integers, as floats would round
+ * 5.405 down where the PDF and the QR-bill round it up.
+ */
+export function invoiceAmounts({ discountPercent, lines }: AmountsInput): InvoiceAmounts {
+  const cents = (l: AmountsInput['lines'][number]) =>
+    BigInt(l.quantity) * BigInt(Math.round(l.unitPriceSnapshot * 100));
+  const percent = BigInt(Math.round(discountPercent * 100)); // hundredths of a percent
+  const subtotal = lines.reduce((sum, l) => sum + cents(l), 0n);
+  const nets = new Map<number, bigint>();
+  for (const l of lines) {
+    if (l.vatRateSnapshot != null) nets.set(l.vatRateSnapshot, (nets.get(l.vatRateSnapshot) ?? 0n) + cents(l));
+  }
+  const vat = [...nets.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([rate, net]) => ({
+      rate,
+      amount: divRound(net * (10000n - percent) * BigInt(Math.round(rate * 10000)), 10000n * 10000n),
+    }));
+  const discount = divRound(subtotal * percent, 10000n);
+  const total = subtotal - discount + vat.reduce((sum, v) => sum + v.amount, 0n);
+  const chf = (c: bigint) => Number(c) / 100;
+  return {
+    subtotal: chf(subtotal),
+    discount: chf(discount),
+    vat: vat.map((v) => ({ rate: v.rate, amount: chf(v.amount) })),
+    total: chf(total),
+  };
+}
+
+export function invoiceTotal(invoice: AmountsInput): number {
+  return invoiceAmounts(invoice).total;
 }
 
 /** Issued and past its due date; the due date itself is still on time. */

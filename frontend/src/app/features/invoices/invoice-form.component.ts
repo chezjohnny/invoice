@@ -6,7 +6,7 @@ import { inputValue } from '../../shared/events';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Customer, customerDisplayName } from '../customers/customer.model';
 import { Article } from '../articles/article.model';
-import { Invoice, InvoiceCreate, PAYMENT_METHODS, PaymentMethod, invoiceTotal } from './invoice.model';
+import { Invoice, InvoiceCreate, PAYMENT_METHODS, PaymentMethod, invoiceAmounts } from './invoice.model';
 
 interface LineForm {
   id: string | null;
@@ -278,10 +278,8 @@ export class InvoiceFormComponent {
   // The same total as the list, the PDF and the pay dialog: VAT included.
   protected readonly totals = computed(() => {
     const { discountPercent, lines } = this._buildPayload();
-    const subtotal = lines.reduce((sum, l) => sum + l.quantity * l.unitPriceSnapshot, 0);
-    const discountAmount = (subtotal * discountPercent) / 100;
-    const total = invoiceTotal({ discountPercent, lines });
-    return { subtotal, discountAmount, vatAmount: total - (subtotal - discountAmount), total };
+    const { subtotal, discount, vat, total } = invoiceAmounts({ discountPercent, lines });
+    return { subtotal, discountAmount: discount, vatAmount: vat.reduce((sum, v) => sum + v.amount, 0), total };
   });
 
   constructor() {
