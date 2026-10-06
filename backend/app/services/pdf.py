@@ -292,13 +292,7 @@ def _totals_block(pdf: FPDF, invoice: Invoice, y: float, t: dict[str, str]) -> f
             align="R",
         )
         y += 5
-
-    if invoice.notes:
-        y += 5
-        pdf.set_xy(_M, y)
-        pdf.set_font("Helvetica", "I", 9)
-        pdf.multi_cell(_W - 2 * _M, 5, invoice.notes)
-        y = pdf.get_y()
+    # Never the notes: they are internal (a paper reference, a reminder to self).
     return y + 5
 
 

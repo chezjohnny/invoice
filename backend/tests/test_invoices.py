@@ -885,6 +885,19 @@ async def test_pdf_header_shows_company_phone(
 
 
 @pytest.mark.anyio
+async def test_pdf_leaves_out_the_internal_notes(
+    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+):
+    create = await client.post(
+        INVOICES,
+        json={"customer_id": customer_id, "lines": [LINE], "notes": "Internal reminder"},
+        headers=auth_headers,
+    )
+    pdf = await client.get(f"{INVOICES}/{create.json()['id']}/pdf", headers=auth_headers)
+    assert "Internal reminder" not in _pdf_text(pdf.content)
+
+
+@pytest.mark.anyio
 async def test_pdf_language(
     client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):

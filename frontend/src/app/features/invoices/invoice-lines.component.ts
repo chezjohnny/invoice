@@ -6,7 +6,7 @@ import { NaturalDatePipe } from '../../shared/date.pipe';
 import { IconComponent } from '../../shared/components/icon.component';
 import { Invoice, PAYMENT_METHODS, PaymentMethod } from './invoice.model';
 
-/** Expanded detail of an invoice row: its payment, then its lines. */
+/** Expanded detail of an invoice row: its payment and reminders, its lines, then its internal notes. */
 @Component({
   selector: 'app-invoice-lines',
   imports: [DecimalPipe, IconComponent, NaturalDatePipe],
@@ -98,6 +98,11 @@ import { Invoice, PAYMENT_METHODS, PaymentMethod } from './invoice.model';
             </tbody>
           </table>
         </div>
+      }
+      @if (invoice().notes) {
+        <p class="text-xs text-base-content/60 whitespace-pre-line">
+          {{ t().invoices.internalNotes }}: {{ invoice().notes }}
+        </p>
       }
     </div>
   `,

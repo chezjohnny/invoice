@@ -6,7 +6,7 @@ Swiss QR-bill support. Bilingual UI (EN/FR).
 
 ## Features
 What exists today; the architecture decisions below explain the rules.
-- **Invoices**: `draft → issued → paid → cancelled`, payment method (cash, TWINT, bank transfer) and date, discount, notes; PDF invoice, receipt once paid, payment reminders; Swiss QR-bill (SIX v2.3) and optional TWINT block
+- **Invoices**: `draft → issued → paid → cancelled`, payment method (cash, TWINT, bank transfer) and date, discount, internal notes (never printed); PDF invoice, receipt once paid, payment reminders; Swiss QR-bill (SIX v2.3) and optional TWINT block
 - **Customers** (persons or companies), **articles** (stock, VAT override, yearly/quarterly sales, inventory mode), **stock withdrawals**; CSV exports
 - **Dashboard**: KPIs, overdue invoices with reminders, recent invoices
 - **Settings**: company profile (address, phone, IBAN, TWINT, VAT, payment and reminder terms)
