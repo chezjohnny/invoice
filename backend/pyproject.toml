@@ -1,0 +1,57 @@
+[project]
+name = "backend"
+version = "1.0.0"
+description = "Invoice management API"
+requires-python = ">=3.14"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.18.4",
+    "bcrypt>=5.0.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.138.0",
+    "fpdf2>=2.8.7",
+    "pydantic-settings>=2.14.2",
+    "pyjwt>=2.15.1",
+    "qrcode[pil]>=8.2",
+    "sqlalchemy[asyncio]>=2.0.51",
+    "uvicorn[standard]>=0.38.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "ipython>=9.15.0",
+    "mypy>=2.1.0",
+    "pip-audit>=2.10.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "qrbill>=1.2.0",
+    "ruff>=0.15.19",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["pydantic.mypy"]
+
+# Test functions need no annotations, but their bodies are still checked.
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+# qrcode and qrbill ship no type information.
+[[tool.mypy.overrides]]
+module = ["qrcode", "qrcode.*", "qrbill"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

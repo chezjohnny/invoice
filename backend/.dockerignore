@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.env
+*.db
+*.db-wal
+*.db-shm
+tests
+fixtures
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage

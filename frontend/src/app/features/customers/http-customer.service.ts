@@ -1,0 +1,108 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
+import { Page, PageDto, toPage } from '../../core/models/page.model';
+import { withSort } from '../../shared/sort';
+import { Customer, CustomerData } from './customer.model';
+
+interface PhoneDto {
+  label: string;
+  number: string;
+}
+
+interface CustomerDto {
+  id: string;
+  tenant_id: string;
+  first_name: string;
+  last_name: string;
+  address_line1: string;
+  address_line2: string | null;
+  postal_code: string;
+  city: string;
+  country: string;
+  email: string | null;
+  phones: PhoneDto[];
+  is_archived: boolean;
+}
+
+
+@Injectable()
+export class HttpCustomerService implements ICustomerService {
+  private readonly http = inject(HttpClient);
+
+  list(params: CustomerListParams): Promise<Page<Customer>> {
+    const httpParams = new HttpParams()
+      .set('search', params.search ?? '')
+      .set('archived', String(params.archived ?? false))
+      .set('page', String(params.page ?? 1))
+      .set('per_page', String(params.perPage ?? 20));
+    return firstValueFrom(
+      this.http.get<PageDto<CustomerDto>>('/api/customers', {
+        params: withSort(httpParams, params.sort),
+      })
+    ).then((dto) => toPage(dto, this.toCustomer));
+  }
+
+  getById(id: string): Promise<Customer> {
+    return firstValueFrom(
+      this.http.get<CustomerDto>(`/api/customers/${id}`)
+    ).then(this.toCustomer);
+  }
+
+  create(data: CustomerData): Promise<Customer> {
+    return firstValueFrom(
+      this.http.post<CustomerDto>('/api/customers', this.toDto(data))
+    ).then(this.toCustomer);
+  }
+
+  update(id: string, data: CustomerData): Promise<Customer> {
+    return firstValueFrom(
+      this.http.put<CustomerDto>(`/api/customers/${id}`, this.toDto(data))
+    ).then(this.toCustomer);
+  }
+
+  archive(id: string): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/archive`, {}));
+  }
+  restore(id: string): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/restore`, {}));
+  }
+
+
+  exportCsv(): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get('/api/customers/export.csv', { responseType: 'blob' })
+    );
+  }
+
+  private toCustomer(dto: CustomerDto): Customer {
+    return {
+      id: dto.id,
+      firstName: dto.first_name,
+      lastName: dto.last_name,
+      addressLine1: dto.address_line1,
+      addressLine2: dto.address_line2,
+      postalCode: dto.postal_code,
+      city: dto.city,
+      country: dto.country,
+      email: dto.email,
+      phones: dto.phones,
+      isArchived: dto.is_archived,
+    };
+  }
+
+  private toDto(data: CustomerData) {
+    return {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      address_line1: data.addressLine1,
+      address_line2: data.addressLine2,
+      postal_code: data.postalCode,
+      city: data.city,
+      country: data.country,
+      email: data.email,
+      phones: data.phones,
+    };
+  }
+}

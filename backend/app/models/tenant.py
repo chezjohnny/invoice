@@ -1,0 +1,64 @@
+import uuid
+from decimal import Decimal
+
+from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import UUIDBase
+
+
+class Tenant(UUIDBase):
+    __tablename__ = "tenants"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    subdomain: Mapped[str] = mapped_column(String(63), unique=True, nullable=False)
+
+    profile: Mapped[TenantProfile] = relationship(back_populates="tenant", uselist=False)
+    users: Mapped[list[User]] = relationship(back_populates="tenant")
+
+
+class TenantProfile(UUIDBase):
+    __tablename__ = "tenant_profiles"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    company_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    address_line1: Mapped[str] = mapped_column(String(255), nullable=False)
+    address_line2: Mapped[str | None] = mapped_column(String(255))
+    postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    country: Mapped[str] = mapped_column(String(2), nullable=False, default="CH")
+    iban: Mapped[str | None] = mapped_column(String(34))
+    # E.164 Swiss mobile number the customer can send the amount to with TWINT.
+    twint_phone: Mapped[str | None] = mapped_column(String(12))
+    # E.164 contact number printed in the invoice header.
+    phone: Mapped[str | None] = mapped_column(String(16))
+    vat_number: Mapped[str | None] = mapped_column(String(20))
+    # null = non-assujetti TVA (CA < CHF 100k)
+    default_vat_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
+    payment_terms_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    # New deadline printed on a payment reminder, counted from the reminder date.
+    reminder_terms_days: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+
+    tenant: Mapped[Tenant] = relationship(back_populates="profile")
+
+    @property
+    def is_complete(self) -> bool:
+        """A Swiss QR-bill needs a full issuer address and an IBAN."""
+        return all([self.company_name, self.address_line1, self.postal_code, self.city, self.iban])
+
+
+class User(UUIDBase):
+    __tablename__ = "users"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
+    # Carried by every token: raising it signs the user out everywhere.
+    token_version: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+
+    tenant: Mapped[Tenant] = relationship(back_populates="users")

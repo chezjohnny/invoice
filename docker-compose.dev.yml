@@ -1,0 +1,33 @@
+# DEVELOPMENT stack (SQLite + hot reload).
+# Production lives in docker-compose.yml: SQLite, Angular build served by nginx,
+# Traefik labels.
+#
+# Usage: make up / make down (the Makefile passes -f docker-compose.dev.yml).
+services:
+  backend:
+    build: ./backend
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # Also holds the SQLite file (backend/dev.db), shared with `make backend-dev`.
+      - ./backend:/app
+      # Keeps Linux-compiled .venv separate from the macOS host .venv
+      - backend_venv:/app/.venv
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      # The Dockerfile defaults to the production nginx image.
+      target: dev
+    command: npm start -- --host 0.0.0.0
+    environment:
+      API_URL: http://backend:8000
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    ports:
+      - "4200:4200"
+
+volumes:
+  backend_venv:

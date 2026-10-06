@@ -1,0 +1,411 @@
+import { CurrencyPipe } from '@angular/common';
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { FormActionsComponent } from '../../shared/components/form-actions.component';
+import { inputValue } from '../../shared/events';
+import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
+import { Customer, customerDisplayName } from '../customers/customer.model';
+import { Article } from '../articles/article.model';
+import { Invoice, InvoiceCreate, PAYMENT_METHODS, PaymentMethod, invoiceTotal } from './invoice.model';
+
+interface LineForm {
+  id: string | null;
+  articleId: string | null;
+  descriptionSnapshot: string;
+  quantity: string;
+  unitPriceSnapshot: string;
+  vatRateSnapshot: string;
+}
+
+const MAX_RECOMMENDATIONS = 10;
+// Enough recent invoices to usually find MAX_RECOMMENDATIONS distinct articles.
+const RECENT_INVOICES = 20;
+const MAX_ARTICLE_RESULTS = 20;
+
+function searchKey(value: string): string {
+  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
+interface Recommendation {
+  articleId: string | null;
+  description: string;
+  unitPrice: number;
+  vatRate: number | null;
+}
+
+@Component({
+  selector: 'app-invoice-form',
+  imports: [CurrencyPipe, FormActionsComponent],
+  template: `
+    <form (submit)="submit($event)">
+      <h1 class="text-xl font-bold sm:text-2xl mb-5">
+        {{ invoice() ? t().invoices.editTitle : t().invoices.newTitle }}
+      </h1>
+
+      <fieldset class="fieldset gap-4">
+        <!-- Customer: fixed, an invoice is always started from its customer's page -->
+        <div>
+          <span class="fieldset-label">{{ t().invoices.customerLabel }}</span>
+          <p class="py-2 font-medium">{{ displayName(customer()) }}</p>
+        </div>
+
+        <!-- Recommendations -->
+        @if (articleRecommendations().length > 0) {
+          <div class="rounded-lg border border-base-300 bg-base-200/50 p-3">
+            <p class="text-xs text-base-content/50 mb-2">{{ t().invoices.recommendations }}</p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (rec of articleRecommendations(); track rec.description) {
+                <button type="button" class="btn btn-outline btn-xs" (click)="addRecommendation(rec)">
+                  + {{ rec.description }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Lines -->
+        <div>
+          <span class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</span>
+
+          @if (lines().length > 0) {
+            <div>
+              <!-- Column headers -->
+              <div class="grid items-end gap-x-2 px-0.5 mb-1 text-xs text-base-content/50"
+                   style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                <span>{{ t().invoices.articleLabel }}</span>
+                <span>{{ t().invoices.qtyLabel }}</span>
+                <span>{{ t().invoices.priceLabel }}</span>
+                <span>{{ t().invoices.vatLabel }}</span>
+                <span></span>
+              </div>
+              <!-- One row per line -->
+              @for (line of lines(); track $index; let i = $index) {
+                <div class="grid items-center gap-x-2 px-0.5 mb-1"
+                     style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                  <!-- Article search; text that matches no picked article stays a free-text line -->
+                  <div class="relative min-w-0">
+                    <label class="input input-sm w-full" [class.input-primary]="line.articleId !== null">
+                      <span class="badge badge-xs shrink-0"
+                        [class.badge-primary]="line.articleId !== null"
+                        [class.badge-ghost]="line.articleId === null">
+                        {{ line.articleId !== null ? t().invoices.articleLabel : t().invoices.freeText }}
+                      </span>
+                      <input class="grow min-w-0" type="text"
+                        [title]="line.descriptionSnapshot"
+                        [placeholder]="t().invoices.searchArticle" autocomplete="off"
+                        [value]="line.descriptionSnapshot"
+                        (focus)="articleSearchLine.set(i)"
+                        (input)="onArticleSearch(i, inputValue($event))"
+                        (blur)="onArticleBlur()" />
+                    </label>
+                    @if (articleSearchLine() === i && articleResults(line.descriptionSnapshot).length > 0) {
+                      <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
+                        @for (a of articleResults(line.descriptionSnapshot); track a.id) {
+                          <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm flex justify-between gap-2"
+                            [class.font-medium]="a.id === line.articleId"
+                            (mousedown)="selectArticle(i, a.id)">
+                            <span class="truncate">{{ a.name }}</span>
+                            <span class="text-base-content/50 text-xs shrink-0 tabular-nums">
+                              {{ a.unitPrice | currency:'CHF':'code':'1.2-2' }} · {{ a.stockQuantity }}
+                            </span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                  <!-- Qty -->
+                  <input class="input input-sm w-full" type="number" min="1" step="1"
+                    [value]="line.quantity"
+                    (input)="updateLine(i, 'quantity', inputValue($event))" />
+                  <!-- Price -->
+                  <input class="input input-sm w-full" type="number" min="0" step="0.01"
+                    [value]="line.unitPriceSnapshot"
+                    (input)="updateLine(i, 'unitPriceSnapshot', inputValue($event))" />
+                  <!-- VAT% -->
+                  <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
+                    placeholder="—"
+                    [value]="line.vatRateSnapshot"
+                    (input)="updateLine(i, 'vatRateSnapshot', inputValue($event))" />
+                  <!-- Delete + warning -->
+                  <div class="flex items-center justify-end gap-0.5">
+                    @if (lineStockWarning(line)) {
+                      <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
+                    }
+                    <button type="button" class="btn btn-ghost btn-xs text-error px-1"
+                      (click)="removeLine(i)">✕</button>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
+          }
+
+          <button type="button" class="btn btn-ghost btn-sm mt-1" (click)="addLine()">
+            {{ t().invoices.addLine }}
+          </button>
+        </div>
+
+        <!-- Totals summary -->
+        @if (lines().length > 0) {
+          <div class="text-sm text-right text-base-content/70 border-t border-base-200 pt-3 space-y-0.5">
+            <div>{{ t().invoices.subtotal }}: <span class="tabular-nums">{{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}</span></div>
+            @if (totals().discountAmount > 0) {
+              <div class="text-error">− {{ totals().discountAmount | currency:'CHF':'code':'1.2-2' }}</div>
+            }
+            @if (totals().vatAmount > 0) {
+              <div>{{ t().invoices.vatAmount }}: <span class="tabular-nums">{{ totals().vatAmount | currency:'CHF':'code':'1.2-2' }}</span></div>
+            }
+            <div class="font-semibold text-base-content">
+              {{ t().invoices.total }}: <span class="tabular-nums">{{ totals().total | currency:'CHF':'code':'1.2-2' }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Notes: folded away unless the invoice already has some -->
+        <details class="collapse collapse-arrow border border-base-300 rounded-box" [open]="!!invoice()?.notes">
+          <summary class="collapse-title min-h-0 py-2 text-sm font-medium">{{ t().invoices.notesLabel }}</summary>
+          <div class="collapse-content">
+            <textarea class="textarea textarea-bordered w-full" rows="2"
+              [attr.aria-label]="t().invoices.notesLabel"
+              [value]="notes()" (input)="notes.set(inputValue($event))"></textarea>
+          </div>
+        </details>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Payment method -->
+          <div class="w-full sm:max-w-48">
+            <label class="fieldset-label" for="invoice-payment-method">{{ t().invoices.paymentMethodLabel }}</label>
+            <select id="invoice-payment-method" class="select w-full" (change)="paymentMethod.set(inputValue($event))">
+              @for (method of paymentMethods; track method) {
+                <option [value]="method" [selected]="paymentMethod() === method">
+                  {{ t().paymentMethod[method] }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- Discount -->
+          <div class="w-full sm:max-w-48">
+            <label class="fieldset-label" for="invoice-discount">{{ t().invoices.discountLabel }}</label>
+            <input id="invoice-discount" class="input w-full" type="number" min="0" max="100" step="0.1"
+              [value]="discountPercent()" (input)="discountPercent.set(inputValue($event))" />
+          </div>
+        </div>
+      </fieldset>
+
+      <app-form-actions [submitLabel]="t().invoices.saveDraft" (cancelled)="cancelled.emit()">
+        <span class="tooltip-left" [class.tooltip]="!!issueBlockedReason()" [attr.data-tip]="issueBlockedReason()">
+          <button type="button" class="btn btn-outline" (click)="submitAndIssue()"
+            [disabled]="!!issueBlockedReason()">
+            {{ paymentMethod() === 'cash' ? t().invoices.payAndPrint : t().invoices.issueAndPrint }}
+          </button>
+        </span>
+      </app-form-actions>
+    </form>
+  `,
+})
+export class InvoiceFormComponent {
+  readonly invoice = input<Invoice | null>(null);
+  readonly articles = input<Article[]>([]);
+  readonly customer = input.required<Customer>();
+  // Issuing needs a complete company profile (address + IBAN) for the QR-bill.
+  readonly canIssue = input(true);
+  readonly saved = output<InvoiceCreate>();
+  readonly cancelled = output<void>();
+  readonly issuedAndPrinted = output<InvoiceCreate>();
+
+  protected readonly t = inject(I18nService).T;
+  protected readonly displayName = customerDisplayName;
+  protected readonly inputValue = inputValue;
+  private readonly invoiceService = inject(INVOICE_SERVICE);
+
+  protected readonly discountPercent = linkedSignal(() =>
+    this.invoice() != null ? String(this.invoice()!.discountPercent) : '0'
+  );
+  protected readonly notes = linkedSignal(() => this.invoice()?.notes ?? '');
+  protected readonly paymentMethod = linkedSignal<PaymentMethod>(() => this.invoice()?.paymentMethod ?? 'cash');
+  protected readonly paymentMethods = PAYMENT_METHODS;
+
+  protected readonly recentInvoices = signal<Invoice[]>([]);
+  protected readonly articleSearchLine = signal<number | null>(null);
+
+  protected readonly articleRecommendations = computed<Recommendation[]>(() => {
+    const seen = new Set<string>();
+    const recs: Recommendation[] = [];
+    const articles = new Map(this.articles().map((a) => [a.id, a]));
+    for (const inv of this.recentInvoices()) {
+      for (const line of inv.lines) {
+        const key = line.articleId ?? line.descriptionSnapshot;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (line.articleId) {
+          // An archived (sold out) or deleted article is no longer offered:
+          // suggesting it as free text would bill it outside the stock.
+          const article = articles.get(line.articleId);
+          if (!article) continue;
+          recs.push({
+            articleId: article.id,
+            description: article.name,
+            unitPrice: article.unitPrice,
+            vatRate: article.vatRateOverride,
+          });
+        } else {
+          recs.push({
+            articleId: null,
+            description: line.descriptionSnapshot,
+            unitPrice: line.unitPriceSnapshot,
+            vatRate: line.vatRateSnapshot,
+          });
+        }
+        if (recs.length >= MAX_RECOMMENDATIONS) return recs;
+      }
+    }
+    return recs;
+  });
+
+  protected readonly lines = linkedSignal<LineForm[]>(() =>
+    this.invoice()?.lines.map((l) => ({
+      id: l.id,
+      articleId: l.articleId,
+      descriptionSnapshot: l.descriptionSnapshot,
+      quantity: String(l.quantity),
+      unitPriceSnapshot: String(l.unitPriceSnapshot),
+      vatRateSnapshot: l.vatRateSnapshot != null ? String(l.vatRateSnapshot * 100) : '',
+    })) ?? []
+  );
+
+  // The same total as the list, the PDF and the pay dialog: VAT included.
+  protected readonly totals = computed(() => {
+    const { discountPercent, lines } = this._buildPayload();
+    const subtotal = lines.reduce((sum, l) => sum + l.quantity * l.unitPriceSnapshot, 0);
+    const discountAmount = (subtotal * discountPercent) / 100;
+    const total = invoiceTotal({ discountPercent, lines });
+    return { subtotal, discountAmount, vatAmount: total - (subtotal - discountAmount), total };
+  });
+
+  constructor() {
+    effect(() => {
+      this.invoiceService
+        .list({ customerId: this.customer().id, perPage: RECENT_INVOICES })
+        .then((page) => this.recentInvoices.set(page.items));
+    });
+  }
+
+  protected addRecommendation(rec: Recommendation): void {
+    this.lines.update((ls) => [
+      ...ls,
+      {
+        id: null,
+        articleId: rec.articleId,
+        descriptionSnapshot: rec.description,
+        quantity: '1',
+        unitPriceSnapshot: String(rec.unitPrice),
+        vatRateSnapshot: rec.vatRate != null ? String(rec.vatRate * 100) : '',
+      },
+    ]);
+  }
+
+  protected addLine(): void {
+    this.lines.update((ls) => [
+      ...ls,
+      { id: null, articleId: null, descriptionSnapshot: '', quantity: '1', unitPriceSnapshot: '', vatRateSnapshot: '' },
+    ]);
+  }
+
+  protected removeLine(index: number): void {
+    this.lines.update((ls) => ls.filter((_, i) => i !== index));
+  }
+
+  protected updateLine(index: number, field: keyof LineForm, value: string): void {
+    this.lines.update((ls) =>
+      ls.map((l, i) => (i === index ? { ...l, [field]: value } : l))
+    );
+  }
+
+  protected selectArticle(index: number, articleId: string): void {
+    const article = this.articles().find((a) => a.id === articleId);
+    this.lines.update((ls) =>
+      ls.map((l, i) =>
+        i === index
+          ? {
+              ...l,
+              articleId: article ? articleId : null,
+              descriptionSnapshot: article ? article.name : '',
+              unitPriceSnapshot: article ? String(article.unitPrice) : '',
+              vatRateSnapshot: article?.vatRateOverride != null
+                ? String(article.vatRateOverride * 100)
+                : '',
+            }
+          : l
+      )
+    );
+  }
+
+  protected articleResults(query: string): Article[] {
+    const words = searchKey(query).split(/\s+/).filter(Boolean);
+    return this.articles()
+      .filter((a) => {
+        const name = searchKey(a.name);
+        return words.every((w) => name.includes(w));
+      })
+      .slice(0, MAX_ARTICLE_RESULTS);
+  }
+
+  protected onArticleSearch(index: number, value: string): void {
+    this.articleSearchLine.set(index);
+    // Typing detaches the line from its article: unless one is picked again,
+    // it is billed as free text, so the article's price and VAT go with it.
+    this.lines.update((ls) =>
+      ls.map((l, i) => {
+        if (i !== index) return l;
+        const detached = l.articleId !== null ? { unitPriceSnapshot: '', vatRateSnapshot: '' } : {};
+        return { ...l, ...detached, articleId: null, descriptionSnapshot: value };
+      })
+    );
+  }
+
+  protected onArticleBlur(): void {
+    setTimeout(() => this.articleSearchLine.set(null), 200);
+  }
+
+  protected lineStockWarning(line: LineForm): boolean {
+    if (!line.articleId) return false;
+    const article = this.articles().find((a) => a.id === line.articleId);
+    return article != null && article.stockQuantity <= 0;
+  }
+
+  // A draft may be saved empty, but an invoice without any article is never issued.
+  protected readonly issueBlockedReason = computed(() => {
+    if (this.lines().length === 0) return this.t().invoices.noLinesBlocked;
+    return this.canIssue() ? null : this.t().invoices.issueBlocked;
+  });
+
+  protected submitAndIssue(): void {
+    if (this.issueBlockedReason()) return;
+    this.issuedAndPrinted.emit(this._buildPayload());
+  }
+
+  submit(event: Event): void {
+    event.preventDefault();
+    this.saved.emit(this._buildPayload());
+  }
+
+  private _buildPayload(): InvoiceCreate {
+    return {
+      customerId: this.customer().id,
+      discountPercent: parseFloat(this.discountPercent()) || 0,
+      notes: this.notes().trim(),
+      paymentMethod: this.paymentMethod(),
+      lines: this.lines().map((l) => ({
+        articleId: l.articleId,
+        descriptionSnapshot: l.descriptionSnapshot.trim(),
+        quantity: parseInt(l.quantity) || 1,
+        unitPriceSnapshot: parseFloat(l.unitPriceSnapshot) || 0,
+        vatRateSnapshot:
+          l.vatRateSnapshot.trim() !== '' ? parseFloat(l.vatRateSnapshot) / 100 : null,
+      })),
+    };
+  }
+}
+
