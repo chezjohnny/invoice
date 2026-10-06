@@ -29,7 +29,8 @@ logs-all: ## Follow all service logs
 	$(COMPOSE) logs -f
 
 # ── Backend ─────────────────────────────────────────────────────────────────
-# Every target uses the SQLite dev DB, backend/dev.db.
+# The SQLite DB of INVOICE_DATABASE_URL (backend/.env), backend/dev.db by default;
+# the -prod targets run on the VPS, against the production database.
 
 .PHONY: backend-dev
 backend-dev: backend-migrate ## Start backend dev server (hot reload)
@@ -56,7 +57,7 @@ backend-create-tenant: backend-migrate ## Create a tenant and its admin (NAME=..
 	uv --directory backend run python -m app.cli create-tenant --name "$(NAME)" --subdomain "$(SUBDOMAIN)" --email "$(EMAIL)"
 
 .PHONY: backend-create-tenant-prod
-backend-create-tenant-prod: ## Run from the production checkout on the VPS (NAME=... SUBDOMAIN=... EMAIL=...)
+backend-create-tenant-prod: ## Create a tenant in production, from the VPS checkout (NAME=... SUBDOMAIN=... EMAIL=...)
 	docker compose run --rm --no-deps api python -m app.cli create-tenant --name "$(NAME)" --subdomain "$(SUBDOMAIN)" --email "$(EMAIL)"
 
 .PHONY: backend-set-password
@@ -64,7 +65,7 @@ backend-set-password: backend-migrate ## Change a user's password (EMAIL=... [AR
 	uv --directory backend run python -m app.cli set-password --email "$(EMAIL)" $(ARGS)
 
 .PHONY: backend-set-password-prod
-backend-set-password-prod: ## Run from the production checkout on the VPS (EMAIL=... [ARGS=--sign-out])
+backend-set-password-prod: ## Change a password in production, from the VPS checkout (EMAIL=... [ARGS=--sign-out])
 	docker compose run --rm --no-deps api python -m app.cli set-password --email "$(EMAIL)" $(ARGS)
 
 .PHONY: backend-shell
@@ -151,4 +152,4 @@ check: backend-check frontend-check ## Run all checks (backend + frontend)
 .PHONY: help
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'

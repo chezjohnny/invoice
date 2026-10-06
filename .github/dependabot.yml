@@ -1,6 +1,7 @@
 # One pull request per ecosystem and month for minor and patch releases.
 # Angular, NgRx and TypeScript move together through `ng update`; the Docker
-# base images follow .nvmrc and nginx's stable branch, so they are bumped by hand.
+# base images follow Node's major in .nvmrc and nginx's stable branch, so they
+# are bumped by hand.
 version: 2
 updates:
   - package-ecosystem: uv

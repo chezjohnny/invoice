@@ -9,8 +9,8 @@ l'application y répond. Pour chaque workflow :
 
 Tous les formulaires (facture, client, article, sortie de stock) s'ouvrent sur
 une page à part : plein écran sur mobile, boutons collés en bas, et le bouton
-retour du téléphone annule. Seules les confirmations (paiement, suppression)
-restent des fenêtres.
+retour du téléphone annule. Seules les confirmations (paiement, rappel,
+suppression) restent des fenêtres.
 
 Vocabulaire :
 
@@ -75,7 +75,7 @@ prépare au magasin.
 - 4. Choisir le mode de paiement :
   - *Espèces* → *Payer & Imprimer* : la facture est émise, marquée payée
     aujourd'hui, et le reçu se télécharge ;
-  - *TWINT* ou *Virement* → *Émettre & Imprimer* : la facture se télécharge.
+  - *TWINT* ou *Virement (IBAN)* → *Émettre & Imprimer* : la facture se télécharge.
 - 5. Imprimer le PDF une deuxième fois.
 
 **Manques**
@@ -141,9 +141,11 @@ supplémentaire*, que la banque reporte dans la communication du virement.
 *Articles* → *Ventes* : année → trimestre. Les colonnes *Vendus* et *Sorties*
 suivent la période choisie ; *Stock* est le stock **actuel**.
 
-*Exporter CSV* télécharge ce qui est affiché sur la période choisie
-(`articles-2025-Q2.csv`) : prix, TVA, stock, vendus et sorties. Avec *Afficher les
-archivés*, il exporte les articles archivés (`articles-archived-2025-Q2.csv`).
+*Exporter CSV* télécharge tous les articles actifs de la période choisie, sans
+tenir compte de la recherche (`articles-2025-Q2.csv`) : prix, TVA propre à
+l'article (vide s'il suit le taux de l'entreprise), stock, vendus et sorties. Avec
+*Afficher les archivés*, il exporte les articles archivés
+(`articles-archived-2025-Q2.csv`).
 
 **Manques**
 
@@ -209,6 +211,70 @@ récente, avec les jours de retard et les rappels déjà envoyés) → cloche
   dans le détail de la facture, le réimprime sans en créer un nouveau.
 - La même cloche figure sur les factures en retard de la liste des factures et
   de la fiche client.
+
+**Manques**
+
+Aucun.
+
+## 9. Enregistrer une sortie de stock
+
+Des articles quittent le stock sans être facturés : dégustation, lot offert,
+bouteille cassée.
+
+**Étapes**
+
+1. Ouvrir l'application.
+2. Noter l'article, la quantité et le motif.
+
+**Dans l'application**
+
+*Sorties de stock* → *Nouvelle sortie* → article (son stock est affiché), date,
+quantité, motif (*Dégustation*, *Promotion / cadeau*, *Perte / casse*, *Autre*)
+et une note. Le stock diminue aussitôt ; la sortie apparaît dans la colonne
+*Sorties* des articles, sur la période choisie.
+
+Une sortie ne se modifie pas : en cas d'erreur, on la supprime (le stock revient)
+et on la saisit à nouveau.
+
+**Manques**
+
+Aucun.
+
+## 10. Configurer l'entreprise
+
+À la première connexion, le profil de l'entreprise est vide.
+
+**Étapes**
+
+1. Saisir l'adresse, l'IBAN et, si besoin, le numéro TWINT, la TVA et les délais.
+
+**Dans l'application**
+
+*Paramètres* : tant que l'adresse ou l'IBAN manquent, un bandeau le rappelle
+(*Compléter*) et aucune facture ne peut être émise. Le taux de TVA par défaut
+s'applique aux articles sans taux propre ; vide, l'entreprise n'est pas assujettie.
+Le numéro TWINT ajoute au PDF un bloc « Payer avec TWINT ».
+
+**Manques**
+
+Aucun.
+
+## 11. Annuler une facture
+
+**Étapes**
+
+1. Retrouver la facture.
+2. L'annuler.
+
+**Dans l'application**
+
+*Factures* (ou la fiche client) → icône *Annuler la facture* sur la ligne, immédiate,
+sans confirmation :
+
+- une facture **émise** reste dans la liste, annulée, avec son numéro ; ses
+  articles reviennent dans le stock ;
+- un **brouillon** annulé peut ensuite être supprimé (*Supprimer le brouillon
+  annulé*) : il n'avait pas de numéro. Une facture émise ne se supprime jamais.
 
 **Manques**
 

@@ -58,7 +58,7 @@ async def set_password(
     db: AsyncSession, *, email: str, password: str, sign_out: bool = False
 ) -> None:
     """With ``sign_out``, every token issued so far stops working: the sessions
-    open on other devices end, instead of lasting until their refresh token expires."""
+    open on other devices end. Without it they go on, each refresh renewing them."""
     user = await db.scalar(select(User).where(User.email == _email(email)))
     if user is None:
         raise TenantError(f"No user with the email {email}")

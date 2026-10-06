@@ -10,13 +10,14 @@ and a bilingual (EN/FR) interface. One admin user per tenant.
   payment reminders; a paid invoice prints as a receipt.
 - **Swiss QR-bill** — PDF with the payment part and receipt of the SIX
   Implementation Guidelines v2.3 (structured addresses), optional TWINT block.
-- **Articles & customers** — full CRUD, customers as persons or companies,
+- **Articles & customers** — create, edit, archive and restore; customers as persons or companies,
   per-article VAT override, stock tracking on issue/cancel, yearly and quarterly
   sales, inventory mode, stock withdrawals (tastings, gifts, losses), CSV export.
 - **Dashboard** — drafts, outstanding and overdue invoices, amount paid this
   year, recent invoices.
-- **Multi-tenant** — every table is scoped by `tenant_id`; JWT auth with access
-  token auto-refresh.
+- **Multi-tenant** — every customer, article, invoice and stock withdrawal belongs
+  to a tenant (`tenant_id`; invoice lines and reminders through their invoice);
+  JWT auth with access token auto-refresh.
 - **Bilingual UI** — reactive EN/FR translations, night mode.
 - **CHF only** — Swiss SME focus, no currency field.
 - **Server-side pagination & search** on all list endpoints.
@@ -70,16 +71,18 @@ make up                        # backend + frontend, hot reload
 make backend-fixtures          # load demo data (from the host, same file)
 ```
 
+The UI is then available at <http://localhost:4200> and the API at
+<http://localhost:8000> (docs at `/docs`).
+
+**Demo login:** `admin@cave.ch` / `secret123` (tenant *Cave du Lac*).
+
 ### Frontend only, fully mocked (no backend/DB)
 
 ```bash
 make dev-mock
 ```
 
-The UI is then available at <http://localhost:4200> and the API at
-<http://localhost:8000> (docs at `/docs`).
-
-**Demo login:** `admin@cave.ch` / `secret123` (tenant *Cave du Lac*).
+Any email and password sign in; the data lives in memory and is lost on reload.
 
 The demo data (`backend/fixtures/demo.json`) covers persons and companies,
 archived records, payments, overdue invoices with reminders and stock
@@ -91,15 +94,15 @@ bring them up to date.
 > signup, the UI only exposes login.
 >
 > ```bash
-> make backend-create-tenant NAME="Cave du Lac" SUBDOMAIN=cave-du-lac EMAIL=you@example.ch
+> make backend-create-tenant NAME="Cave des Alpes" SUBDOMAIN=cave-des-alpes EMAIL=you@example.ch
 > make backend-set-password EMAIL=you@example.ch
 > ```
 >
 > Both ask for the password (twice, at least 9 characters), or read it from
 > stdin when piped. A new tenant starts with an empty company profile, to
 > complete on `/settings`. Add `ARGS=--sign-out` to a password change to also end
-> the sessions open on every device; without it, they last until their tokens
-> expire (up to 7 days).
+> the sessions open on every device; without it, they stay open (a session ends
+> after 7 days without use).
 
 ## Configuration
 
@@ -111,10 +114,14 @@ Settings are read from environment variables (via `pydantic-settings`) with the
 | `INVOICE_DATABASE_URL` | `sqlite+aiosqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db` |
 | `INVOICE_SECRET_KEY` | dev-only placeholder | **must** be overridden in production (≥ 32 bytes) |
 | `INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
-| `INVOICE_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | |
-| `INVOICE_API_DOCS` | `true` | `/docs` and `/openapi.json`; `false` in production |
+| `INVOICE_ALGORITHM` | `HS256` | JWT signing algorithm |
+| `INVOICE_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | a session ends after this many days without use |
+| `INVOICE_API_DOCS` | `true` | `/docs`, `/redoc` and `/openapi.json`; `false` in production |
 | `INVOICE_ROOT_PATH` | empty | `/api` in production, behind the nginx proxy |
 | `INVOICE_DATA_DIR` | `./data` | docker compose only: host directory mounted on `/data` |
+
+`API_URL` (no prefix) tells the frontend dev server where to proxy `/api`;
+`docker-compose.dev.yml` sets it, `http://localhost:8000` otherwise.
 
 ## Common commands
 
@@ -131,6 +138,8 @@ Run `make help` for the full list.
 | `make backend-fixtures [ARGS=--reset]` | Load demo fixtures |
 | `make backend-create-tenant NAME=… SUBDOMAIN=… EMAIL=…` | Create a tenant and its admin |
 | `make backend-set-password EMAIL=… [ARGS=--sign-out]` | Change a user's password, optionally ending every open session |
+| `make frontend-dev` | Frontend dev server against the backend on `localhost:8000` |
+| `make frontend-lint` | ESLint, templates and accessibility included |
 | `make backend-fmt` | Format the backend and apply safe lint fixes |
 | `make backend-check` | Lint, format, typecheck, `alembic check`, tests, `pip-audit` |
 | `make frontend-check` | ESLint, tests, production build, `npm audit` |
@@ -149,7 +158,7 @@ Two containers, no published ports:
 | `api` | `python:3.14-slim` + uv | FastAPI via uvicorn; applies Alembic migrations on start |
 | `web` | multi-stage → `nginx:1.30-alpine` | serves the Angular bundle, proxies `/api/` to `api:8000` |
 
-The app uses **SQLite** everywhere: a single-tenant winery does not need
+The app uses **SQLite** everywhere: a deployment for one winery does not need
 a database server, and a backup is one file. The database lives outside the
 repository, in `INVOICE_DATA_DIR` on the host, so the deployment hook's
 `git checkout -f` can never touch it.
@@ -254,7 +263,7 @@ make check             # everything
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the same checks as `make check`
-on every push and pull request, and every Monday so that the audits catch newly
+on every push to `main` and every pull request, and every Monday so that the audits catch newly
 published vulnerabilities. Dependabot proposes grouped dependency updates each
 month. The QR-bill payload is checked against the `qrbill` library in the tests.
 
