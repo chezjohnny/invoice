@@ -67,6 +67,35 @@ interface Recommendation {
         <div>
           <span class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</span>
 
+          <!-- Always at hand: each article picked is added (or its quantity raised) -->
+          <div class="relative mb-3">
+            <input class="input w-full" type="text" role="combobox" autocomplete="off"
+              aria-autocomplete="list" aria-controls="article-options"
+              [attr.aria-label]="t().invoices.addArticle" [placeholder]="t().invoices.addArticle"
+              [attr.aria-expanded]="pickerOpen()"
+              [attr.aria-activedescendant]="pickerOpen() ? 'article-option-' + activeOption() : null"
+              [value]="articleQuery()"
+              (input)="onPickerInput(inputValue($event))" (keydown)="onPickerKey($event)"
+              (focus)="pickerFocused.set(true)" (blur)="pickerFocused.set(false)" />
+            @if (pickerOpen()) {
+              <ul id="article-options" role="listbox"
+                class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-60 overflow-y-auto">
+                @for (a of pickerResults(); track a.id; let k = $index) {
+                  <li role="option" [id]="'article-option-' + k" [attr.aria-selected]="k === activeOption()"
+                    class="px-3 py-2 cursor-pointer text-sm flex justify-between gap-2"
+                    [class.bg-base-200]="k === activeOption()"
+                    (mouseenter)="activeOption.set(k)"
+                    (mousedown)="$event.preventDefault(); addArticle(a)">
+                    <span class="truncate">{{ a.name }}</span>
+                    <span class="text-base-content/50 text-xs shrink-0 tabular-nums">
+                      {{ a.unitPrice | currency:'CHF':'code':'1.2-2' }} · {{ a.stockQuantity }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
           @if (lines().length > 0) {
             <div>
               <!-- Column headers -->
@@ -82,35 +111,23 @@ interface Recommendation {
               @for (line of lines(); track $index; let i = $index) {
                 <div class="grid items-center gap-x-2 px-0.5 mb-1"
                      style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
-                  <!-- Article search; text that matches no picked article stays a free-text line -->
-                  <div class="relative min-w-0">
-                    <label class="input input-sm w-full" [class.input-primary]="line.articleId !== null">
-                      <span class="badge badge-xs shrink-0"
-                        [class.badge-primary]="line.articleId !== null"
-                        [class.badge-ghost]="line.articleId === null">
-                        {{ line.articleId !== null ? t().invoices.articleLabel : t().invoices.freeText }}
-                      </span>
-                      <input class="grow min-w-0" type="text"
-                        [title]="line.descriptionSnapshot"
-                        [placeholder]="t().invoices.searchArticle" autocomplete="off"
-                        [value]="line.descriptionSnapshot"
-                        (focus)="articleSearchLine.set(i)"
-                        (input)="onArticleSearch(i, inputValue($event))"
-                        (blur)="onArticleBlur()" />
-                    </label>
-                    @if (articleSearchLine() === i && articleResults(line.descriptionSnapshot).length > 0) {
-                      <ul class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-48 overflow-y-auto">
-                        @for (a of articleResults(line.descriptionSnapshot); track a.id) {
-                          <li class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm flex justify-between gap-2"
-                            [class.font-medium]="a.id === line.articleId"
-                            (mousedown)="selectArticle(i, a.id)">
-                            <span class="truncate">{{ a.name }}</span>
-                            <span class="text-base-content/50 text-xs shrink-0 tabular-nums">
-                              {{ a.unitPrice | currency:'CHF':'code':'1.2-2' }} · {{ a.stockQuantity }}
-                            </span>
-                          </li>
-                        }
-                      </ul>
+                  <!-- An article line shows its article; a free-text line is typed -->
+                  <div class="min-w-0">
+                    @if (line.articleId !== null) {
+                      <div class="input input-sm input-primary w-full">
+                        <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
+                        <span class="truncate" [title]="line.descriptionSnapshot">{{ line.descriptionSnapshot }}</span>
+                      </div>
+                    } @else {
+                      <label class="input input-sm w-full"
+                        [class.input-error]="submitted() && lineErrors()[i].description">
+                        <span class="badge badge-xs badge-ghost shrink-0">{{ t().invoices.freeText }}</span>
+                        <input class="grow min-w-0" type="text" autocomplete="off"
+                          [attr.aria-label]="t().invoices.descLabel" [placeholder]="t().invoices.descLabel"
+                          [attr.aria-invalid]="submitted() && lineErrors()[i].description"
+                          [value]="line.descriptionSnapshot"
+                          (input)="updateLine(i, 'descriptionSnapshot', inputValue($event))" />
+                      </label>
                     }
                   </div>
                   <!-- Qty -->
@@ -148,7 +165,7 @@ interface Recommendation {
           }
 
           <button type="button" class="btn btn-ghost btn-sm mt-1" (click)="addLine()">
-            {{ t().invoices.addLine }}
+            {{ t().invoices.addFreeText }}
           </button>
         </div>
 
@@ -241,7 +258,17 @@ export class InvoiceFormComponent {
   protected readonly paymentMethods = PAYMENT_METHODS;
 
   protected readonly recentInvoices = signal<Invoice[]>([]);
-  protected readonly articleSearchLine = signal<number | null>(null);
+  protected readonly articleQuery = signal('');
+  protected readonly pickerFocused = signal(false);
+  protected readonly activeOption = signal(0);
+  protected readonly pickerResults = computed(() => {
+    const words = searchKey(this.articleQuery()).split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+    return this.articles()
+      .filter((a) => words.every((w) => searchKey(a.name).includes(w)))
+      .slice(0, MAX_ARTICLE_RESULTS);
+  });
+  protected readonly pickerOpen = computed(() => this.pickerFocused() && this.pickerResults().length > 0);
 
   protected readonly articleRecommendations = computed<Recommendation[]>(() => {
     const seen = new Set<string>();
@@ -318,7 +345,13 @@ export class InvoiceFormComponent {
   protected addLine(): void {
     this.lines.update((ls) => [
       ...ls,
-      { articleId: null, descriptionSnapshot: '', quantity: '1', unitPriceSnapshot: '', vatRateSnapshot: '' },
+      {
+        articleId: null,
+        descriptionSnapshot: '',
+        quantity: '1',
+        unitPriceSnapshot: '',
+        vatRateSnapshot: percentFromRate(this.defaultVatRate()),
+      },
     ]);
   }
 
@@ -332,48 +365,53 @@ export class InvoiceFormComponent {
     );
   }
 
-  protected selectArticle(index: number, articleId: string): void {
-    const article = this.articles().find((a) => a.id === articleId);
-    this.lines.update((ls) =>
-      ls.map((l, i) =>
-        i === index
-          ? {
-              ...l,
-              articleId: article ? articleId : null,
-              descriptionSnapshot: article ? article.name : '',
-              unitPriceSnapshot: article ? String(article.unitPrice) : '',
-              vatRateSnapshot: article ? percentFromRate(article.vatRateOverride ?? this.defaultVatRate()) : '',
-            }
-          : l
-      )
-    );
+  protected onPickerInput(value: string): void {
+    this.articleQuery.set(value);
+    this.activeOption.set(0);
   }
 
-  protected articleResults(query: string): Article[] {
-    const words = searchKey(query).split(/\s+/).filter(Boolean);
-    return this.articles()
-      .filter((a) => {
-        const name = searchKey(a.name);
-        return words.every((w) => name.includes(w));
-      })
-      .slice(0, MAX_ARTICLE_RESULTS);
+  protected onPickerKey(event: KeyboardEvent): void {
+    const count = this.pickerResults().length;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.activeOption.update((k) => Math.min(k + 1, count - 1));
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.activeOption.update((k) => Math.max(k - 1, 0));
+        break;
+      case 'Enter':
+        // Never submits the form from here: Enter picks the article.
+        event.preventDefault();
+        if (count > 0) this.addArticle(this.pickerResults()[this.activeOption()]);
+        break;
+      case 'Escape':
+        this.articleQuery.set('');
+        break;
+    }
   }
 
-  protected onArticleSearch(index: number, value: string): void {
-    this.articleSearchLine.set(index);
-    // Typing detaches the line from its article: unless one is picked again,
-    // it is billed as free text, so the article's price and VAT go with it.
-    this.lines.update((ls) =>
-      ls.map((l, i) => {
-        if (i !== index) return l;
-        const detached = l.articleId !== null ? { unitPriceSnapshot: '', vatRateSnapshot: '' } : {};
-        return { ...l, ...detached, articleId: null, descriptionSnapshot: value };
-      })
-    );
-  }
-
-  protected onArticleBlur(): void {
-    setTimeout(() => this.articleSearchLine.set(null), 200);
+  /** Adds the article, or one more of it when it is already on the invoice. */
+  protected addArticle(article: Article): void {
+    const index = this.lines().findIndex((l) => l.articleId === article.id);
+    if (index >= 0) {
+      const quantity = parseInt(this.lines()[index].quantity, 10);
+      this.updateLine(index, 'quantity', String(Number.isFinite(quantity) ? quantity + 1 : 1));
+    } else {
+      this.lines.update((ls) => [
+        ...ls,
+        {
+          articleId: article.id,
+          descriptionSnapshot: article.name,
+          quantity: '1',
+          unitPriceSnapshot: String(article.unitPrice),
+          vatRateSnapshot: percentFromRate(article.vatRateOverride ?? this.defaultVatRate()),
+        },
+      ]);
+    }
+    this.articleQuery.set('');
+    this.activeOption.set(0);
   }
 
   protected lineStockWarning(line: LineForm): boolean {
@@ -386,6 +424,7 @@ export class InvoiceFormComponent {
 
   protected readonly lineErrors = computed(() =>
     this.lines().map((l) => ({
+      description: l.articleId === null && l.descriptionSnapshot.trim() === '',
       quantity: !/^\d+$/.test(l.quantity.trim()) || parseInt(l.quantity, 10) < 1,
       price: l.unitPriceSnapshot.trim() === '' || !(Number(l.unitPriceSnapshot) >= 0),
       vat: !isPercent(l.vatRateSnapshot),
@@ -393,7 +432,7 @@ export class InvoiceFormComponent {
   );
   protected readonly discountError = computed(() => !isPercent(this.discountPercent()));
   private readonly isValid = computed(
-    () => !this.discountError() && this.lineErrors().every((e) => !e.quantity && !e.price && !e.vat)
+    () => !this.discountError() && this.lineErrors().every((e) => !e.description && !e.quantity && !e.price && !e.vat)
   );
 
   // A draft may be saved empty, but an invoice without any article is never issued.

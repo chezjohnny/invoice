@@ -47,7 +47,10 @@ prépare au magasin.
   est créée et la nouvelle facture s'ouvre directement. Pour une société, son nom
   va dans *Nom ou raison sociale*, sans prénom ; une personne de contact
   (« Par Mme … ») va dans le complément d'adresse.
-- 5. Fiche client → *Nouvelle facture* → articles → *Enregistrer* (brouillon).
+- 5. Fiche client → *Nouvelle facture* → *Ajouter un article…* : chaque article
+  choisi (à la souris, ou au clavier avec les flèches et Entrée) s'ajoute à la
+  facture, ou augmente sa quantité s'il y est déjà ; *+ Ligne de texte libre* pour
+  une ligne hors stock → *Enregistrer* (brouillon).
 - 7. *Factures* → onglet *Brouillon* → *Modifier* → ajuster les quantités →
   *Émettre & Imprimer*, ou *Payer & Imprimer* si le client paie en espèces au retrait.
 
@@ -71,7 +74,7 @@ prépare au magasin.
 
 **Dans l'application**
 
-- 2. *Clients* → fiche → *Nouvelle facture* → articles.
+- 2. *Clients* → fiche → *Nouvelle facture* → *Ajouter un article…*, un article après l'autre.
 - 4. Choisir le mode de paiement :
   - *Espèces* → *Payer & Imprimer* : la facture est émise, marquée payée
     aujourd'hui, et le reçu se télécharge ;
