@@ -1,5 +1,4 @@
 export interface CompanyProfile {
-  id: string;
   companyName: string;
   addressLine1: string;
   addressLine2: string | null;
@@ -17,4 +16,4 @@ export interface CompanyProfile {
   isComplete: boolean;
 }
 
-export type CompanyProfileData = Omit<CompanyProfile, 'id' | 'isComplete'>;
+export type CompanyProfileData = Omit<CompanyProfile, 'isComplete'>;

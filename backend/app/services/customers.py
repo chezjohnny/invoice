@@ -17,12 +17,16 @@ def full_name(customer: Customer) -> str:
     return " ".join(part for part in (customer.first_name, customer.last_name) if part)
 
 
-async def customer_names(db: AsyncSession, ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, str]:
-    """Display names of these customers, in one query."""
+async def customer_names(
+    db: AsyncSession, tenant_id: uuid.UUID, ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """Display names of these customers of the tenant, in one query."""
     wanted = set(ids)
     if not wanted:
         return {}
     rows = await db.execute(
-        select(Customer.id, Customer.first_name, Customer.last_name).where(Customer.id.in_(wanted))
+        select(Customer.id, Customer.first_name, Customer.last_name).where(
+            Customer.tenant_id == tenant_id, Customer.id.in_(wanted)
+        )
     )
     return {row.id: display_name(row.first_name, row.last_name) for row in rows}

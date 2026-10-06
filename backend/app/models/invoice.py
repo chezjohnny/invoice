@@ -52,7 +52,6 @@ class Invoice(UUIDBase):
     notes: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
 
     lines: Mapped[list[InvoiceLine]] = relationship(
-        back_populates="invoice",
         cascade="all, delete-orphan",
         order_by="InvoiceLine.created_at",
     )
@@ -75,8 +74,6 @@ class InvoiceLine(UUIDBase):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     unit_price_snapshot: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     vat_rate_snapshot: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
-
-    invoice: Mapped[Invoice] = relationship(back_populates="lines")
 
 
 class InvoiceReminder(UUIDBase):

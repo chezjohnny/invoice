@@ -60,7 +60,7 @@ async def get_dashboard_stats(
         if i.status == InvoiceStatus.PAID and i.paid_at is not None and i.paid_at.year == today.year
     ]
     recent = invoices[:RECENT_INVOICES]
-    names = await customer_names(db, (i.customer_id for i in [*recent, *overdue]))
+    names = await customer_names(db, tenant_id, (i.customer_id for i in [*recent, *overdue]))
 
     customer_count = await db.scalar(
         select(func.count(Customer.id)).where(

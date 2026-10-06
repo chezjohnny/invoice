@@ -13,7 +13,6 @@ interface PhoneDto {
 
 interface CustomerDto {
   id: string;
-  tenant_id: string;
   first_name: string;
   last_name: string;
   address_line1: string;

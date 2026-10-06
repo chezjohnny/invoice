@@ -8,7 +8,6 @@ import { Article, ArticleListItem, ArticleData } from './article.model';
 
 interface ArticleDto {
   id: string;
-  tenant_id: string;
   name: string;
   description: string;
   unit_price: string;

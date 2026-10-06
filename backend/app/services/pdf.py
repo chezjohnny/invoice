@@ -597,7 +597,7 @@ def _structured_address(
 ) -> list[str]:
     """The 7 fields of a structured ("S") address, the only type QR-bills accept
     since November 2025. Without postal code and town, the party is left blank."""
-    if not (postal_code and city):
+    if not _has_address(postal_code, city):
         return [""] * 7
     street, number = _street_and_number(line1)
     return ["S", name[:70], street[:70], number[:16], postal_code[:16], city[:35], country]

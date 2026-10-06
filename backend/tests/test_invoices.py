@@ -344,7 +344,7 @@ async def test_invoice_history_newest_first(
 
 
 @pytest.mark.anyio
-async def test_invoice_history_uses_issue_date_for_imported_invoices(
+async def test_history_orders_by_issue_date_before_creation(
     client: AsyncClient,
     auth_headers: dict[str, str],
     customer_id: str,
@@ -356,16 +356,17 @@ async def test_invoice_history_uses_issue_date_for_imported_invoices(
     newer = await client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
-    import_created_at = datetime(2026, 9, 29, 17, 36, 42)
+    # Created together (as imported invoices were): the issue date decides.
+    created_at = datetime(2026, 9, 29, 17, 36, 42)
     await db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(older.json()["id"]))
-        .values(issue_date=date(2022, 1, 5), created_at=import_created_at)
+        .values(issue_date=date(2022, 1, 5), created_at=created_at)
     )
     await db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(newer.json()["id"]))
-        .values(issue_date=date(2025, 11, 21), created_at=import_created_at)
+        .values(issue_date=date(2025, 11, 21), created_at=created_at)
     )
     await db_session.commit()
 
@@ -504,6 +505,24 @@ async def test_issue_numbers_restart_each_day(
         )
     ).json()["items"]
     assert [i["invoice_number"] for i in listed] == [f"{today}11", f"{today}10", f"{today}9"]
+
+
+@pytest.mark.anyio
+async def test_issue_number_skips_numbers_with_letters(
+    complete_profile: None, make_invoice: MakeInvoice, db_session: AsyncSession
+):
+    first = await make_invoice("issue")
+    stem = first["invoice_number"][:6]
+    # Numbers imported before 1.0 may end with letters: they never count.
+    await db_session.execute(
+        update(Invoice)
+        .where(Invoice.id == UUID(first["id"]))
+        .values(invoice_number=f"{stem}5840pr")
+    )
+    await db_session.commit()
+
+    second = await make_invoice("issue")
+    assert second["invoice_number"] == f"{stem}1"
 
 
 @pytest.mark.anyio

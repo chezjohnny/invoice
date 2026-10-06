@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
-export type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'theme';
 

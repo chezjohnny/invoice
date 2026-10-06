@@ -13,9 +13,6 @@ class Tenant(UUIDBase):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     subdomain: Mapped[str] = mapped_column(String(63), unique=True, nullable=False)
 
-    profile: Mapped[TenantProfile] = relationship(back_populates="tenant", uselist=False)
-    users: Mapped[list[User]] = relationship(back_populates="tenant")
-
 
 class TenantProfile(UUIDBase):
     __tablename__ = "tenant_profiles"
@@ -35,13 +32,13 @@ class TenantProfile(UUIDBase):
     # E.164 contact number printed in the invoice header.
     phone: Mapped[str | None] = mapped_column(String(16))
     vat_number: Mapped[str | None] = mapped_column(String(20))
-    # null = non-assujetti TVA (CA < CHF 100k)
+    # None: not VAT-registered (a turnover under CHF 100,000).
     default_vat_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
     payment_terms_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     # New deadline printed on a payment reminder, counted from the reminder date.
     reminder_terms_days: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
 
-    tenant: Mapped[Tenant] = relationship(back_populates="profile")
+    tenant: Mapped[Tenant] = relationship()
 
     @property
     def is_complete(self) -> bool:
@@ -60,5 +57,3 @@ class User(UUIDBase):
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
     # Carried by every token: raising it signs the user out everywhere.
     token_version: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
-
-    tenant: Mapped[Tenant] = relationship(back_populates="users")

@@ -1,11 +1,11 @@
 import type { InvoiceStatus } from '../invoices/invoice.model';
 
-export interface InvoiceKpi {
+interface InvoiceKpi {
   count: number;
   total: number;
 }
 
-export interface RecentInvoiceItem {
+interface RecentInvoiceItem {
   id: string;
   invoiceNumber: string | null;
   customerId: string;

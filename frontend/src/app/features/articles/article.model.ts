@@ -9,7 +9,7 @@ export interface Article {
 }
 
 export interface ArticleListItem extends Article {
-  /** Sold on issued and paid invoices, over `salesYear` or all time. */
+  /** Sold on issued and paid invoices, over the sales period (a year or a quarter) or all time. */
   soldQuantity: number;
   /** Left the stock unbilled (tasting, gift, loss…), over the same period. */
   withdrawnQuantity: number;

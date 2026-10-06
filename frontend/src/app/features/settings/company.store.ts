@@ -13,8 +13,8 @@ interface CompanyState {
 
 const EMPTY: CompanyState = { profile: null, loading: false, saving: false };
 
-// Root-provided: the shell reads `isIncomplete` for its warning banner while the
-// settings page edits the same instance, so the profile is fetched only once.
+// Root-provided: one profile for the shell's warning banner (`isIncomplete`),
+// the invoice editor (default VAT rate) and the settings page that edits it.
 export const CompanyStore = signalStore(
   { providedIn: 'root' },
   withState<CompanyState>(EMPTY),

@@ -92,9 +92,8 @@ async def delete_stock_withdrawal(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     withdrawal = await get_owned(db, StockWithdrawal, withdrawal_id, current_user.tenant_id)
-    article = await db.get(Article, withdrawal.article_id)
-    if article is not None:
-        article.stock_quantity += withdrawal.quantity
+    article = await get_owned(db, Article, withdrawal.article_id, current_user.tenant_id)
+    article.stock_quantity += withdrawal.quantity
     await db.delete(withdrawal)
     await db.commit()
 

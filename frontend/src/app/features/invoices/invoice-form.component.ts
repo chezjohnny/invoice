@@ -10,7 +10,6 @@ import { Article } from '../articles/article.model';
 import { Invoice, InvoiceCreate, PAYMENT_METHODS, PaymentMethod, invoiceAmounts } from './invoice.model';
 
 interface LineForm {
-  id: string | null;
   articleId: string | null;
   descriptionSnapshot: string;
   quantity: string;
@@ -280,7 +279,6 @@ export class InvoiceFormComponent {
 
   protected readonly lines = linkedSignal<LineForm[]>(() =>
     this.invoice()?.lines.map((l) => ({
-      id: l.id,
       articleId: l.articleId,
       descriptionSnapshot: l.descriptionSnapshot,
       quantity: String(l.quantity),
@@ -308,7 +306,6 @@ export class InvoiceFormComponent {
     this.lines.update((ls) => [
       ...ls,
       {
-        id: null,
         articleId: rec.articleId,
         descriptionSnapshot: rec.description,
         quantity: '1',
@@ -321,7 +318,7 @@ export class InvoiceFormComponent {
   protected addLine(): void {
     this.lines.update((ls) => [
       ...ls,
-      { id: null, articleId: null, descriptionSnapshot: '', quantity: '1', unitPriceSnapshot: '', vatRateSnapshot: '' },
+      { articleId: null, descriptionSnapshot: '', quantity: '1', unitPriceSnapshot: '', vatRateSnapshot: '' },
     ]);
   }
 
@@ -382,7 +379,7 @@ export class InvoiceFormComponent {
   protected lineStockWarning(line: LineForm): boolean {
     if (!line.articleId) return false;
     const article = this.articles().find((a) => a.id === line.articleId);
-    return article != null && article.stockQuantity <= 0;
+    return article != null && article.stockQuantity < Number(line.quantity);
   }
 
   protected readonly submitted = linkedSignal(() => { this.invoice(); return false; });

@@ -6,7 +6,6 @@ import { CompanyProfile, CompanyProfileData } from './company.model';
 import { CompanyStore } from './company.store';
 
 const INCOMPLETE: CompanyProfile = {
-  id: 'p1',
   companyName: 'Cave Test',
   addressLine1: '',
   addressLine2: null,

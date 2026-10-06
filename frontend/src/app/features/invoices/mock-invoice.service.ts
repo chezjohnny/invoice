@@ -22,7 +22,7 @@ export class MockInvoiceService implements IInvoiceService {
     if (params.customerId) {
       filtered = filtered.filter((i) => i.customerId === params.customerId);
     }
-    if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter) {
       filtered = filtered.filter((i) => i.status === statusFilter);
     }
     if (search) {
@@ -70,7 +70,6 @@ export class MockInvoiceService implements IInvoiceService {
       reminders: [],
       lines: data.lines.map((l, i) => ({
         id: `line-${this.nextNum}-${i}`,
-        invoiceId: String(this.nextNum - 1),
         articleId: l.articleId,
         descriptionSnapshot: l.descriptionSnapshot,
         quantity: l.quantity,
@@ -94,7 +93,6 @@ export class MockInvoiceService implements IInvoiceService {
       paymentMethod: data.paymentMethod,
       lines: data.lines.map((l, i) => ({
         id: `line-${id}-${i}`,
-        invoiceId: id,
         articleId: l.articleId,
         descriptionSnapshot: l.descriptionSnapshot,
         quantity: l.quantity,

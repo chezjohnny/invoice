@@ -33,8 +33,8 @@ def _normalize_phone(value: str) -> str:
     return phone
 
 
-# Lengths mirror the columns of TenantProfile: without them an oversize value
-# reaches the INSERT and raises a DataError (500) instead of a 422.
+# Lengths mirror the columns of TenantProfile: SQLite would store an oversize
+# value whole, that the PDF and the QR-bill could not fit.
 Text255 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=255)]
 
 

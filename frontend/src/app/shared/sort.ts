@@ -1,6 +1,6 @@
 import { HttpParams } from '@angular/common/http';
 
-export type SortOrder = 'asc' | 'desc';
+type SortOrder = 'asc' | 'desc';
 
 export interface Sort {
   key: string;

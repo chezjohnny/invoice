@@ -5,7 +5,6 @@ import { normalizeIban } from './iban';
 import { normalizePhone } from './phone';
 
 const INITIAL: CompanyProfile = {
-  id: 'profile-1',
   companyName: 'Cave du Lac Sàrl',
   addressLine1: 'Route du Vignoble 12',
   addressLine2: null,

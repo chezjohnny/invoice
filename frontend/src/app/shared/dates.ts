@@ -17,7 +17,7 @@ export function formatShortDate(isoDate: string, locale: keyof typeof DISPLAY_LO
  * '2026-10-05' at local midnight. Built from its parts: new Date('2026-10-05')
  * would be UTC midnight, the day before west of Greenwich.
  */
-export function parseIsoDate(isoDate: string): Date {
+function parseIsoDate(isoDate: string): Date {
   const [year, month, day] = isoDate.split('-').map(Number);
   return new Date(year, month - 1, day);
 }

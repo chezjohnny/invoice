@@ -8,7 +8,6 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export interface InvoiceLine {
   id: string;
-  invoiceId: string;
   articleId: string | null;
   descriptionSnapshot: string;
   quantity: number;
@@ -17,7 +16,7 @@ export interface InvoiceLine {
 }
 
 /** A payment reminder sent for an overdue invoice: 1st, 2nd… */
-export interface InvoiceReminder {
+interface InvoiceReminder {
   number: number;
   /** ISO dates: when it was sent, and the new deadline it gives. */
   sentOn: string;
@@ -40,7 +39,7 @@ export interface Invoice {
   reminders: InvoiceReminder[];
 }
 
-export interface InvoiceLineCreate {
+interface InvoiceLineCreate {
   articleId: string | null;
   descriptionSnapshot: string;
   quantity: number;

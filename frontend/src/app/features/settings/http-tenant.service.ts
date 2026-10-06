@@ -5,7 +5,6 @@ import { ITenantService } from '../../core/tokens/tenant-service.token';
 import { CompanyProfile, CompanyProfileData } from './company.model';
 
 interface CompanyProfileDto {
-  id: string;
   company_name: string;
   address_line1: string;
   address_line2: string | null;
@@ -42,7 +41,6 @@ export class HttpTenantService implements ITenantService {
 
   private toProfile(dto: CompanyProfileDto): CompanyProfile {
     return {
-      id: dto.id,
       companyName: dto.company_name,
       addressLine1: dto.address_line1,
       addressLine2: dto.address_line2,

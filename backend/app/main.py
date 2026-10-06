@@ -1,4 +1,6 @@
 import logging
+import tomllib
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,9 +12,12 @@ from app.core.config import settings
 
 logger = logging.getLogger("app")
 
+# Next to app/, in the repository as in the image.
+_PYPROJECT = Path(__file__).resolve().parents[1] / "pyproject.toml"
+
 app = FastAPI(
     title="Invoice API",
-    version="0.1.0",
+    version=tomllib.loads(_PYPROJECT.read_text())["project"]["version"],
     docs_url="/docs" if settings.api_docs else None,
     redoc_url="/redoc" if settings.api_docs else None,
     openapi_url="/openapi.json" if settings.api_docs else None,

@@ -25,7 +25,7 @@ async def next_invoice_number(db: AsyncSession, tenant_id: uuid.UUID, day: date)
             Invoice.invoice_number.startswith(stem, autoescape=True),
         )
     )
-    # Imported references may carry letters ("5840pr"): only numeric ones count.
+    # Numbers imported before 1.0 may carry letters ("2201055840pr"): only numeric ones count.
     used = [
         int(number[len(stem) :]) for number in numbers if number and number[len(stem) :].isdigit()
     ]

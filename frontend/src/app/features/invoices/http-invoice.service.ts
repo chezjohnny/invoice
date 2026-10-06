@@ -9,7 +9,6 @@ import { Invoice, InvoiceCreate, InvoiceLine, InvoiceUpdate, Payment, PaymentMet
 
 interface InvoiceLineDto {
   id: string;
-  invoice_id: string;
   article_id: string | null;
   description_snapshot: string;
   quantity: number;
@@ -135,7 +134,7 @@ export class HttpInvoiceService implements IInvoiceService {
     return {
       id: dto.id,
       customerId: dto.customer_id,
-      customerName: dto.customer_name ?? '',
+      customerName: dto.customer_name,
       invoiceNumber: dto.invoice_number,
       status: dto.status as Invoice['status'],
       issueDate: dto.issue_date,
@@ -147,7 +146,6 @@ export class HttpInvoiceService implements IInvoiceService {
       lines: dto.lines.map(
         (l): InvoiceLine => ({
           id: l.id,
-          invoiceId: l.invoice_id,
           articleId: l.article_id,
           descriptionSnapshot: l.description_snapshot,
           quantity: l.quantity,

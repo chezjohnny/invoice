@@ -61,10 +61,11 @@ async def list_invoices(
                     Invoice.lines.any(contains(InvoiceLine.description_snapshot, pattern)),
                     Invoice.customer_id.in_(
                         select(Customer.id).where(
+                            Customer.tenant_id == current_user.tenant_id,
                             or_(
                                 contains(Customer.first_name, pattern),
                                 contains(Customer.last_name, pattern),
-                            )
+                            ),
                         )
                     ),
                 ),
@@ -107,7 +108,7 @@ async def list_invoices(
         .scalars()
         .all()
     )
-    names = await customer_names(db, (i.customer_id for i in items))
+    names = await customer_names(db, current_user.tenant_id, (i.customer_id for i in items))
     response_items = [
         InvoiceResponse.model_validate(inv).model_copy(
             update={"customer_name": names.get(inv.customer_id, "")}
@@ -356,9 +357,7 @@ async def _pdf_response(
     tenant_id: uuid.UUID,
     db: AsyncSession,
 ) -> Response:
-    customer = await db.scalar(select(Customer).where(Customer.id == invoice.customer_id))
-    if not customer:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Customer not found")
+    customer = await get_owned(db, Customer, invoice.customer_id, tenant_id)
     profile = await get_profile(db, tenant_id)
     pdf_bytes = generate_invoice_pdf(invoice, customer, profile, lang, reminder)
     return Response(
@@ -431,5 +430,8 @@ async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:
         if line.article_id is not None:
             quantities[line.article_id] = quantities.get(line.article_id, 0) + line.quantity
     if quantities:
-        for article in await db.scalars(select(Article).where(Article.id.in_(quantities))):
+        articles = select(Article).where(
+            Article.tenant_id == invoice.tenant_id, Article.id.in_(quantities)
+        )
+        for article in await db.scalars(articles):
             article.stock_quantity += sign * quantities[article.id]
