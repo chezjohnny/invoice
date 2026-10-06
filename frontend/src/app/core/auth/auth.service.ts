@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 interface TokenResponse {
   access_token: string;
@@ -17,9 +18,10 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this.token() !== null);
 
   async login(email: string, password: string): Promise<void> {
-    const resp = await firstValueFrom(
-      this.http.post<TokenResponse>('/api/auth/login', { email, password })
-    );
+    // Mock mode runs without a backend: any credentials sign in.
+    const resp = environment.useMock
+      ? { access_token: 'mock', refresh_token: 'mock' }
+      : await firstValueFrom(this.http.post<TokenResponse>('/api/auth/login', { email, password }));
     this._storeTokens(resp);
     await this.router.navigate(['/dashboard']);
   }
