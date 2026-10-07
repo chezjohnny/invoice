@@ -1,5 +1,8 @@
+import { registerLocaleData } from '@angular/common';
+import localeDeCh from '@angular/common/locales/de-CH';
 import {
   ApplicationConfig,
+  LOCALE_ID,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -30,6 +33,10 @@ import { MockInvoiceService } from './features/invoices/mock-invoice.service';
 import { HttpTenantService } from './features/settings/http-tenant.service';
 import { MockTenantService } from './features/settings/mock-tenant.service';
 
+// Amounts as written in Switzerland, in every language: CHF 1’250.50. Dates
+// follow the UI language on their own (shared/dates.ts).
+registerLocaleData(localeDeCh);
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -37,6 +44,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([errorInterceptor, authInterceptor])),
     provideRouter(routes),
     provideFormErrorClasses(),
+    { provide: LOCALE_ID, useValue: 'de-CH' },
     { provide: ARTICLE_SERVICE, useClass: environment.useMock ? MockArticleService : HttpArticleService },
     { provide: CUSTOMER_SERVICE, useClass: environment.useMock ? MockCustomerService : HttpCustomerService },
     { provide: INVOICE_SERVICE, useClass: environment.useMock ? MockInvoiceService : HttpInvoiceService },

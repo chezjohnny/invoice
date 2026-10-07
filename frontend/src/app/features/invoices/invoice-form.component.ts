@@ -3,6 +3,7 @@ import { Component, computed, inject, input, linkedSignal, output, resource } fr
 import { FormField, FormRoot, applyEach, form, min, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
+import { DecimalInputDirective } from '../../shared/decimal-input.directive';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { integer, percent, showsError } from '../../shared/form-errors';
 import { searchKey } from '../../shared/search-key';
@@ -46,7 +47,7 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [ArticlePickerComponent, CurrencyPipe, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
+  imports: [ArticlePickerComponent, CurrencyPipe, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
   template: `
     <form [formRoot]="invoiceForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -121,15 +122,15 @@ interface Recommendation {
                     }
                   </div>
                   <!-- Qty -->
-                  <input class="input input-sm w-full" type="number" step="1"
+                  <input class="input input-sm w-full" type="number" step="1" [attr.aria-label]="t().invoices.qtyLabel"
                     [attr.aria-invalid]="showsError(line.quantity)"
                     [formField]="line.quantity" />
                   <!-- Price -->
-                  <input class="input input-sm w-full" type="number" step="0.01"
+                  <input class="input input-sm w-full" appDecimal [attr.aria-label]="t().invoices.priceLabel"
                     [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
                     [formField]="line.unitPriceSnapshot" />
                   <!-- VAT% -->
-                  <input class="input input-sm w-full" type="number" step="0.1" placeholder="—"
+                  <input class="input input-sm w-full" appDecimal placeholder="—" [attr.aria-label]="t().invoices.vatLabel"
                     [attr.aria-invalid]="showsError(line.vatPercent)"
                     [formField]="line.vatPercent" />
                   <!-- Delete + warning -->
@@ -191,7 +192,7 @@ interface Recommendation {
           <!-- Discount -->
           <div class="w-full sm:max-w-48">
             <label class="fieldset-label" for="invoice-discount">{{ t().invoices.discountLabel }}</label>
-            <input id="invoice-discount" class="input w-full" type="number" step="0.1"
+            <input id="invoice-discount" class="input w-full" appDecimal
               [formField]="invoiceForm.discountPercent" />
             <app-field-error [field]="invoiceForm.discountPercent" />
           </div>

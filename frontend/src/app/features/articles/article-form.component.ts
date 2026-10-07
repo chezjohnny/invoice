@@ -2,6 +2,7 @@ import { Component, inject, input, linkedSignal, output } from '@angular/core';
 import { FormField, FormRoot, form, min, required } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { DecimalInputDirective } from '../../shared/decimal-input.directive';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { percent, requiredText } from '../../shared/form-errors';
@@ -19,7 +20,7 @@ interface ArticleModel {
 
 @Component({
   selector: 'app-article-form',
-  imports: [AutofocusDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
+  imports: [AutofocusDirective, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
   template: `
     <form [formRoot]="articleForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -41,12 +42,12 @@ interface ArticleModel {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label" for="article-price">{{ t().articles.priceLabel }}</label>
-            <input id="article-price" class="input w-full" type="number" step="0.01" [formField]="articleForm.unitPrice" />
+            <input id="article-price" class="input w-full" appDecimal [formField]="articleForm.unitPrice" />
             <app-field-error [field]="articleForm.unitPrice" />
           </div>
           <div>
             <label class="fieldset-label" for="article-vat">{{ t().articles.vatLabel }}</label>
-            <input id="article-vat" class="input w-full" type="number" step="0.1" [formField]="articleForm.vatPercent" />
+            <input id="article-vat" class="input w-full" appDecimal [formField]="articleForm.vatPercent" />
             <app-field-error [field]="articleForm.vatPercent" />
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Component, inject, linkedSignal } from '@angular/core';
 import { FormField, FormRoot, SchemaPath, form, max, min, required, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { DecimalInputDirective } from '../../shared/decimal-input.directive';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { countryCode, integer, percent, requiredText, showsError } from '../../shared/form-errors';
 import { percentOf, rateOf } from '../../shared/percent';
@@ -28,7 +29,7 @@ interface ProfileModel {
 
 @Component({
   selector: 'app-settings',
-  imports: [AutofocusDirective, FieldErrorComponent, FormField, FormRoot],
+  imports: [AutofocusDirective, DecimalInputDirective, FieldErrorComponent, FormField, FormRoot],
   template: `
     <div class="p-4 md:p-6 max-w-3xl mx-auto">
       <h1 class="text-xl font-bold sm:text-2xl mb-6">{{ t().settings.title }}</h1>
@@ -125,7 +126,7 @@ interface ProfileModel {
               </div>
               <div class="sm:w-48">
                 <label class="fieldset-label" for="settings-vat-rate">{{ t().settings.vatRateLabel }}</label>
-                <input id="settings-vat-rate" class="input w-full" type="number" step="0.1"
+                <input id="settings-vat-rate" class="input w-full" appDecimal
                   [formField]="profileForm.vatPercent" />
                 <app-field-error [field]="profileForm.vatPercent" />
               </div>

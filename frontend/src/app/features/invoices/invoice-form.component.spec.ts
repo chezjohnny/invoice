@@ -88,7 +88,7 @@ describe('InvoiceFormComponent article picker', () => {
     expect(lines[0].quantity).toBe(2);
   });
 
-  it('adds a free-text line from its button, at the default VAT, which needs a description', async () => {
+  it('adds a free-text line from its button, at the default VAT, which needs a description, its price typed with a comma', async () => {
     const button = [...fixture.nativeElement.querySelectorAll('button')]
       .find((b: HTMLButtonElement) => b.textContent?.includes('+')) as HTMLButtonElement;
     button.click();
@@ -99,13 +99,13 @@ describe('InvoiceFormComponent article picker', () => {
     const description = fixture.nativeElement.querySelector('input[type="text"]:not([role])') as HTMLInputElement;
     description.value = 'Livraison';
     description.dispatchEvent(new Event('input'));
-    const price = fixture.nativeElement.querySelector('input[step="0.01"]') as HTMLInputElement;
-    price.value = '15';
+    const price = fixture.nativeElement.querySelector('input[inputmode="decimal"]') as HTMLInputElement;
+    price.value = '15,50';
     price.dispatchEvent(new Event('input'));
     await fixture.whenStable();
     const lines = (await save()).lines;
     expect(lines).toEqual([
-      { articleId: null, descriptionSnapshot: 'Livraison', quantity: 1, unitPriceSnapshot: 15, vatRateSnapshot: 0.081 },
+      { articleId: null, descriptionSnapshot: 'Livraison', quantity: 1, unitPriceSnapshot: 15.5, vatRateSnapshot: 0.081 },
     ]);
   });
 
