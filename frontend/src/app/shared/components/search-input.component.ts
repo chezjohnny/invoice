@@ -1,5 +1,6 @@
-import { Component, DestroyRef, inject, input, linkedSignal, output } from '@angular/core';
+import { Component, DestroyRef, booleanAttribute, inject, input, linkedSignal, output } from '@angular/core';
 import { inputValue } from '../events';
+import { AutofocusDirective } from '../autofocus.directive';
 
 // One or two letters match too much to be worth a reload of the list.
 const MIN_LENGTH = 3;
@@ -11,13 +12,14 @@ const MIN_LENGTH = 3;
  */
 @Component({
   selector: 'app-search-input',
+  imports: [AutofocusDirective],
   host: { class: 'w-full sm:max-w-xs' },
   template: `
     <label class="input w-full flex items-center gap-2">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40 shrink-0" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11"/>
       </svg>
-      <input type="text" autocomplete="off" [placeholder]="placeholder()" [value]="text()" (input)="onInput($event)"
+      <input type="text" autocomplete="off" [placeholder]="placeholder()" [value]="text()" [appAutofocus]="autofocus()" (input)="onInput($event)"
         (keydown.enter)="search(text())" />
     </label>
   `,
@@ -25,6 +27,8 @@ const MIN_LENGTH = 3;
 export class SearchInputComponent {
   readonly placeholder = input.required<string>();
   readonly value = input('');
+  /** A list's own search, ready to type into when the page opens. */
+  readonly autofocus = input(false, { transform: booleanAttribute });
   readonly valueChange = output<string>();
 
   // What is typed. The search comes back trimmed: while it still matches, the

@@ -4,11 +4,12 @@ import { FormActionsComponent } from '../../shared/components/form-actions.compo
 import { inputValue } from '../../shared/events';
 import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
 import { Article, ArticleData } from './article.model';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
 
 
 @Component({
   selector: 'app-article-form',
-  imports: [FormActionsComponent],
+  imports: [AutofocusDirective, FormActionsComponent],
   template: `
     <form (submit)="submit($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -18,7 +19,7 @@ import { Article, ArticleData } from './article.model';
       <fieldset class="fieldset gap-4">
         <div>
           <label class="fieldset-label" for="article-name">{{ t().articles.nameLabel }}</label>
-          <input id="article-name" class="input w-full" [class.input-error]="submitted() && errors().name"
+          <input id="article-name" appAutofocus class="input w-full" [class.input-error]="submitted() && errors().name"
             type="text" [value]="name()" (input)="name.set(inputValue($event))" />
           @if (submitted() && errors().name) {
             <p class="fieldset-label text-error mt-1">{{ errors().name }}</p>

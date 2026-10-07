@@ -3,11 +3,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { inputValue } from '../../shared/events';
 import { Customer, PhoneEntry, CustomerData } from './customer.model';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
 
 
 @Component({
   selector: 'app-customer-form',
-  imports: [FormActionsComponent],
+  imports: [AutofocusDirective, FormActionsComponent],
   template: `
     <form (submit)="submit($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -18,7 +19,7 @@ import { Customer, PhoneEntry, CustomerData } from './customer.model';
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label" for="customer-last-name">{{ t().customers.lastNameLabel }}</label>
-            <input id="customer-last-name" class="input w-full" [class.input-error]="submitted() && errors().lastName"
+            <input id="customer-last-name" appAutofocus class="input w-full" [class.input-error]="submitted() && errors().lastName"
               type="text" [value]="lastName()" (input)="lastName.set(inputValue($event))" />
             @if (submitted() && errors().lastName) {
               <p class="fieldset-label text-error mt-1">{{ errors().lastName }}</p>

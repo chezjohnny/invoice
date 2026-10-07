@@ -18,7 +18,7 @@ const STATUS_TABS = ['all', ...INVOICE_STATUSES] as const;
 
       <!-- Filters row -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <app-search-input [placeholder]="t().invoices.search" [value]="store.search()"
+        <app-search-input autofocus [placeholder]="t().invoices.search" [value]="store.search()"
           (valueChange)="store.setSearch($event)" />
         <div class="tabs tabs-bordered overflow-x-auto flex-1 min-w-0">
           @for (tab of statusTabs; track tab) {

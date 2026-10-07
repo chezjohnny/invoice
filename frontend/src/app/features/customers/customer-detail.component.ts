@@ -58,7 +58,7 @@ import { Customer, customerDisplayName } from './customer.model';
         </div>
 
         <div class="flex flex-wrap items-center gap-4 mb-4">
-          <app-search-input [placeholder]="t().invoices.search" [value]="invoices.search()"
+          <app-search-input autofocus [placeholder]="t().invoices.search" [value]="invoices.search()"
             (valueChange)="invoices.setSearch($event)" />
         </div>
 

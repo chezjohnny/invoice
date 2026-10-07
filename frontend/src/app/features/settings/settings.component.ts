@@ -5,6 +5,7 @@ import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percen
 import { CompanyStore } from './company.store';
 import { isValidQrBillIban, normalizeIban } from './iban';
 import { isValidPhone, isValidTwintPhone, normalizePhone } from './phone';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
 
 function validTerms(value: string): boolean {
   const days = Number(value);
@@ -13,6 +14,7 @@ function validTerms(value: string): boolean {
 
 @Component({
   selector: 'app-settings',
+  imports: [AutofocusDirective],
   template: `
     <div class="p-4 md:p-6 max-w-3xl mx-auto">
       <h1 class="text-xl font-bold sm:text-2xl mb-6">{{ t().settings.title }}</h1>
@@ -34,7 +36,7 @@ function validTerms(value: string): boolean {
               <h2 class="card-title text-base">{{ t().settings.identity }}</h2>
               <div>
                 <label class="fieldset-label" for="settings-company-name">{{ t().settings.companyNameLabel }}</label>
-                <input id="settings-company-name" class="input w-full" [class.input-error]="submitted() && errors().companyName"
+                <input id="settings-company-name" appAutofocus class="input w-full" [class.input-error]="submitted() && errors().companyName"
                   type="text" [value]="companyName()" (input)="companyName.set(inputValue($event))" />
                 @if (submitted() && errors().companyName) {
                   <p class="fieldset-label text-error mt-1">{{ errors().companyName }}</p>

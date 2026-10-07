@@ -3,6 +3,8 @@ import { Component, computed, effect, inject, input, linkedSignal, output, signa
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { inputValue } from '../../shared/events';
+import { searchKey } from '../../shared/search-key';
+import { ArticlePickerComponent } from '../articles/article-picker.component';
 import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Customer, customerDisplayName } from '../customers/customer.model';
@@ -20,12 +22,6 @@ interface LineForm {
 const MAX_RECOMMENDATIONS = 10;
 // Enough recent invoices to usually find MAX_RECOMMENDATIONS distinct articles.
 const RECENT_INVOICES = 20;
-// A short list to scan; the rest is counted, to tell when to type more.
-const MAX_ARTICLE_RESULTS = 10;
-
-function searchKey(value: string): string {
-  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-}
 
 interface Recommendation {
   description: string;
@@ -40,7 +36,7 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [CurrencyPipe, FormActionsComponent],
+  imports: [ArticlePickerComponent, CurrencyPipe, FormActionsComponent],
   template: `
     <form (submit)="submit($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -79,40 +75,8 @@ interface Recommendation {
           <span class="fieldset-label font-semibold mb-2">{{ t().invoices.linesLabel }}</span>
 
           <!-- Always at hand: each article picked is added (or its quantity raised) -->
-          <div class="relative mb-3">
-            <input class="input w-full" type="text" role="combobox" autocomplete="off"
-              aria-autocomplete="list" aria-controls="article-options"
-              [attr.aria-label]="t().invoices.addArticle" [placeholder]="t().invoices.addArticle"
-              [attr.aria-expanded]="pickerOpen()"
-              [attr.aria-activedescendant]="pickerOpen() ? 'article-option-' + activeOption() : null"
-              [value]="articleQuery()"
-              (input)="onPickerInput(inputValue($event))" (keydown)="onPickerKey($event)"
-              (focus)="pickerFocused.set(true)" (blur)="pickerFocused.set(false)" />
-            @if (pickerOpen()) {
-              <div class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 overflow-hidden">
-              <ul id="article-options" role="listbox" class="max-h-60 overflow-y-auto">
-                @for (a of pickerResults(); track a.id; let k = $index) {
-                  <li role="option" [id]="'article-option-' + k" [attr.aria-selected]="k === activeOption()"
-                    class="px-3 py-2 cursor-pointer text-sm flex justify-between gap-2"
-                    [class.bg-base-200]="k === activeOption()"
-                    (mouseenter)="activeOption.set(k)"
-                    (mousedown)="$event.preventDefault(); addArticle(a)">
-                    <span class="truncate">{{ a.name }}</span>
-                    <span class="text-base-content/50 text-xs shrink-0 tabular-nums">
-                      {{ a.unitPrice | currency:'CHF':'code':'1.2-2' }} · {{ a.stockQuantity }}
-                    </span>
-                  </li>
-                }
-              </ul>
-              <!-- Outside the scrolling list: always in sight -->
-              @if (pickerMore() > 0) {
-                <p id="article-options-more" class="px-3 py-1.5 text-xs text-base-content/50 border-t border-base-200">
-                  {{ (pickerMore() === 1 ? t().invoices.moreArticle : t().invoices.moreArticles).replace('{count}', '' + pickerMore()) }}
-                </p>
-              }
-              </div>
-            }
-          </div>
+          <app-article-picker class="mb-3" autofocus [articles]="articles()"
+            [placeholder]="t().invoices.addArticle" (picked)="addArticle($event)" />
 
           @if (lines().length > 0) {
             <div>
@@ -277,18 +241,6 @@ export class InvoiceFormComponent {
   protected readonly paymentMethods = PAYMENT_METHODS;
 
   protected readonly recentInvoices = signal<Invoice[]>([]);
-  protected readonly articleQuery = signal('');
-  protected readonly pickerFocused = signal(false);
-  protected readonly activeOption = signal(0);
-  private readonly pickerMatches = computed(() => {
-    const words = searchKey(this.articleQuery()).split(/\s+/).filter(Boolean);
-    if (words.length === 0) return [];
-    return this.articles().filter((a) => words.every((w) => searchKey(a.name).includes(w)));
-  });
-  protected readonly pickerResults = computed(() => this.pickerMatches().slice(0, MAX_ARTICLE_RESULTS));
-  /** Matching articles left out of the list. */
-  protected readonly pickerMore = computed(() => this.pickerMatches().length - this.pickerResults().length);
-  protected readonly pickerOpen = computed(() => this.pickerFocused() && this.pickerResults().length > 0);
 
   // What the customer bought lately. Imported invoices often name an article in a
   // free-text line: matched by name, it counts as that article, active or archived.
@@ -388,40 +340,6 @@ export class InvoiceFormComponent {
     );
   }
 
-  protected onPickerInput(value: string): void {
-    this.articleQuery.set(value);
-    this.activeOption.set(0);
-  }
-
-  protected onPickerKey(event: KeyboardEvent): void {
-    const count = this.pickerResults().length;
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.activeOption.update((k) => Math.min(k + 1, count - 1));
-        this.revealActiveOption();
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.activeOption.update((k) => Math.max(k - 1, 0));
-        this.revealActiveOption();
-        break;
-      case 'Enter':
-        // Never submits the form from here: Enter picks the article.
-        event.preventDefault();
-        if (count > 0) this.addArticle(this.pickerResults()[this.activeOption()]);
-        break;
-      case 'Escape':
-        this.articleQuery.set('');
-        break;
-    }
-  }
-
-  // The list scrolls: keep the option chosen with the arrows in sight.
-  private revealActiveOption(): void {
-    document.getElementById(`article-option-${this.activeOption()}`)?.scrollIntoView({ block: 'nearest' });
-  }
-
   /** Adds the article, or one more of it when it is already on the invoice. */
   protected addArticle(article: Article): void {
     const index = this.lines().findIndex((l) => l.articleId === article.id);
@@ -440,8 +358,6 @@ export class InvoiceFormComponent {
         },
       ]);
     }
-    this.articleQuery.set('');
-    this.activeOption.set(0);
   }
 
   protected lineStockWarning(line: LineForm): boolean {

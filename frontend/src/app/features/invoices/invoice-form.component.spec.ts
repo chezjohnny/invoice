@@ -75,7 +75,7 @@ describe('InvoiceFormComponent article picker', () => {
     fixture.componentRef.setInput('articles', many);
     await type('fendant');
     expect(fixture.nativeElement.querySelectorAll('[role="option"]').length).toBe(10);
-    expect(fixture.nativeElement.querySelector('#article-options-more').textContent).toContain('3');
+    expect(fixture.nativeElement.querySelector('[id$="-more"]').textContent).toContain('3');
   });
 
   it('raises the quantity of an article picked again', async () => {

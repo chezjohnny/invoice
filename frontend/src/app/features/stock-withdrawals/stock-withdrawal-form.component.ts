@@ -3,12 +3,13 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
 import { inputValue } from '../../shared/events';
 import { localIsoDate } from '../../shared/dates';
+import { ArticlePickerComponent } from '../articles/article-picker.component';
 import { Article } from '../articles/article.model';
 import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason } from './stock-withdrawal.model';
 
 @Component({
   selector: 'app-stock-withdrawal-form',
-  imports: [FormActionsComponent],
+  imports: [ArticlePickerComponent, FormActionsComponent],
   template: `
     <form (submit)="submit($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">{{ t().stockWithdrawals.newTitle }}</h1>
@@ -16,15 +17,19 @@ import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason 
       <fieldset class="fieldset gap-4">
         <div>
           <label class="fieldset-label" for="withdrawal-article">{{ t().stockWithdrawals.articleLabel }}</label>
-          <select id="withdrawal-article" class="select w-full" [class.select-error]="submitted() && errors().article"
-            (change)="articleId.set(inputValue($event))">
-            <option value="" [selected]="articleId() === ''" disabled>—</option>
-            @for (a of articles(); track a.id) {
-              <option [value]="a.id" [selected]="articleId() === a.id">
-                {{ a.name }} · {{ t().articles.stock }} {{ a.stockQuantity }}
-              </option>
-            }
-          </select>
+          <!-- Picked by typing part of its name, as on an invoice; ✕ to pick another -->
+          @if (article(); as a) {
+            <div class="input w-full">
+              <span class="truncate grow" [title]="a.name">{{ a.name }}</span>
+              <span class="text-base-content/50 text-xs shrink-0 tabular-nums">{{ t().articles.stock }} {{ a.stockQuantity }}</span>
+              <button type="button" class="btn btn-ghost btn-xs px-1" [attr.aria-label]="t().stockWithdrawals.changeArticle"
+                (click)="article.set(null)">✕</button>
+            </div>
+          } @else {
+            <app-article-picker inputId="withdrawal-article" autofocus [articles]="articles()"
+              [invalid]="submitted() && !!errors().article"
+              [placeholder]="t().stockWithdrawals.pickArticle" (picked)="article.set($event)" />
+          }
           @if (submitted() && errors().article) {
             <p class="fieldset-label text-error mt-1">{{ errors().article }}</p>
           }
@@ -79,7 +84,7 @@ export class StockWithdrawalFormComponent {
   protected readonly reasons = STOCK_WITHDRAWAL_REASONS;
 
   // Create-only, and recreated on each visit to its page: plain signals.
-  protected readonly articleId = signal('');
+  protected readonly article = signal<Article | null>(null);
   protected readonly date = signal(localIsoDate());
   protected readonly quantity = signal('1');
   protected readonly reason = signal<StockWithdrawalReason>('tasting');
@@ -87,7 +92,7 @@ export class StockWithdrawalFormComponent {
   protected readonly submitted = signal(false);
 
   protected readonly errors = computed(() => ({
-    article: this.articleId() === '' ? this.t().stockWithdrawals.articleRequired : null,
+    article: this.article() === null ? this.t().stockWithdrawals.articleRequired : null,
     date: this.date() === '' ? this.t().stockWithdrawals.dateRequired : null,
     quantity: (() => {
       const v = Number(this.quantity());
@@ -104,7 +109,7 @@ export class StockWithdrawalFormComponent {
     this.submitted.set(true);
     if (!this.isValid()) return;
     this.saved.emit({
-      articleId: this.articleId(),
+      articleId: this.article()!.id,
       date: this.date(),
       quantity: Number(this.quantity()),
       reason: this.reason(),

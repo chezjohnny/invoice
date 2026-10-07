@@ -2,9 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
 
 @Component({
   selector: 'app-login',
+  imports: [AutofocusDirective],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div class="w-full max-w-sm">
@@ -23,6 +25,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
               <label class="floating-label">
                 <input
                   type="email"
+                  appAutofocus
                   [placeholder]="t().login.email"
                   class="input input-bordered w-full"
                   [value]="email()"

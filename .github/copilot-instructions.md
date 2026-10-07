@@ -103,7 +103,7 @@ invoice/
 ## Frontend conventions
 - Angular 22 standalone components, zoneless change detection
 - State: `@ngrx/signals` Signal Store with `withState<XState>` + `withMethods`; inner `load()` function pattern; setter methods return `Promise<void>`
-- Forms: `linkedSignal` fields + `computed()` validation; editors submit through `once()` (`shared/busy.ts`) and pass `[busy]` down to `<app-form-actions>`; percents ↔ rates through `shared/percent.ts`
+- Forms: `linkedSignal` fields + `computed()` validation; editors submit through `once()` (`shared/busy.ts`) and pass `[busy]` down to `<app-form-actions>`; percents ↔ rates through `shared/percent.ts`; articles are picked by name through `<app-article-picker>` (`features/articles/`, invoice editor and stock withdrawal form); the field to type in first carries `appAutofocus` (`shared/autofocus.directive.ts`, mouse or trackpad only), lists set `autofocus` on their `<app-search-input>`
 - HTTP: `HttpClient` + `firstValueFrom`
 - Styling: Tailwind v4 + DaisyUI classes directly in templates
 - `core/` app-wide services (auth and its guard, interceptors, DI tokens, i18n, notifications, theme, version), `features/` lazy-loaded routes, `shared/` reusable components and helpers

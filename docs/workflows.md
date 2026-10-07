@@ -232,7 +232,8 @@ bouteille cassée.
 
 **Dans l'application**
 
-*Sorties de stock* → *Nouvelle sortie* → article (son stock est affiché), date,
+*Sorties de stock* → *Nouvelle sortie* → article, cherché en tapant une partie de son
+nom comme dans une facture (son stock est affiché ; ✕ pour en choisir un autre), date,
 quantité, motif (*Dégustation*, *Promotion / cadeau*, *Perte / casse*, *Autre*)
 et une note. Le stock diminue aussitôt ; la sortie apparaît dans la colonne
 *Sorties* des articles, sur la période choisie.

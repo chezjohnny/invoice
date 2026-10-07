@@ -37,7 +37,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
       }
 
       <div class="flex flex-wrap items-center gap-4 mb-4">
-      <app-search-input [placeholder]="t().articles.search" [value]="store.search()"
+      <app-search-input autofocus [placeholder]="t().articles.search" [value]="store.search()"
         (valueChange)="store.setSearch($event)" />
       <label class="label cursor-pointer gap-2 text-sm">
         <input type="checkbox" class="toggle toggle-sm"

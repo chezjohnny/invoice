@@ -33,7 +33,7 @@ const REASON_BADGE: Record<StockWithdrawalReason, string> = {
       </div>
 
       <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <app-search-input [placeholder]="t().stockWithdrawals.search" [value]="store.search()"
+        <app-search-input autofocus [placeholder]="t().stockWithdrawals.search" [value]="store.search()"
           (valueChange)="store.setSearch($event)" />
         <div class="tabs tabs-bordered overflow-x-auto flex-1 min-w-0">
           <button class="tab whitespace-nowrap" [class.tab-active]="store.reasonFilter() === null"
