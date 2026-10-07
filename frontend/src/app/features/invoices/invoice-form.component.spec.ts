@@ -108,6 +108,33 @@ describe('InvoiceFormComponent article picker', () => {
       { articleId: null, descriptionSnapshot: 'Livraison', quantity: 1, unitPriceSnapshot: 15, vatRateSnapshot: 0.081 },
     ]);
   });
+
+  it('edits an invoice: its values shown, a discount over 100 % refused', async () => {
+    fixture.componentRef.setInput('invoice', {
+      id: 'i1', customerId: 'c1', customerName: '', invoiceNumber: null, status: 'draft',
+      issueDate: null, dueDate: null, paidAt: null, discountPercent: 5, notes: 'Livrer le soir', paymentMethod: 'twint',
+      reminders: [],
+      lines: [{ id: 'l1', articleId: 'a1', descriptionSnapshot: 'Pinot Noir', quantity: 3, unitPriceSnapshot: 18, vatRateSnapshot: 0.081 }],
+    } satisfies Invoice);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect((element.querySelector('#invoice-payment-method') as HTMLSelectElement).value).toBe('twint');
+    const discount = element.querySelector('#invoice-discount') as HTMLInputElement;
+    expect(discount.value).toBe('5');
+
+    discount.value = '120';
+    discount.dispatchEvent(new Event('input'));
+    await save();
+    expect(saved.length).toBe(0);
+    expect(element.querySelector('.text-error')?.textContent).toBeTruthy();
+
+    discount.value = '10';
+    discount.dispatchEvent(new Event('input'));
+    expect(await save()).toEqual({
+      customerId: 'c1', discountPercent: 10, notes: 'Livrer le soir', paymentMethod: 'twint',
+      lines: [{ articleId: 'a1', descriptionSnapshot: 'Pinot Noir', quantity: 3, unitPriceSnapshot: 18, vatRateSnapshot: 0.081 }],
+    });
+  });
 });
 
 describe('InvoiceFormComponent suggestions', () => {

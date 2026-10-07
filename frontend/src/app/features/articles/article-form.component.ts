@@ -1,17 +1,27 @@
-import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { Component, inject, input, linkedSignal, output } from '@angular/core';
+import { FormField, form, max, min, required, submit } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { FormActionsComponent } from '../../shared/components/form-actions.component';
-import { inputValue } from '../../shared/events';
-import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
-import { Article, ArticleData } from './article.model';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
+import { FormActionsComponent } from '../../shared/components/form-actions.component';
+import { requiredText, showsError } from '../../shared/form-errors';
+import { percentOf, rateOf } from '../../shared/percent';
+import { Article, ArticleData } from './article.model';
 
+interface ArticleModel {
+  name: string;
+  description: string;
+  unitPrice: number | null;
+  /** 8.1 for 8.1 %; null: the company's rate. */
+  vatPercent: number | null;
+  stockQuantity: number | null;
+}
 
 @Component({
   selector: 'app-article-form',
-  imports: [AutofocusDirective, FormActionsComponent],
+  imports: [AutofocusDirective, FieldErrorComponent, FormActionsComponent, FormField],
   template: `
-    <form (submit)="submit($event)">
+    <form (submit)="save($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
         {{ article() ? t().articles.editTitle : t().articles.newTitle }}
       </h1>
@@ -19,44 +29,36 @@ import { AutofocusDirective } from '../../shared/autofocus.directive';
       <fieldset class="fieldset gap-4">
         <div>
           <label class="fieldset-label" for="article-name">{{ t().articles.nameLabel }}</label>
-          <input id="article-name" appAutofocus class="input w-full" [class.input-error]="submitted() && errors().name"
-            type="text" [value]="name()" (input)="name.set(inputValue($event))" />
-          @if (submitted() && errors().name) {
-            <p class="fieldset-label text-error mt-1">{{ errors().name }}</p>
-          }
+          <input id="article-name" appAutofocus class="input w-full" type="text"
+            [class.input-error]="showsError(articleForm.name)" [formField]="articleForm.name" />
+          <app-field-error [field]="articleForm.name" />
         </div>
 
         <div>
           <label class="fieldset-label" for="article-desc">{{ t().articles.descLabel }}</label>
-          <input id="article-desc" class="input w-full" type="text"
-            [value]="description()" (input)="description.set(inputValue($event))" />
+          <input id="article-desc" class="input w-full" type="text" [formField]="articleForm.description" />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label" for="article-price">{{ t().articles.priceLabel }}</label>
-            <input id="article-price" class="input w-full" [class.input-error]="submitted() && errors().unitPrice"
-              type="number" min="0" step="0.01"
-              [value]="unitPrice()" (input)="unitPrice.set(inputValue($event))" />
-            @if (submitted() && errors().unitPrice) {
-              <p class="fieldset-label text-error mt-1">{{ errors().unitPrice }}</p>
-            }
+            <input id="article-price" class="input w-full" type="number" step="0.01"
+              [class.input-error]="showsError(articleForm.unitPrice)" [formField]="articleForm.unitPrice" />
+            <app-field-error [field]="articleForm.unitPrice" />
           </div>
           <div>
             <label class="fieldset-label" for="article-vat">{{ t().articles.vatLabel }}</label>
-            <input id="article-vat" class="input w-full" [class.input-error]="submitted() && errors().vatRateOverride"
-              type="number" min="0" max="100" step="0.1"
-              [value]="vatRateOverride()" (input)="vatRateOverride.set(inputValue($event))" />
-            @if (submitted() && errors().vatRateOverride) {
-              <p class="fieldset-label text-error mt-1">{{ errors().vatRateOverride }}</p>
-            }
+            <input id="article-vat" class="input w-full" type="number" step="0.1"
+              [class.input-error]="showsError(articleForm.vatPercent)" [formField]="articleForm.vatPercent" />
+            <app-field-error [field]="articleForm.vatPercent" />
           </div>
         </div>
 
         <div>
           <label class="fieldset-label" for="article-stock">{{ t().articles.stockLabel }}</label>
           <input id="article-stock" class="input w-full sm:max-w-40" type="number" step="1"
-            [value]="stockQuantity()" (input)="stockQuantity.set(inputValue($event))" />
+            [class.input-error]="showsError(articleForm.stockQuantity)" [formField]="articleForm.stockQuantity" />
+          <app-field-error [field]="articleForm.stockQuantity" />
         </div>
       </fieldset>
 
@@ -71,45 +73,38 @@ export class ArticleFormComponent {
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
-  protected readonly inputValue = inputValue;
+  protected readonly showsError = showsError;
 
-  protected readonly name = linkedSignal(() => this.article()?.name ?? '');
-  protected readonly description = linkedSignal(() => this.article()?.description ?? '');
-  protected readonly unitPrice = linkedSignal(() =>
-    this.article() != null ? String(this.article()!.unitPrice) : ''
-  );
-  protected readonly vatRateOverride = linkedSignal(() => percentFromRate(this.article()?.vatRateOverride));
-  protected readonly stockQuantity = linkedSignal(() =>
-    this.article() != null ? String(this.article()!.stockQuantity) : '0'
-  );
+  protected readonly model = linkedSignal<ArticleModel>(() => {
+    const article = this.article();
+    return {
+      name: article?.name ?? '',
+      description: article?.description ?? '',
+      unitPrice: article?.unitPrice ?? null,
+      vatPercent: percentOf(article?.vatRateOverride),
+      stockQuantity: article?.stockQuantity ?? 0,
+    };
+  });
 
-  protected readonly submitted = linkedSignal(() => { this.article(); return false; });
+  protected readonly articleForm = form(this.model, (path) => {
+    requiredText(path.name, () => this.t().articles.nameRequired);
+    required(path.unitPrice, { message: () => this.t().articles.priceRequired });
+    min(path.unitPrice, 0, { message: () => this.t().articles.pricePositive });
+    min(path.vatPercent, 0, { message: () => this.t().common.invalidPercent });
+    max(path.vatPercent, 100, { message: () => this.t().common.invalidPercent });
+  });
 
-  protected readonly errors = computed(() => ({
-    name: this.name().trim() === '' ? this.t().articles.nameRequired : null,
-    unitPrice: (() => {
-      const v = parseFloat(this.unitPrice());
-      if (isNaN(v)) return this.t().articles.priceRequired;
-      if (v < 0) return this.t().articles.pricePositive;
-      return null;
-    })(),
-    vatRateOverride: isPercent(this.vatRateOverride()) ? null : this.t().common.invalidPercent,
-  }));
-
-  protected readonly isValid = computed(() =>
-    Object.values(this.errors()).every((e) => e === null)
-  );
-
-  submit(event: Event): void {
+  protected save(event: Event): void {
     event.preventDefault();
-    this.submitted.set(true);
-    if (!this.isValid()) return;
-    this.saved.emit({
-      name: this.name().trim(),
-      description: this.description().trim(),
-      unitPrice: parseFloat(this.unitPrice()),
-      vatRateOverride: rateFromPercent(this.vatRateOverride()),
-      stockQuantity: parseInt(this.stockQuantity(), 10) || 0,
+    submit(this.articleForm, async () => {
+      const m = this.model();
+      this.saved.emit({
+        name: m.name.trim(),
+        description: m.description.trim(),
+        unitPrice: m.unitPrice ?? 0,
+        vatRateOverride: rateOf(m.vatPercent),
+        stockQuantity: m.stockQuantity ?? 0,
+      });
     });
   }
 }

@@ -1,17 +1,28 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { FormField, form, maxLength, min, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
-import { inputValue } from '../../shared/events';
 import { localIsoDate } from '../../shared/dates';
+import { showsError } from '../../shared/form-errors';
 import { ArticlePickerComponent } from '../articles/article-picker.component';
 import { Article } from '../articles/article.model';
 import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason } from './stock-withdrawal.model';
 
+interface WithdrawalModel {
+  /** Empty until an article is picked. */
+  articleId: string;
+  date: string;
+  quantity: number | null;
+  reason: StockWithdrawalReason;
+  note: string;
+}
+
 @Component({
   selector: 'app-stock-withdrawal-form',
-  imports: [ArticlePickerComponent, FormActionsComponent],
+  imports: [ArticlePickerComponent, FieldErrorComponent, FormActionsComponent, FormField],
   template: `
-    <form (submit)="submit($event)">
+    <form (submit)="save($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">{{ t().stockWithdrawals.newTitle }}</h1>
 
       <fieldset class="fieldset gap-4">
@@ -23,40 +34,34 @@ import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason 
               <span class="truncate grow" [title]="a.name">{{ a.name }}</span>
               <span class="text-base-content/50 text-xs shrink-0 tabular-nums">{{ t().articles.stock }} {{ a.stockQuantity }}</span>
               <button type="button" class="btn btn-ghost btn-xs px-1" [attr.aria-label]="t().stockWithdrawals.changeArticle"
-                (click)="article.set(null)">✕</button>
+                (click)="pick('')">✕</button>
             </div>
           } @else {
             <app-article-picker inputId="withdrawal-article" autofocus [articles]="articles()"
-              [invalid]="submitted() && !!errors().article"
-              [placeholder]="t().stockWithdrawals.pickArticle" (picked)="article.set($event)" />
+              [invalid]="showsError(withdrawalForm.articleId)"
+              [placeholder]="t().stockWithdrawals.pickArticle" (picked)="pick($event.id)" />
           }
-          @if (submitted() && errors().article) {
-            <p class="fieldset-label text-error mt-1">{{ errors().article }}</p>
-          }
+          <app-field-error [field]="withdrawalForm.articleId" />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="fieldset-label" for="withdrawal-date">{{ t().stockWithdrawals.dateLabel }}</label>
-            <input id="withdrawal-date" class="input w-full" [class.input-error]="submitted() && errors().date"
-              type="date" [value]="date()" (change)="date.set(inputValue($event))" />
-            @if (submitted() && errors().date) {
-              <p class="fieldset-label text-error mt-1">{{ errors().date }}</p>
-            }
+            <input id="withdrawal-date" class="input w-full" type="date"
+              [class.input-error]="showsError(withdrawalForm.date)" [formField]="withdrawalForm.date" />
+            <app-field-error [field]="withdrawalForm.date" />
           </div>
           <div>
             <label class="fieldset-label" for="withdrawal-quantity">{{ t().stockWithdrawals.quantityLabel }}</label>
-            <input id="withdrawal-quantity" class="input w-full" [class.input-error]="submitted() && errors().quantity"
-              type="number" min="1" step="1" [value]="quantity()" (input)="quantity.set(inputValue($event))" />
-            @if (submitted() && errors().quantity) {
-              <p class="fieldset-label text-error mt-1">{{ errors().quantity }}</p>
-            }
+            <input id="withdrawal-quantity" class="input w-full" type="number" step="1"
+              [class.input-error]="showsError(withdrawalForm.quantity)" [formField]="withdrawalForm.quantity" />
+            <app-field-error [field]="withdrawalForm.quantity" />
           </div>
           <div>
             <label class="fieldset-label" for="withdrawal-reason">{{ t().stockWithdrawals.reasonLabel }}</label>
-            <select id="withdrawal-reason" class="select w-full" (change)="reason.set(inputValue($event))">
+            <select id="withdrawal-reason" class="select w-full" [formField]="withdrawalForm.reason">
               @for (r of reasons; track r) {
-                <option [value]="r" [selected]="reason() === r">{{ t().stockWithdrawalReason[r] }}</option>
+                <option [value]="r">{{ t().stockWithdrawalReason[r] }}</option>
               }
             </select>
           </div>
@@ -64,8 +69,9 @@ import { STOCK_WITHDRAWAL_REASONS, StockWithdrawalCreate, StockWithdrawalReason 
 
         <div>
           <label class="fieldset-label" for="withdrawal-note">{{ t().stockWithdrawals.noteLabel }}</label>
-          <input id="withdrawal-note" class="input w-full" type="text" maxlength="500"
-            [value]="note()" (input)="note.set(inputValue($event))" />
+          <input id="withdrawal-note" class="input w-full" type="text"
+            [class.input-error]="showsError(withdrawalForm.note)" [formField]="withdrawalForm.note" />
+          <app-field-error [field]="withdrawalForm.note" />
         </div>
       </fieldset>
 
@@ -80,40 +86,50 @@ export class StockWithdrawalFormComponent {
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
-  protected readonly inputValue = inputValue;
+  protected readonly showsError = showsError;
   protected readonly reasons = STOCK_WITHDRAWAL_REASONS;
 
-  // Create-only, and recreated on each visit to its page: plain signals.
-  protected readonly article = signal<Article | null>(null);
-  protected readonly date = signal(localIsoDate());
-  protected readonly quantity = signal('1');
-  protected readonly reason = signal<StockWithdrawalReason>('tasting');
-  protected readonly note = signal('');
-  protected readonly submitted = signal(false);
+  // Create-only, and recreated on each visit to its page: a plain signal.
+  protected readonly model = signal<WithdrawalModel>({
+    articleId: '',
+    date: localIsoDate(),
+    quantity: 1,
+    reason: 'tasting',
+    note: '',
+  });
 
-  protected readonly errors = computed(() => ({
-    article: this.article() === null ? this.t().stockWithdrawals.articleRequired : null,
-    date: this.date() === '' ? this.t().stockWithdrawals.dateRequired : null,
-    quantity: (() => {
-      const v = Number(this.quantity());
-      return Number.isInteger(v) && v >= 1 ? null : this.t().stockWithdrawals.quantityPositive;
-    })(),
-  }));
+  protected readonly withdrawalForm = form(this.model, (path) => {
+    required(path.articleId, { message: () => this.t().stockWithdrawals.articleRequired });
+    required(path.date, { message: () => this.t().stockWithdrawals.dateRequired });
+    required(path.quantity, { message: () => this.t().stockWithdrawals.quantityPositive });
+    min(path.quantity, 1, { message: () => this.t().stockWithdrawals.quantityPositive });
+    validate(path.quantity, ({ value }) =>
+      value() == null || Number.isInteger(value())
+        ? undefined
+        : { kind: 'integer', message: this.t().stockWithdrawals.quantityPositive }
+    );
+    maxLength(path.note, 500);
+  });
 
-  protected readonly isValid = computed(() =>
-    Object.values(this.errors()).every((e) => e === null)
+  protected readonly article = computed(() =>
+    this.articles().find((a) => a.id === this.model().articleId) ?? null
   );
 
-  submit(event: Event): void {
+  protected pick(articleId: string): void {
+    this.model.update((m) => ({ ...m, articleId }));
+  }
+
+  protected save(event: Event): void {
     event.preventDefault();
-    this.submitted.set(true);
-    if (!this.isValid()) return;
-    this.saved.emit({
-      articleId: this.article()!.id,
-      date: this.date(),
-      quantity: Number(this.quantity()),
-      reason: this.reason(),
-      note: this.note().trim(),
+    submit(this.withdrawalForm, async () => {
+      const m = this.model();
+      this.saved.emit({
+        articleId: m.articleId,
+        date: m.date,
+        quantity: m.quantity ?? 1,
+        reason: m.reason,
+        note: m.note.trim(),
+      });
     });
   }
 }

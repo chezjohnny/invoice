@@ -1,8 +1,10 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { FormField, form, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { inputValue } from '../../shared/events';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { localIsoDate } from '../../shared/dates';
+import { showsError } from '../../shared/form-errors';
 import { Invoice, PAYMENT_METHODS, Payment, PaymentMethod, invoiceTotal } from './invoice.model';
 
 export interface PaymentRequest extends Payment {
@@ -18,7 +20,7 @@ export interface PaymentRequest extends Payment {
   selector: 'app-pay-dialog',
   // On the document: the button that opened the dialog keeps the focus.
   host: { '(document:keydown.escape)': 'cancelled.emit()' },
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, FieldErrorComponent, FormField],
   template: `
     <dialog class="modal modal-open">
       <div class="modal-box max-w-md">
@@ -31,16 +33,15 @@ export interface PaymentRequest extends Payment {
         <fieldset class="fieldset gap-4 mt-4">
           <div>
             <label class="fieldset-label" for="pay-payment-date">{{ t().invoices.paymentDate }}</label>
-            <input id="pay-payment-date" class="input w-full" type="date" [max]="today" [value]="paidAt()"
-              (change)="paidAt.set(inputValue($event))" />
+            <input id="pay-payment-date" class="input w-full" type="date"
+              [class.input-error]="showsError(payForm.paidAt)" [formField]="payForm.paidAt" />
+            <app-field-error [field]="payForm.paidAt" />
           </div>
           <div>
             <label class="fieldset-label" for="pay-payment-method">{{ t().invoices.paymentMethodLabel }}</label>
-            <select id="pay-payment-method" class="select w-full" (change)="paymentMethod.set(inputValue($event))">
+            <select id="pay-payment-method" class="select w-full" [formField]="payForm.paymentMethod">
               @for (method of paymentMethods; track method) {
-                <option [value]="method" [selected]="paymentMethod() === method">
-                  {{ t().paymentMethod[method] }}
-                </option>
+                <option [value]="method">{{ t().paymentMethod[method] }}</option>
               }
             </select>
           </div>
@@ -50,10 +51,10 @@ export interface PaymentRequest extends Payment {
           <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">
             {{ t().common.cancel }}
           </button>
-          <button type="button" class="btn btn-outline" [disabled]="!paidAt()" (click)="confirm(false)">
+          <button type="button" class="btn btn-outline" [disabled]="payForm().invalid()" (click)="confirm(false)">
             {{ t().invoices.pay }}
           </button>
-          <button type="button" class="btn btn-success" [disabled]="!paidAt()" (click)="confirm(true)">
+          <button type="button" class="btn btn-success" [disabled]="payForm().invalid()" (click)="confirm(true)">
             {{ t().invoices.payAndPrint }}
           </button>
         </div>
@@ -69,18 +70,25 @@ export class PayDialogComponent {
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
-  protected readonly inputValue = inputValue;
+  protected readonly showsError = showsError;
   protected readonly paymentMethods = PAYMENT_METHODS;
   protected readonly today = localIsoDate();
   protected readonly total = computed(() => invoiceTotal(this.invoice()));
 
-  protected readonly paidAt = linkedSignal(() => { this.invoice(); return this.today; });
-  // The method planned on the invoice, to be corrected when the customer paid otherwise.
-  protected readonly paymentMethod = linkedSignal<PaymentMethod>(
-    () => this.invoice().paymentMethod ?? 'cash'
-  );
+  // Paid today, by the method planned on the invoice: both to correct when needed.
+  protected readonly model = linkedSignal<{ paidAt: string; paymentMethod: PaymentMethod }>(() => ({
+    paidAt: this.today,
+    paymentMethod: this.invoice().paymentMethod ?? 'cash',
+  }));
+  protected readonly payForm = form(this.model, (path) => {
+    required(path.paidAt, { message: () => this.t().invoices.paymentDateRequired });
+    // ISO dates compare as text.
+    validate(path.paidAt, ({ value }) =>
+      value() > this.today ? { kind: 'future', message: this.t().invoices.paymentInFuture } : undefined
+    );
+  });
 
   protected confirm(print: boolean): void {
-    this.confirmed.emit({ paidAt: this.paidAt(), paymentMethod: this.paymentMethod(), print });
+    submit(this.payForm, async () => this.confirmed.emit({ ...this.model(), print }));
   }
 }

@@ -103,10 +103,16 @@ invoice/
 ## Frontend conventions
 - Angular 22 standalone components, zoneless change detection
 - State: `@ngrx/signals` Signal Store with `withState<XState>` + `withMethods`; inner `load()` function pattern; setter methods return `Promise<void>`
-- Forms: `linkedSignal` fields + `computed()` validation; editors submit through `once()` (`shared/busy.ts`) and pass `[busy]` down to `<app-form-actions>`; percents ↔ rates through `shared/percent.ts`; articles are picked by name through `<app-article-picker>` (`features/articles/`, invoice editor and stock withdrawal form); the field to type in first carries `appAutofocus` (`shared/autofocus.directive.ts`, mouse or trackpad only), lists set `autofocus` on their `<app-search-input>`
+- Forms: Signal Forms (`@angular/forms/signals`): one `linkedSignal` model per form (reset when its input changes), `form(model, schema)` with i18n messages as functions, `[formField]` bindings (no `min`/`max`/`maxlength`/`value` attributes: validators instead), number fields typed `number | null`; a field turns red with `showsError()` and shows its message through `<app-field-error>` (`shared/form-errors.ts`, `requiredText()` for blank-proof required text); `submit()` validates and marks every field touched; editors submit through `once()` (`shared/busy.ts`) and pass `[busy]` down to `<app-form-actions>`; percents ↔ rates through `shared/percent.ts`; articles are picked by name through `<app-article-picker>` (`features/articles/`, invoice editor and stock withdrawal form); the field to type in first carries `appAutofocus` (`shared/autofocus.directive.ts`, mouse or trackpad only), lists set `autofocus` on their `<app-search-input>`
+- Reactivity: derived state through `computed()` / `linkedSignal()`, a component's own async data through `resource()`; `effect()` only for side effects outside the signal graph (URL sync, loading the profile at sign-in), never to `.set()` another signal
 - HTTP: `HttpClient` + `firstValueFrom`
 - Styling: Tailwind v4 + DaisyUI classes directly in templates
 - `core/` app-wide services (auth and its guard, interceptors, DI tokens, i18n, notifications, theme, version), `features/` lazy-loaded routes, `shared/` reusable components and helpers
+
+### Angular skill
+- `.claude/skills/angular-developer/` is Angular's official agent skill (github.com/angular/skills, copied at 2698acd): reference guides on signals, forms, DI, routing, accessibility, testing, loaded on demand
+- It is general guidance: the conventions above win where they differ (stores, mocks and tests as described here)
+- Update it by copying `angular-developer/` from a fresh clone of github.com/angular/skills over `.claude/skills/angular-developer/`
 
 ## Code quality
 - No dead code, no TODOs, YAGNI

@@ -1,12 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { FormField, email, form, required, submit } from '@angular/forms/signals';
 import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
+import { showsError } from '../../shared/form-errors';
 
 @Component({
   selector: 'app-login',
-  imports: [AutofocusDirective],
+  imports: [AutofocusDirective, FieldErrorComponent, FormField],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div class="w-full max-w-sm">
@@ -19,32 +22,34 @@ import { AutofocusDirective } from '../../shared/autofocus.directive';
         <div class="card bg-base-100 shadow-lg rounded-t-none">
           <div class="card-body gap-4 pt-6">
             @if (error()) {
-              <div class="alert alert-error text-sm py-2">{{ error() }}</div>
+              <div class="alert alert-error text-sm py-2" role="alert">{{ error() }}</div>
             }
-            <form class="flex flex-col gap-4" (submit)="$event.preventDefault(); submit()">
+            <form class="flex flex-col gap-4" (submit)="signIn($event)">
               <label class="floating-label">
                 <input
                   type="email"
                   appAutofocus
                   [placeholder]="t().login.email"
                   class="input input-bordered w-full"
-                  [value]="email()"
-                  (input)="email.set($any($event.target).value)"
+                  [class.input-error]="showsError(loginForm.email)"
+                  [formField]="loginForm.email"
                   autocomplete="email"
                 />
                 <span>{{ t().login.email }}</span>
               </label>
+              <app-field-error class="-mt-3" [field]="loginForm.email" />
               <label class="floating-label">
                 <input
                   type="password"
                   [placeholder]="t().login.password"
                   class="input input-bordered w-full"
-                  [value]="password()"
-                  (input)="password.set($any($event.target).value)"
+                  [class.input-error]="showsError(loginForm.password)"
+                  [formField]="loginForm.password"
                   autocomplete="current-password"
                 />
                 <span>{{ t().login.password }}</span>
               </label>
+              <app-field-error class="-mt-3" [field]="loginForm.password" />
               <button type="submit" class="btn btn-primary w-full mt-2" [disabled]="loading()">
                 @if (loading()) {
                   <span class="loading loading-spinner loading-sm"></span>
@@ -62,22 +67,38 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
 
   protected readonly t = inject(I18nService).T;
-  protected readonly email = signal('');
-  protected readonly password = signal('');
+  protected readonly showsError = showsError;
   protected readonly loading = signal(false);
   protected readonly error = signal('');
 
-  async submit(): Promise<void> {
-    this.error.set('');
-    this.loading.set(true);
-    try {
-      await this.auth.login(this.email(), this.password());
-    } catch (error) {
-      // 429: nginx caps sign-in attempts per address to slow down password guessing.
-      const tooMany = error instanceof HttpErrorResponse && error.status === 429;
-      this.error.set(tooMany ? this.t().login.tooManyAttempts : this.t().login.invalid);
-    } finally {
-      this.loading.set(false);
-    }
+  protected readonly model = signal({ email: '', password: '' });
+  protected readonly loginForm = form(this.model, (path) => {
+    required(path.email, { message: () => this.t().login.emailRequired });
+    email(path.email, { message: () => this.t().login.emailInvalid });
+    required(path.password, { message: () => this.t().login.passwordRequired });
+  });
+
+  protected signIn(event: Event): void {
+    event.preventDefault();
+    submit(this.loginForm, async () => {
+      this.error.set('');
+      this.loading.set(true);
+      try {
+        await this.auth.login(this.model().email.trim(), this.model().password);
+      } catch (error) {
+        this.error.set(this.failure(error));
+      } finally {
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private failure(error: unknown): string {
+    const status = error instanceof HttpErrorResponse ? error.status : 0;
+    // 429: nginx caps sign-in attempts per address to slow down password guessing.
+    if (status === 429) return this.t().login.tooManyAttempts;
+    if (status === 0) return this.t().errors.network;
+    if (status >= 500) return this.t().errors.server;
+    return this.t().login.invalid;
   }
 }

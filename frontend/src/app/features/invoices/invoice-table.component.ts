@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
@@ -142,21 +142,21 @@ export class InvoiceTableComponent {
   protected readonly t = inject(I18nService).T;
   private readonly router = inject(Router);
 
-  protected readonly expandedId = signal<string | null>(null);
+  // The first row opens on each new page when asked; a row closed by hand stays closed.
+  protected readonly expandedId = linkedSignal<Invoice[], string | null>({
+    source: () => this.store.items(),
+    computation: (items, previous) => {
+      const current = previous?.value ?? null;
+      if (!this.expandFirst() || items.some((i) => i.id === current)) return current;
+      return items[0]?.id ?? null;
+    },
+  });
   protected readonly pendingPayment = signal<Invoice | null>(null);
   protected readonly pendingReminder = signal<Invoice | null>(null);
   protected readonly pendingDelete = signal<Invoice | null>(null);
   protected readonly invoiceTotal = invoiceTotal;
   protected readonly isOverdue = isOverdue;
   protected readonly columns = computed(() => (this.showCustomer() ? 8 : 7));
-
-  constructor() {
-    effect(() => {
-      const items = this.store.items();
-      if (!this.expandFirst() || items.some((i) => i.id === this.expandedId())) return;
-      this.expandedId.set(items[0]?.id ?? null);
-    });
-  }
 
   protected toggle(id: string): void {
     this.expandedId.update((current) => (current === id ? null : id));

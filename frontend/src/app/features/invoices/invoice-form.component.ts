@@ -1,22 +1,32 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, effect, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output, resource } from '@angular/core';
+import { FormField, applyEach, form, max, min, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
-import { inputValue } from '../../shared/events';
+import { showsError } from '../../shared/form-errors';
 import { searchKey } from '../../shared/search-key';
 import { ArticlePickerComponent } from '../articles/article-picker.component';
-import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
+import { percentOf, rateOf } from '../../shared/percent';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Customer, customerDisplayName } from '../customers/customer.model';
 import { Article } from '../articles/article.model';
 import { Invoice, InvoiceCreate, PAYMENT_METHODS, PaymentMethod, invoiceAmounts } from './invoice.model';
 
-interface LineForm {
+interface LineModel {
   articleId: string | null;
   descriptionSnapshot: string;
-  quantity: string;
-  unitPriceSnapshot: string;
-  vatRateSnapshot: string;
+  quantity: number | null;
+  unitPriceSnapshot: number | null;
+  /** 8.1 for 8.1 %; null: no VAT. */
+  vatPercent: number | null;
+}
+
+interface InvoiceModel {
+  discountPercent: number | null;
+  notes: string;
+  paymentMethod: PaymentMethod;
+  lines: LineModel[];
 }
 
 const MAX_RECOMMENDATIONS = 10;
@@ -36,9 +46,9 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [ArticlePickerComponent, CurrencyPipe, FormActionsComponent],
+  imports: [ArticlePickerComponent, CurrencyPipe, FieldErrorComponent, FormActionsComponent, FormField],
   template: `
-    <form (submit)="submit($event)">
+    <form (submit)="save($event)">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
         {{ invoice() ? t().invoices.editTitle : t().invoices.newTitle }}
       </h1>
@@ -78,7 +88,7 @@ interface Recommendation {
           <app-article-picker class="mb-3" autofocus [articles]="articles()"
             [placeholder]="t().invoices.addArticle" (picked)="addArticle($event)" />
 
-          @if (lines().length > 0) {
+          @if (model().lines.length > 0) {
             <div>
               <!-- Column headers -->
               <div class="grid items-end gap-x-2 px-0.5 mb-1 text-xs text-base-content/50"
@@ -90,50 +100,42 @@ interface Recommendation {
                 <span></span>
               </div>
               <!-- One row per line -->
-              @for (line of lines(); track $index; let i = $index) {
+              @for (line of invoiceForm.lines; track $index; let i = $index) {
                 <div class="grid items-center gap-x-2 px-0.5 mb-1"
                      style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
                   <!-- An article line shows its article; a free-text line is typed -->
                   <div class="min-w-0">
-                    @if (line.articleId !== null) {
+                    @if (line.articleId().value() !== null) {
                       <div class="input input-sm input-primary w-full">
                         <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
-                        <span class="truncate" [title]="line.descriptionSnapshot">{{ line.descriptionSnapshot }}</span>
+                        <span class="truncate" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
                       </div>
                     } @else {
-                      <label class="input input-sm w-full"
-                        [class.input-error]="submitted() && lineErrors()[i].description">
+                      <label class="input input-sm w-full" [class.input-error]="showsError(line.descriptionSnapshot)">
                         <span class="badge badge-xs badge-ghost shrink-0">{{ t().invoices.freeText }}</span>
                         <input class="grow min-w-0" type="text" autocomplete="off"
                           [attr.aria-label]="t().invoices.descLabel" [placeholder]="t().invoices.descLabel"
-                          [attr.aria-invalid]="submitted() && lineErrors()[i].description"
-                          [value]="line.descriptionSnapshot"
-                          (input)="updateLine(i, 'descriptionSnapshot', inputValue($event))" />
+                          [attr.aria-invalid]="showsError(line.descriptionSnapshot)"
+                          [formField]="line.descriptionSnapshot" />
                       </label>
                     }
                   </div>
                   <!-- Qty -->
-                  <input class="input input-sm w-full" type="number" min="1" step="1"
-                    [class.input-error]="submitted() && lineErrors()[i].quantity"
-                    [attr.aria-invalid]="submitted() && lineErrors()[i].quantity"
-                    [value]="line.quantity"
-                    (input)="updateLine(i, 'quantity', inputValue($event))" />
+                  <input class="input input-sm w-full" type="number" step="1"
+                    [class.input-error]="showsError(line.quantity)" [attr.aria-invalid]="showsError(line.quantity)"
+                    [formField]="line.quantity" />
                   <!-- Price -->
-                  <input class="input input-sm w-full" type="number" min="0" step="0.01"
-                    [class.input-error]="submitted() && lineErrors()[i].price"
-                    [attr.aria-invalid]="submitted() && lineErrors()[i].price"
-                    [value]="line.unitPriceSnapshot"
-                    (input)="updateLine(i, 'unitPriceSnapshot', inputValue($event))" />
+                  <input class="input input-sm w-full" type="number" step="0.01"
+                    [class.input-error]="showsError(line.unitPriceSnapshot)"
+                    [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
+                    [formField]="line.unitPriceSnapshot" />
                   <!-- VAT% -->
-                  <input class="input input-sm w-full" type="number" min="0" max="100" step="0.1"
-                    placeholder="—"
-                    [class.input-error]="submitted() && lineErrors()[i].vat"
-                    [attr.aria-invalid]="submitted() && lineErrors()[i].vat"
-                    [value]="line.vatRateSnapshot"
-                    (input)="updateLine(i, 'vatRateSnapshot', inputValue($event))" />
+                  <input class="input input-sm w-full" type="number" step="0.1" placeholder="—"
+                    [class.input-error]="showsError(line.vatPercent)" [attr.aria-invalid]="showsError(line.vatPercent)"
+                    [formField]="line.vatPercent" />
                   <!-- Delete + warning -->
                   <div class="flex items-center justify-end gap-0.5">
-                    @if (lineStockWarning(line)) {
+                    @if (lineStockWarning(line().value())) {
                       <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
                     }
                     <button type="button" class="btn btn-ghost btn-xs text-error px-1"
@@ -152,7 +154,7 @@ interface Recommendation {
         </div>
 
         <!-- Totals summary -->
-        @if (lines().length > 0) {
+        @if (model().lines.length > 0) {
           <div class="text-sm text-right text-base-content/70 border-t border-base-200 pt-3 space-y-0.5">
             <div>{{ t().invoices.subtotal }}: <span class="tabular-nums">{{ totals().subtotal | currency:'CHF':'code':'1.2-2' }}</span></div>
             @if (totals().discountAmount > 0) {
@@ -172,8 +174,7 @@ interface Recommendation {
           <summary class="collapse-title min-h-0 py-2 text-sm font-medium">{{ t().invoices.notesLabel }}</summary>
           <div class="collapse-content">
             <textarea class="textarea textarea-bordered w-full" rows="2"
-              [attr.aria-label]="t().invoices.notesLabel"
-              [value]="notes()" (input)="notes.set(inputValue($event))"></textarea>
+              [attr.aria-label]="t().invoices.notesLabel" [formField]="invoiceForm.notes"></textarea>
           </div>
         </details>
 
@@ -181,11 +182,9 @@ interface Recommendation {
           <!-- Payment method -->
           <div class="w-full sm:max-w-48">
             <label class="fieldset-label" for="invoice-payment-method">{{ t().invoices.paymentMethodLabel }}</label>
-            <select id="invoice-payment-method" class="select w-full" (change)="paymentMethod.set(inputValue($event))">
+            <select id="invoice-payment-method" class="select w-full" [formField]="invoiceForm.paymentMethod">
               @for (method of paymentMethods; track method) {
-                <option [value]="method" [selected]="paymentMethod() === method">
-                  {{ t().paymentMethod[method] }}
-                </option>
+                <option [value]="method">{{ t().paymentMethod[method] }}</option>
               }
             </select>
           </div>
@@ -193,12 +192,9 @@ interface Recommendation {
           <!-- Discount -->
           <div class="w-full sm:max-w-48">
             <label class="fieldset-label" for="invoice-discount">{{ t().invoices.discountLabel }}</label>
-            <input id="invoice-discount" class="input w-full" [class.input-error]="submitted() && discountError()"
-              type="number" min="0" max="100" step="0.1"
-              [value]="discountPercent()" (input)="discountPercent.set(inputValue($event))" />
-            @if (submitted() && discountError()) {
-              <p class="fieldset-label text-error mt-1">{{ t().common.invalidPercent }}</p>
-            }
+            <input id="invoice-discount" class="input w-full" type="number" step="0.1"
+              [class.input-error]="showsError(invoiceForm.discountPercent)" [formField]="invoiceForm.discountPercent" />
+            <app-field-error [field]="invoiceForm.discountPercent" />
           </div>
         </div>
       </fieldset>
@@ -207,7 +203,7 @@ interface Recommendation {
         <span class="tooltip-left" [class.tooltip]="!!issueBlockedReason()" [attr.data-tip]="issueBlockedReason()">
           <button type="button" class="btn btn-outline" (click)="submitAndIssue()"
             [disabled]="busy() || !!issueBlockedReason()">
-            {{ paymentMethod() === 'cash' ? t().invoices.payAndPrint : t().invoices.issueAndPrint }}
+            {{ model().paymentMethod === 'cash' ? t().invoices.payAndPrint : t().invoices.issueAndPrint }}
           </button>
         </span>
       </app-form-actions>
@@ -230,17 +226,52 @@ export class InvoiceFormComponent {
 
   protected readonly t = inject(I18nService).T;
   protected readonly displayName = customerDisplayName;
-  protected readonly inputValue = inputValue;
+  protected readonly showsError = showsError;
   private readonly invoiceService = inject(INVOICE_SERVICE);
 
-  protected readonly discountPercent = linkedSignal(() =>
-    this.invoice() != null ? String(this.invoice()!.discountPercent) : '0'
-  );
-  protected readonly notes = linkedSignal(() => this.invoice()?.notes ?? '');
-  protected readonly paymentMethod = linkedSignal<PaymentMethod>(() => this.invoice()?.paymentMethod ?? 'cash');
   protected readonly paymentMethods = PAYMENT_METHODS;
 
-  protected readonly recentInvoices = signal<Invoice[]>([]);
+  protected readonly model = linkedSignal<InvoiceModel>(() => {
+    const invoice = this.invoice();
+    return {
+      discountPercent: invoice?.discountPercent ?? 0,
+      notes: invoice?.notes ?? '',
+      paymentMethod: invoice?.paymentMethod ?? 'cash',
+      lines: invoice?.lines.map((l) => ({
+        articleId: l.articleId,
+        descriptionSnapshot: l.descriptionSnapshot,
+        quantity: l.quantity,
+        unitPriceSnapshot: l.unitPriceSnapshot,
+        vatPercent: percentOf(l.vatRateSnapshot),
+      })) ?? [],
+    };
+  });
+
+  // Line fields only turn red: a message under each would break the row grid.
+  protected readonly invoiceForm = form(this.model, (path) => {
+    required(path.discountPercent, { message: () => this.t().common.invalidPercent });
+    min(path.discountPercent, 0, { message: () => this.t().common.invalidPercent });
+    max(path.discountPercent, 100, { message: () => this.t().common.invalidPercent });
+    applyEach(path.lines, (line) => {
+      validate(line.descriptionSnapshot, ({ value, valueOf }) =>
+        valueOf(line.articleId) === null && value().trim() === '' ? { kind: 'required' } : undefined
+      );
+      required(line.quantity);
+      min(line.quantity, 1);
+      validate(line.quantity, ({ value }) =>
+        value() == null || Number.isInteger(value()) ? undefined : { kind: 'integer' }
+      );
+      required(line.unitPriceSnapshot);
+      min(line.unitPriceSnapshot, 0);
+      min(line.vatPercent, 0);
+      max(line.vatPercent, 100);
+    });
+  });
+
+  private readonly recentInvoices = resource({
+    params: () => ({ customerId: this.customer().id, perPage: RECENT_INVOICES }),
+    loader: async ({ params }) => (await this.invoiceService.list(params)).items,
+  });
 
   // What the customer bought lately. Imported invoices often name an article in a
   // free-text line: matched by name, it counts as that article, active or archived.
@@ -251,7 +282,9 @@ export class InvoiceFormComponent {
     const archivedNames = new Set(this.archivedArticles().map((a) => searchKey(a.name)));
     const seen = new Set<string>();
     const recs: Recommendation[] = [];
-    for (const inv of this.recentInvoices()) {
+    // Suggestions are a help: without them (the list failed), the editor still works.
+    const recent = this.recentInvoices.hasValue() ? this.recentInvoices.value() : [];
+    for (const inv of recent) {
       for (const line of inv.lines) {
         const name = searchKey(line.descriptionSnapshot);
         const article = (line.articleId ? byId.get(line.articleId) : byName.get(name)) ?? null;
@@ -275,147 +308,104 @@ export class InvoiceFormComponent {
     return recs;
   });
 
-  protected readonly lines = linkedSignal<LineForm[]>(() =>
-    this.invoice()?.lines.map((l) => ({
-      articleId: l.articleId,
-      descriptionSnapshot: l.descriptionSnapshot,
-      quantity: String(l.quantity),
-      unitPriceSnapshot: String(l.unitPriceSnapshot),
-      vatRateSnapshot: percentFromRate(l.vatRateSnapshot),
-    })) ?? []
-  );
-
   // The same total as the list, the PDF and the pay dialog: VAT included.
   protected readonly totals = computed(() => {
-    const { discountPercent, lines } = this._buildPayload();
+    const { discountPercent, lines } = this.payload();
     const { subtotal, discount, vat, total } = invoiceAmounts({ discountPercent, lines });
     return { subtotal, discountAmount: discount, vatAmount: vat.reduce((sum, v) => sum + v.amount, 0), total };
   });
-
-  constructor() {
-    effect(() => {
-      this.invoiceService
-        .list({ customerId: this.customer().id, perPage: RECENT_INVOICES })
-        .then((page) => this.recentInvoices.set(page.items));
-    });
-  }
 
   protected addRecommendation(rec: Recommendation): void {
     if (rec.article) {
       this.addArticle(rec.article);
       return;
     }
-    this.lines.update((ls) => [
-      ...ls,
-      {
-        articleId: null,
-        descriptionSnapshot: rec.description,
-        quantity: '1',
-        unitPriceSnapshot: String(rec.unitPrice),
-        vatRateSnapshot: percentFromRate(rec.vatRate),
-      },
-    ]);
+    this.pushLine({
+      articleId: null,
+      descriptionSnapshot: rec.description,
+      quantity: 1,
+      unitPriceSnapshot: rec.unitPrice,
+      vatPercent: percentOf(rec.vatRate),
+    });
   }
 
   protected addLine(): void {
-    this.lines.update((ls) => [
-      ...ls,
-      {
-        articleId: null,
-        descriptionSnapshot: '',
-        quantity: '1',
-        unitPriceSnapshot: '',
-        vatRateSnapshot: percentFromRate(this.defaultVatRate()),
-      },
-    ]);
+    this.pushLine({
+      articleId: null,
+      descriptionSnapshot: '',
+      quantity: 1,
+      unitPriceSnapshot: null,
+      vatPercent: percentOf(this.defaultVatRate()),
+    });
   }
 
   protected removeLine(index: number): void {
-    this.lines.update((ls) => ls.filter((_, i) => i !== index));
+    this.model.update((m) => ({ ...m, lines: m.lines.filter((_, i) => i !== index) }));
   }
 
-  protected updateLine(index: number, field: keyof LineForm, value: string): void {
-    this.lines.update((ls) =>
-      ls.map((l, i) => (i === index ? { ...l, [field]: value } : l))
-    );
+  private pushLine(line: LineModel): void {
+    this.model.update((m) => ({ ...m, lines: [...m.lines, line] }));
   }
 
   /** Adds the article, or one more of it when it is already on the invoice. */
   protected addArticle(article: Article): void {
-    const index = this.lines().findIndex((l) => l.articleId === article.id);
-    if (index >= 0) {
-      const quantity = parseInt(this.lines()[index].quantity, 10);
-      this.updateLine(index, 'quantity', String(Number.isFinite(quantity) ? quantity + 1 : 1));
+    if (this.model().lines.some((l) => l.articleId === article.id)) {
+      this.model.update((m) => ({
+        ...m,
+        lines: m.lines.map((l) =>
+          l.articleId === article.id ? { ...l, quantity: Number.isInteger(l.quantity) ? l.quantity! + 1 : 1 } : l
+        ),
+      }));
     } else {
-      this.lines.update((ls) => [
-        ...ls,
-        {
-          articleId: article.id,
-          descriptionSnapshot: article.name,
-          quantity: '1',
-          unitPriceSnapshot: String(article.unitPrice),
-          vatRateSnapshot: percentFromRate(article.vatRateOverride ?? this.defaultVatRate()),
-        },
-      ]);
+      this.pushLine({
+        articleId: article.id,
+        descriptionSnapshot: article.name,
+        quantity: 1,
+        unitPriceSnapshot: article.unitPrice,
+        vatPercent: percentOf(article.vatRateOverride ?? this.defaultVatRate()),
+      });
     }
   }
 
-  protected lineStockWarning(line: LineForm): boolean {
+  protected lineStockWarning(line: LineModel): boolean {
     if (!line.articleId) return false;
     const article = this.articles().find((a) => a.id === line.articleId);
-    return article != null && article.stockQuantity < Number(line.quantity);
+    return article != null && article.stockQuantity < (line.quantity ?? 0);
   }
-
-  protected readonly submitted = linkedSignal(() => { this.invoice(); return false; });
-
-  protected readonly lineErrors = computed(() =>
-    this.lines().map((l) => ({
-      description: l.articleId === null && l.descriptionSnapshot.trim() === '',
-      quantity: !/^\d+$/.test(l.quantity.trim()) || parseInt(l.quantity, 10) < 1,
-      price: l.unitPriceSnapshot.trim() === '' || !(Number(l.unitPriceSnapshot) >= 0),
-      vat: !isPercent(l.vatRateSnapshot),
-    }))
-  );
-  protected readonly discountError = computed(() => !isPercent(this.discountPercent()));
-  private readonly isValid = computed(
-    () => !this.discountError() && this.lineErrors().every((e) => !e.description && !e.quantity && !e.price && !e.vat)
-  );
 
   // A draft may be saved empty, but an invoice without any article is never issued.
   protected readonly issueBlockedReason = computed(() => {
-    if (this.lines().length === 0) return this.t().invoices.noLinesBlocked;
+    if (this.model().lines.length === 0) return this.t().invoices.noLinesBlocked;
     return this.canIssue() ? null : this.t().invoices.issueBlocked;
   });
 
   protected submitAndIssue(): void {
-    this.submitted.set(true);
-    if (this.issueBlockedReason() || !this.isValid()) return;
-    this.issuedAndPrinted.emit(this._buildPayload());
+    if (this.issueBlockedReason()) return;
+    submit(this.invoiceForm, async () => this.issuedAndPrinted.emit(this.payload()));
   }
 
-  submit(event: Event): void {
+  protected save(event: Event): void {
     event.preventDefault();
-    this.submitted.set(true);
-    if (!this.isValid()) return;
-    this.saved.emit(this._buildPayload());
+    submit(this.invoiceForm, async () => this.saved.emit(this.payload()));
   }
 
-  // Also run while typing, for the totals: anything not yet a number counts as 0.
-  private _buildPayload(): InvoiceCreate {
-    const num = (text: string) => (Number.isFinite(Number(text)) ? Number(text) : 0);
+  // Also run while typing, for the totals: an empty or half-typed number counts as 0.
+  private payload(): InvoiceCreate {
+    const finite = (value: number | null) => (value != null && Number.isFinite(value) ? value : null);
+    const num = (value: number | null) => finite(value) ?? 0;
+    const m = this.model();
     return {
       customerId: this.customer().id,
-      discountPercent: num(this.discountPercent()),
-      notes: this.notes().trim(),
-      paymentMethod: this.paymentMethod(),
-      lines: this.lines().map((l) => ({
+      discountPercent: num(m.discountPercent),
+      notes: m.notes.trim(),
+      paymentMethod: m.paymentMethod,
+      lines: m.lines.map((l) => ({
         articleId: l.articleId,
         descriptionSnapshot: l.descriptionSnapshot.trim(),
         quantity: Math.trunc(num(l.quantity)),
         unitPriceSnapshot: num(l.unitPriceSnapshot),
-        vatRateSnapshot: isPercent(l.vatRateSnapshot) ? rateFromPercent(l.vatRateSnapshot) : null,
+        vatRateSnapshot: rateOf(finite(l.vatPercent)),
       })),
     };
   }
 }
-

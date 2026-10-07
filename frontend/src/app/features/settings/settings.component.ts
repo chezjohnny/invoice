@@ -1,20 +1,34 @@
-import { Component, computed, inject, linkedSignal } from '@angular/core';
+import { Component, inject, linkedSignal } from '@angular/core';
+import { FormField, SchemaPath, form, max, min, pattern, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { inputValue } from '../../shared/events';
-import { isPercent, percentFromRate, rateFromPercent } from '../../shared/percent';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { FieldErrorComponent } from '../../shared/components/field-error.component';
+import { requiredText, showsError } from '../../shared/form-errors';
+import { percentOf, rateOf } from '../../shared/percent';
 import { CompanyStore } from './company.store';
 import { isValidQrBillIban, normalizeIban } from './iban';
 import { isValidPhone, isValidTwintPhone, normalizePhone } from './phone';
-import { AutofocusDirective } from '../../shared/autofocus.directive';
 
-function validTerms(value: string): boolean {
-  const days = Number(value);
-  return Number.isInteger(days) && days >= 0 && days <= 365;
+interface ProfileModel {
+  companyName: string;
+  vatNumber: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  iban: string;
+  phone: string;
+  twintPhone: string;
+  /** 8.1 for 8.1 %; null: not VAT-registered. */
+  vatPercent: number | null;
+  paymentTermsDays: number | null;
+  reminderTermsDays: number | null;
 }
 
 @Component({
   selector: 'app-settings',
-  imports: [AutofocusDirective],
+  imports: [AutofocusDirective, FieldErrorComponent, FormField],
   template: `
     <div class="p-4 md:p-6 max-w-3xl mx-auto">
       <h1 class="text-xl font-bold sm:text-2xl mb-6">{{ t().settings.title }}</h1>
@@ -29,23 +43,20 @@ function validTerms(value: string): boolean {
           <button class="btn btn-sm" (click)="store.load()">{{ t().common.retry }}</button>
         </div>
       } @else {
-        <form (submit)="submit($event)" class="flex flex-col gap-4">
+        <form (submit)="save($event)" class="flex flex-col gap-4">
           <!-- ── Identity ── -->
           <section class="card bg-base-100 shadow">
             <div class="card-body gap-4">
               <h2 class="card-title text-base">{{ t().settings.identity }}</h2>
               <div>
                 <label class="fieldset-label" for="settings-company-name">{{ t().settings.companyNameLabel }}</label>
-                <input id="settings-company-name" appAutofocus class="input w-full" [class.input-error]="submitted() && errors().companyName"
-                  type="text" [value]="companyName()" (input)="companyName.set(inputValue($event))" />
-                @if (submitted() && errors().companyName) {
-                  <p class="fieldset-label text-error mt-1">{{ errors().companyName }}</p>
-                }
+                <input id="settings-company-name" appAutofocus class="input w-full" type="text"
+                  [class.input-error]="showsError(profileForm.companyName)" [formField]="profileForm.companyName" />
+                <app-field-error [field]="profileForm.companyName" />
               </div>
               <div>
                 <label class="fieldset-label" for="settings-vat-number">{{ t().settings.vatNumberLabel }}</label>
-                <input id="settings-vat-number" class="input w-full" type="text"
-                  [value]="vatNumber()" (input)="vatNumber.set(inputValue($event))" />
+                <input id="settings-vat-number" class="input w-full" type="text" [formField]="profileForm.vatNumber" />
               </div>
             </div>
           </section>
@@ -56,29 +67,26 @@ function validTerms(value: string): boolean {
               <h2 class="card-title text-base">{{ t().settings.address }}</h2>
               <div>
                 <label class="fieldset-label" for="settings-address">{{ t().settings.addressLabel }}</label>
-                <input id="settings-address" class="input w-full" type="text"
-                  [value]="addressLine1()" (input)="addressLine1.set(inputValue($event))" />
+                <input id="settings-address" class="input w-full" type="text" [formField]="profileForm.addressLine1" />
               </div>
               <div>
                 <label class="fieldset-label" for="settings-address2">{{ t().settings.address2Label }}</label>
-                <input id="settings-address2" class="input w-full" type="text"
-                  [value]="addressLine2()" (input)="addressLine2.set(inputValue($event))" />
+                <input id="settings-address2" class="input w-full" type="text" [formField]="profileForm.addressLine2" />
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label class="fieldset-label" for="settings-postal">{{ t().settings.postalLabel }}</label>
-                  <input id="settings-postal" class="input w-full" type="text"
-                    [value]="postalCode()" (input)="postalCode.set(inputValue($event))" />
+                  <input id="settings-postal" class="input w-full" type="text" [formField]="profileForm.postalCode" />
                 </div>
                 <div class="sm:col-span-2">
                   <label class="fieldset-label" for="settings-city">{{ t().settings.cityLabel }}</label>
-                  <input id="settings-city" class="input w-full" type="text"
-                    [value]="city()" (input)="city.set(inputValue($event))" />
+                  <input id="settings-city" class="input w-full" type="text" [formField]="profileForm.city" />
                 </div>
                 <div>
                   <label class="fieldset-label" for="settings-country">{{ t().settings.countryLabel }}</label>
-                  <input id="settings-country" class="input w-full" type="text" maxlength="2"
-                    [value]="country()" (input)="country.set(inputValue($event))" />
+                  <input id="settings-country" class="input w-full" type="text"
+                    [class.input-error]="showsError(profileForm.country)" [formField]="profileForm.country" />
+                  <app-field-error [field]="profileForm.country" />
                 </div>
               </div>
             </div>
@@ -90,44 +98,36 @@ function validTerms(value: string): boolean {
               <h2 class="card-title text-base">{{ t().settings.billing }}</h2>
               <div>
                 <label class="fieldset-label" for="settings-iban">{{ t().settings.ibanLabel }}</label>
-                <input id="settings-iban" class="input w-full font-mono" [class.input-error]="submitted() && errors().iban"
-                  type="text" [value]="iban()" (input)="iban.set(inputValue($event))" />
-                @if (submitted() && errors().iban) {
-                  <p class="fieldset-label text-error mt-1">{{ errors().iban }}</p>
-                } @else {
+                <input id="settings-iban" class="input w-full font-mono" type="text"
+                  [class.input-error]="showsError(profileForm.iban)" [formField]="profileForm.iban" />
+                <app-field-error [field]="profileForm.iban" />
+                @if (!showsError(profileForm.iban)) {
                   <p class="fieldset-label mt-1">{{ t().settings.ibanHint }}</p>
                 }
               </div>
               <div class="sm:w-64">
                 <label class="fieldset-label" for="settings-phone">{{ t().settings.phoneLabel }}</label>
-                <input id="settings-phone" class="input w-full font-mono" [class.input-error]="submitted() && errors().phone"
-                  type="tel" placeholder="024 123 45 67"
-                  [value]="phone()" (input)="phone.set(inputValue($event))" />
-                @if (submitted() && errors().phone) {
-                  <p class="fieldset-label text-error mt-1">{{ errors().phone }}</p>
-                } @else {
+                <input id="settings-phone" class="input w-full font-mono" type="tel" placeholder="024 123 45 67"
+                  [class.input-error]="showsError(profileForm.phone)" [formField]="profileForm.phone" />
+                <app-field-error [field]="profileForm.phone" />
+                @if (!showsError(profileForm.phone)) {
                   <p class="fieldset-label mt-1">{{ t().settings.phoneHint }}</p>
                 }
               </div>
               <div class="sm:w-64">
                 <label class="fieldset-label" for="settings-twint">{{ t().settings.twintLabel }}</label>
-                <input id="settings-twint" class="input w-full font-mono" [class.input-error]="submitted() && errors().twintPhone"
-                  type="tel" placeholder="079 123 45 67"
-                  [value]="twintPhone()" (input)="twintPhone.set(inputValue($event))" />
-                @if (submitted() && errors().twintPhone) {
-                  <p class="fieldset-label text-error mt-1">{{ errors().twintPhone }}</p>
-                } @else {
+                <input id="settings-twint" class="input w-full font-mono" type="tel" placeholder="079 123 45 67"
+                  [class.input-error]="showsError(profileForm.twintPhone)" [formField]="profileForm.twintPhone" />
+                <app-field-error [field]="profileForm.twintPhone" />
+                @if (!showsError(profileForm.twintPhone)) {
                   <p class="fieldset-label mt-1">{{ t().settings.twintHint }}</p>
                 }
               </div>
               <div class="sm:w-48">
                 <label class="fieldset-label" for="settings-vat-rate">{{ t().settings.vatRateLabel }}</label>
-                <input id="settings-vat-rate" class="input w-full" [class.input-error]="submitted() && errors().vatRate"
-                  type="number" min="0" max="100" step="0.1"
-                  [value]="vatRate()" (input)="vatRate.set(inputValue($event))" />
-                @if (submitted() && errors().vatRate) {
-                  <p class="fieldset-label text-error mt-1">{{ errors().vatRate }}</p>
-                }
+                <input id="settings-vat-rate" class="input w-full" type="number" step="0.1"
+                  [class.input-error]="showsError(profileForm.vatPercent)" [formField]="profileForm.vatPercent" />
+                <app-field-error [field]="profileForm.vatPercent" />
               </div>
             </div>
           </section>
@@ -139,21 +139,15 @@ function validTerms(value: string): boolean {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="fieldset-label" for="settings-terms">{{ t().settings.termsLabel }}</label>
-                  <input id="settings-terms" class="input w-full" [class.input-error]="submitted() && errors().paymentTermsDays"
-                    type="number" min="0" max="365" step="1"
-                    [value]="paymentTermsDays()" (input)="paymentTermsDays.set(inputValue($event))" />
-                  @if (submitted() && errors().paymentTermsDays) {
-                    <p class="fieldset-label text-error mt-1">{{ errors().paymentTermsDays }}</p>
-                  }
+                  <input id="settings-terms" class="input w-full" type="number" step="1"
+                    [class.input-error]="showsError(profileForm.paymentTermsDays)" [formField]="profileForm.paymentTermsDays" />
+                  <app-field-error [field]="profileForm.paymentTermsDays" />
                 </div>
                 <div>
                   <label class="fieldset-label" for="settings-reminder-terms">{{ t().settings.reminderTermsLabel }}</label>
-                  <input id="settings-reminder-terms" class="input w-full" [class.input-error]="submitted() && errors().reminderTermsDays"
-                    type="number" min="0" max="365" step="1"
-                    [value]="reminderTermsDays()" (input)="reminderTermsDays.set(inputValue($event))" />
-                  @if (submitted() && errors().reminderTermsDays) {
-                    <p class="fieldset-label text-error mt-1">{{ errors().reminderTermsDays }}</p>
-                  }
+                  <input id="settings-reminder-terms" class="input w-full" type="number" step="1"
+                    [class.input-error]="showsError(profileForm.reminderTermsDays)" [formField]="profileForm.reminderTermsDays" />
+                  <app-field-error [field]="profileForm.reminderTermsDays" />
                 </div>
               </div>
             </div>
@@ -173,7 +167,7 @@ function validTerms(value: string): boolean {
 export class SettingsComponent {
   protected readonly store = inject(CompanyStore);
   protected readonly t = inject(I18nService).T;
-  protected readonly inputValue = inputValue;
+  protected readonly showsError = showsError;
 
   constructor() {
     // Never edit a stale profile: the shell loads it once at sign-in — and this
@@ -181,78 +175,80 @@ export class SettingsComponent {
     this.store.load();
   }
 
-  protected readonly companyName = linkedSignal(() => this.store.profile()?.companyName ?? '');
-  protected readonly addressLine1 = linkedSignal(() => this.store.profile()?.addressLine1 ?? '');
-  protected readonly addressLine2 = linkedSignal(() => this.store.profile()?.addressLine2 ?? '');
-  protected readonly postalCode = linkedSignal(() => this.store.profile()?.postalCode ?? '');
-  protected readonly city = linkedSignal(() => this.store.profile()?.city ?? '');
-  protected readonly country = linkedSignal(() => this.store.profile()?.country ?? 'CH');
-  protected readonly iban = linkedSignal(() => this.store.profile()?.iban ?? '');
-  protected readonly twintPhone = linkedSignal(() => this.store.profile()?.twintPhone ?? '');
-  protected readonly phone = linkedSignal(() => this.store.profile()?.phone ?? '');
-  protected readonly vatNumber = linkedSignal(() => this.store.profile()?.vatNumber ?? '');
-  protected readonly vatRate = linkedSignal(() => percentFromRate(this.store.profile()?.defaultVatRate));
-  protected readonly paymentTermsDays = linkedSignal(() =>
-    String(this.store.profile()?.paymentTermsDays ?? 30)
-  );
-  protected readonly reminderTermsDays = linkedSignal(() =>
-    String(this.store.profile()?.reminderTermsDays ?? 10)
-  );
-  protected readonly submitted = linkedSignal(() => {
-    this.store.profile();
-    return false;
+  protected readonly model = linkedSignal<ProfileModel>(() => {
+    const p = this.store.profile();
+    return {
+      companyName: p?.companyName ?? '',
+      vatNumber: p?.vatNumber ?? '',
+      addressLine1: p?.addressLine1 ?? '',
+      addressLine2: p?.addressLine2 ?? '',
+      postalCode: p?.postalCode ?? '',
+      city: p?.city ?? '',
+      country: p?.country ?? 'CH',
+      iban: p?.iban ?? '',
+      phone: p?.phone ?? '',
+      twintPhone: p?.twintPhone ?? '',
+      vatPercent: percentOf(p?.defaultVatRate),
+      paymentTermsDays: p?.paymentTermsDays ?? 30,
+      reminderTermsDays: p?.reminderTermsDays ?? 10,
+    };
   });
 
-  protected readonly errors = computed(() => ({
-    companyName:
-      this.companyName().trim() === '' ? this.t().settings.companyNameRequired : null,
-    iban: (() => {
-      const value = normalizeIban(this.iban());
-      if (value === '') return null;
-      return isValidQrBillIban(value) ? null : this.t().settings.invalidIban;
-    })(),
-    phone: (() => {
-      const value = normalizePhone(this.phone());
-      if (value === '') return null;
-      return isValidPhone(value) ? null : this.t().settings.invalidPhone;
-    })(),
-    twintPhone: (() => {
-      const value = normalizePhone(this.twintPhone());
-      if (value === '') return null;
-      return isValidTwintPhone(value) ? null : this.t().settings.invalidTwint;
-    })(),
-    vatRate: isPercent(this.vatRate()) ? null : this.t().common.invalidPercent,
-    paymentTermsDays: validTerms(this.paymentTermsDays()) ? null : this.t().settings.invalidTerms,
-    reminderTermsDays: validTerms(this.reminderTermsDays()) ? null : this.t().settings.invalidTerms,
-  }));
+  protected readonly profileForm = form(this.model, (path) => {
+    requiredText(path.companyName, () => this.t().settings.companyNameRequired);
+    pattern(path.country, /^\s*[A-Za-z]{2}\s*$/, { message: () => this.t().common.invalidCountry });
+    this.optional(path.iban, normalizeIban, isValidQrBillIban, () => this.t().settings.invalidIban);
+    this.optional(path.phone, normalizePhone, isValidPhone, () => this.t().settings.invalidPhone);
+    this.optional(path.twintPhone, normalizePhone, isValidTwintPhone, () => this.t().settings.invalidTwint);
+    min(path.vatPercent, 0, { message: () => this.t().common.invalidPercent });
+    max(path.vatPercent, 100, { message: () => this.t().common.invalidPercent });
+    this.days(path.paymentTermsDays);
+    this.days(path.reminderTermsDays);
+  });
 
-  protected readonly isValid = computed(() =>
-    Object.values(this.errors()).every((e) => e === null)
-  );
+  /** An optional field: empty, or valid once normalized. */
+  private optional(
+    path: SchemaPath<string>,
+    normalize: (value: string) => string,
+    isValid: (value: string) => boolean,
+    message: () => string,
+  ): void {
+    validate(path, ({ value }) => {
+      const normalized = normalize(value());
+      return normalized === '' || isValid(normalized) ? undefined : { kind: 'invalid', message: message() };
+    });
+  }
 
-  protected async submit(event: Event): Promise<void> {
+  /** A number of days, from 0 to 365. */
+  private days(path: SchemaPath<number | null>): void {
+    validate(path, ({ value }) => {
+      const days = value();
+      return days != null && Number.isInteger(days) && days >= 0 && days <= 365
+        ? undefined
+        : { kind: 'days', message: this.t().settings.invalidTerms };
+    });
+  }
+
+  protected save(event: Event): void {
     event.preventDefault();
-    this.submitted.set(true);
-    if (!this.isValid()) return;
-    const iban = normalizeIban(this.iban());
-    const twintPhone = normalizePhone(this.twintPhone());
-    const phone = normalizePhone(this.phone());
-    const addressLine2 = this.addressLine2().trim();
-    const vatNumber = this.vatNumber().trim();
-    await this.store.save({
-      companyName: this.companyName().trim(),
-      addressLine1: this.addressLine1().trim(),
-      addressLine2: addressLine2 !== '' ? addressLine2 : null,
-      postalCode: this.postalCode().trim(),
-      city: this.city().trim(),
-      country: this.country().trim().toUpperCase() || 'CH',
-      iban: iban !== '' ? iban : null,
-      twintPhone: twintPhone !== '' ? twintPhone : null,
-      phone: phone !== '' ? phone : null,
-      vatNumber: vatNumber !== '' ? vatNumber : null,
-      defaultVatRate: rateFromPercent(this.vatRate()),
-      paymentTermsDays: parseInt(this.paymentTermsDays(), 10),
-      reminderTermsDays: parseInt(this.reminderTermsDays(), 10),
+    submit(this.profileForm, async () => {
+      const m = this.model();
+      const optional = (text: string) => text.trim() || null;
+      await this.store.save({
+        companyName: m.companyName.trim(),
+        addressLine1: m.addressLine1.trim(),
+        addressLine2: optional(m.addressLine2),
+        postalCode: m.postalCode.trim(),
+        city: m.city.trim(),
+        country: m.country.trim().toUpperCase() || 'CH',
+        iban: normalizeIban(m.iban) || null,
+        twintPhone: normalizePhone(m.twintPhone) || null,
+        phone: normalizePhone(m.phone) || null,
+        vatNumber: optional(m.vatNumber),
+        defaultVatRate: rateOf(m.vatPercent),
+        paymentTermsDays: m.paymentTermsDays ?? 30,
+        reminderTermsDays: m.reminderTermsDays ?? 10,
+      });
     });
   }
 }
