@@ -20,7 +20,8 @@ interface LineForm {
 const MAX_RECOMMENDATIONS = 10;
 // Enough recent invoices to usually find MAX_RECOMMENDATIONS distinct articles.
 const RECENT_INVOICES = 20;
-const MAX_ARTICLE_RESULTS = 20;
+// A short list to scan; the rest is counted, to tell when to type more.
+const MAX_ARTICLE_RESULTS = 10;
 
 function searchKey(value: string): string {
   return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -88,8 +89,8 @@ interface Recommendation {
               (input)="onPickerInput(inputValue($event))" (keydown)="onPickerKey($event)"
               (focus)="pickerFocused.set(true)" (blur)="pickerFocused.set(false)" />
             @if (pickerOpen()) {
-              <ul id="article-options" role="listbox"
-                class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 max-h-60 overflow-y-auto">
+              <div class="absolute z-50 w-full bg-base-100 border border-base-300 rounded-box shadow-lg mt-1 overflow-hidden">
+              <ul id="article-options" role="listbox" class="max-h-60 overflow-y-auto">
                 @for (a of pickerResults(); track a.id; let k = $index) {
                   <li role="option" [id]="'article-option-' + k" [attr.aria-selected]="k === activeOption()"
                     class="px-3 py-2 cursor-pointer text-sm flex justify-between gap-2"
@@ -103,6 +104,13 @@ interface Recommendation {
                   </li>
                 }
               </ul>
+              <!-- Outside the scrolling list: always in sight -->
+              @if (pickerMore() > 0) {
+                <p id="article-options-more" class="px-3 py-1.5 text-xs text-base-content/50 border-t border-base-200">
+                  {{ (pickerMore() === 1 ? t().invoices.moreArticle : t().invoices.moreArticles).replace('{count}', '' + pickerMore()) }}
+                </p>
+              }
+              </div>
             }
           </div>
 
@@ -272,13 +280,14 @@ export class InvoiceFormComponent {
   protected readonly articleQuery = signal('');
   protected readonly pickerFocused = signal(false);
   protected readonly activeOption = signal(0);
-  protected readonly pickerResults = computed(() => {
+  private readonly pickerMatches = computed(() => {
     const words = searchKey(this.articleQuery()).split(/\s+/).filter(Boolean);
     if (words.length === 0) return [];
-    return this.articles()
-      .filter((a) => words.every((w) => searchKey(a.name).includes(w)))
-      .slice(0, MAX_ARTICLE_RESULTS);
+    return this.articles().filter((a) => words.every((w) => searchKey(a.name).includes(w)));
   });
+  protected readonly pickerResults = computed(() => this.pickerMatches().slice(0, MAX_ARTICLE_RESULTS));
+  /** Matching articles left out of the list. */
+  protected readonly pickerMore = computed(() => this.pickerMatches().length - this.pickerResults().length);
   protected readonly pickerOpen = computed(() => this.pickerFocused() && this.pickerResults().length > 0);
 
   // What the customer bought lately. Imported invoices often name an article in a
@@ -390,10 +399,12 @@ export class InvoiceFormComponent {
       case 'ArrowDown':
         event.preventDefault();
         this.activeOption.update((k) => Math.min(k + 1, count - 1));
+        this.revealActiveOption();
         break;
       case 'ArrowUp':
         event.preventDefault();
         this.activeOption.update((k) => Math.max(k - 1, 0));
+        this.revealActiveOption();
         break;
       case 'Enter':
         // Never submits the form from here: Enter picks the article.
@@ -404,6 +415,11 @@ export class InvoiceFormComponent {
         this.articleQuery.set('');
         break;
     }
+  }
+
+  // The list scrolls: keep the option chosen with the arrows in sight.
+  private revealActiveOption(): void {
+    document.getElementById(`article-option-${this.activeOption()}`)?.scrollIntoView({ block: 'nearest' });
   }
 
   /** Adds the article, or one more of it when it is already on the invoice. */

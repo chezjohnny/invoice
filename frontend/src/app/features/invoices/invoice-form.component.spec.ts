@@ -70,6 +70,14 @@ describe('InvoiceFormComponent article picker', () => {
     expect(lines.map((l) => [l.articleId, l.vatRateSnapshot])).toEqual([['a2', 0.026], ['a1', 0.081]]);
   });
 
+  it('lists 10 articles at most and counts the others', async () => {
+    const many = Array.from({ length: 13 }, (_, i) => article(`v${i}`, `Fendant ${2010 + i}`));
+    fixture.componentRef.setInput('articles', many);
+    await type('fendant');
+    expect(fixture.nativeElement.querySelectorAll('[role="option"]').length).toBe(10);
+    expect(fixture.nativeElement.querySelector('#article-options-more').textContent).toContain('3');
+  });
+
   it('raises the quantity of an article picked again', async () => {
     for (let i = 0; i < 2; i++) {
       await type('pinot');
