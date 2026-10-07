@@ -1,10 +1,10 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, input, linkedSignal, output, resource } from '@angular/core';
-import { FormField, applyEach, form, max, min, required, submit, validate } from '@angular/forms/signals';
+import { FormField, FormRoot, applyEach, form, min, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
-import { showsError } from '../../shared/form-errors';
+import { integer, percent, showsError } from '../../shared/form-errors';
 import { searchKey } from '../../shared/search-key';
 import { ArticlePickerComponent } from '../articles/article-picker.component';
 import { percentOf, rateOf } from '../../shared/percent';
@@ -46,9 +46,9 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [ArticlePickerComponent, CurrencyPipe, FieldErrorComponent, FormActionsComponent, FormField],
+  imports: [ArticlePickerComponent, CurrencyPipe, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
   template: `
-    <form (submit)="save($event)">
+    <form [formRoot]="invoiceForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
         {{ invoice() ? t().invoices.editTitle : t().invoices.newTitle }}
       </h1>
@@ -122,16 +122,15 @@ interface Recommendation {
                   </div>
                   <!-- Qty -->
                   <input class="input input-sm w-full" type="number" step="1"
-                    [class.input-error]="showsError(line.quantity)" [attr.aria-invalid]="showsError(line.quantity)"
+                    [attr.aria-invalid]="showsError(line.quantity)"
                     [formField]="line.quantity" />
                   <!-- Price -->
                   <input class="input input-sm w-full" type="number" step="0.01"
-                    [class.input-error]="showsError(line.unitPriceSnapshot)"
                     [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
                     [formField]="line.unitPriceSnapshot" />
                   <!-- VAT% -->
                   <input class="input input-sm w-full" type="number" step="0.1" placeholder="—"
-                    [class.input-error]="showsError(line.vatPercent)" [attr.aria-invalid]="showsError(line.vatPercent)"
+                    [attr.aria-invalid]="showsError(line.vatPercent)"
                     [formField]="line.vatPercent" />
                   <!-- Delete + warning -->
                   <div class="flex items-center justify-end gap-0.5">
@@ -193,7 +192,7 @@ interface Recommendation {
           <div class="w-full sm:max-w-48">
             <label class="fieldset-label" for="invoice-discount">{{ t().invoices.discountLabel }}</label>
             <input id="invoice-discount" class="input w-full" type="number" step="0.1"
-              [class.input-error]="showsError(invoiceForm.discountPercent)" [formField]="invoiceForm.discountPercent" />
+              [formField]="invoiceForm.discountPercent" />
             <app-field-error [field]="invoiceForm.discountPercent" />
           </div>
         </div>
@@ -248,25 +247,26 @@ export class InvoiceFormComponent {
   });
 
   // Line fields only turn red: a message under each would break the row grid.
-  protected readonly invoiceForm = form(this.model, (path) => {
-    required(path.discountPercent, { message: () => this.t().common.invalidPercent });
-    min(path.discountPercent, 0, { message: () => this.t().common.invalidPercent });
-    max(path.discountPercent, 100, { message: () => this.t().common.invalidPercent });
-    applyEach(path.lines, (line) => {
-      validate(line.descriptionSnapshot, ({ value, valueOf }) =>
-        valueOf(line.articleId) === null && value().trim() === '' ? { kind: 'required' } : undefined
-      );
-      required(line.quantity);
-      min(line.quantity, 1);
-      validate(line.quantity, ({ value }) =>
-        value() == null || Number.isInteger(value()) ? undefined : { kind: 'integer' }
-      );
-      required(line.unitPriceSnapshot);
-      min(line.unitPriceSnapshot, 0);
-      min(line.vatPercent, 0);
-      max(line.vatPercent, 100);
-    });
-  });
+  protected readonly invoiceForm = form(
+    this.model,
+    (path) => {
+      const invalidPercent = () => this.t().common.invalidPercent;
+      required(path.discountPercent, { message: invalidPercent });
+      percent(path.discountPercent, invalidPercent);
+      applyEach(path.lines, (line) => {
+        validate(line.descriptionSnapshot, ({ value, valueOf }) =>
+          valueOf(line.articleId) === null && value().trim() === '' ? { kind: 'required' } : undefined
+        );
+        required(line.quantity);
+        min(line.quantity, 1);
+        integer(line.quantity);
+        required(line.unitPriceSnapshot);
+        min(line.unitPriceSnapshot, 0);
+        percent(line.vatPercent, invalidPercent);
+      });
+    },
+    { submission: { action: async () => this.saved.emit(this.payload()) } }
+  );
 
   private readonly recentInvoices = resource({
     params: () => ({ customerId: this.customer().id, perPage: RECENT_INVOICES }),
@@ -382,11 +382,6 @@ export class InvoiceFormComponent {
   protected submitAndIssue(): void {
     if (this.issueBlockedReason()) return;
     submit(this.invoiceForm, async () => this.issuedAndPrinted.emit(this.payload()));
-  }
-
-  protected save(event: Event): void {
-    event.preventDefault();
-    submit(this.invoiceForm, async () => this.saved.emit(this.payload()));
   }
 
   // Also run while typing, for the totals: an empty or half-typed number counts as 0.

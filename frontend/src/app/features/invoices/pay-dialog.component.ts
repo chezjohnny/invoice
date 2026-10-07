@@ -4,7 +4,6 @@ import { FormField, form, required, submit, validate } from '@angular/forms/sign
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { localIsoDate } from '../../shared/dates';
-import { showsError } from '../../shared/form-errors';
 import { Invoice, PAYMENT_METHODS, Payment, PaymentMethod, invoiceTotal } from './invoice.model';
 
 export interface PaymentRequest extends Payment {
@@ -33,8 +32,7 @@ export interface PaymentRequest extends Payment {
         <fieldset class="fieldset gap-4 mt-4">
           <div>
             <label class="fieldset-label" for="pay-payment-date">{{ t().invoices.paymentDate }}</label>
-            <input id="pay-payment-date" class="input w-full" type="date"
-              [class.input-error]="showsError(payForm.paidAt)" [formField]="payForm.paidAt" />
+            <input id="pay-payment-date" class="input w-full" type="date" [formField]="payForm.paidAt" />
             <app-field-error [field]="payForm.paidAt" />
           </div>
           <div>
@@ -70,7 +68,6 @@ export class PayDialogComponent {
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
-  protected readonly showsError = showsError;
   protected readonly paymentMethods = PAYMENT_METHODS;
   protected readonly today = localIsoDate();
   protected readonly total = computed(() => invoiceTotal(this.invoice()));

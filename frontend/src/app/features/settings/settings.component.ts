@@ -1,9 +1,9 @@
 import { Component, inject, linkedSignal } from '@angular/core';
-import { FormField, SchemaPath, form, max, min, pattern, submit, validate } from '@angular/forms/signals';
+import { FormField, FormRoot, SchemaPath, form, max, min, required, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
-import { requiredText, showsError } from '../../shared/form-errors';
+import { countryCode, integer, percent, requiredText, showsError } from '../../shared/form-errors';
 import { percentOf, rateOf } from '../../shared/percent';
 import { CompanyStore } from './company.store';
 import { isValidQrBillIban, normalizeIban } from './iban';
@@ -28,7 +28,7 @@ interface ProfileModel {
 
 @Component({
   selector: 'app-settings',
-  imports: [AutofocusDirective, FieldErrorComponent, FormField],
+  imports: [AutofocusDirective, FieldErrorComponent, FormField, FormRoot],
   template: `
     <div class="p-4 md:p-6 max-w-3xl mx-auto">
       <h1 class="text-xl font-bold sm:text-2xl mb-6">{{ t().settings.title }}</h1>
@@ -43,7 +43,7 @@ interface ProfileModel {
           <button class="btn btn-sm" (click)="store.load()">{{ t().common.retry }}</button>
         </div>
       } @else {
-        <form (submit)="save($event)" class="flex flex-col gap-4">
+        <form [formRoot]="profileForm" class="flex flex-col gap-4">
           <!-- ── Identity ── -->
           <section class="card bg-base-100 shadow">
             <div class="card-body gap-4">
@@ -51,7 +51,7 @@ interface ProfileModel {
               <div>
                 <label class="fieldset-label" for="settings-company-name">{{ t().settings.companyNameLabel }}</label>
                 <input id="settings-company-name" appAutofocus class="input w-full" type="text"
-                  [class.input-error]="showsError(profileForm.companyName)" [formField]="profileForm.companyName" />
+                  [formField]="profileForm.companyName" />
                 <app-field-error [field]="profileForm.companyName" />
               </div>
               <div>
@@ -85,7 +85,7 @@ interface ProfileModel {
                 <div>
                   <label class="fieldset-label" for="settings-country">{{ t().settings.countryLabel }}</label>
                   <input id="settings-country" class="input w-full" type="text"
-                    [class.input-error]="showsError(profileForm.country)" [formField]="profileForm.country" />
+                    [formField]="profileForm.country" />
                   <app-field-error [field]="profileForm.country" />
                 </div>
               </div>
@@ -99,7 +99,7 @@ interface ProfileModel {
               <div>
                 <label class="fieldset-label" for="settings-iban">{{ t().settings.ibanLabel }}</label>
                 <input id="settings-iban" class="input w-full font-mono" type="text"
-                  [class.input-error]="showsError(profileForm.iban)" [formField]="profileForm.iban" />
+                  [formField]="profileForm.iban" />
                 <app-field-error [field]="profileForm.iban" />
                 @if (!showsError(profileForm.iban)) {
                   <p class="fieldset-label mt-1">{{ t().settings.ibanHint }}</p>
@@ -108,7 +108,7 @@ interface ProfileModel {
               <div class="sm:w-64">
                 <label class="fieldset-label" for="settings-phone">{{ t().settings.phoneLabel }}</label>
                 <input id="settings-phone" class="input w-full font-mono" type="tel" placeholder="024 123 45 67"
-                  [class.input-error]="showsError(profileForm.phone)" [formField]="profileForm.phone" />
+                  [formField]="profileForm.phone" />
                 <app-field-error [field]="profileForm.phone" />
                 @if (!showsError(profileForm.phone)) {
                   <p class="fieldset-label mt-1">{{ t().settings.phoneHint }}</p>
@@ -117,7 +117,7 @@ interface ProfileModel {
               <div class="sm:w-64">
                 <label class="fieldset-label" for="settings-twint">{{ t().settings.twintLabel }}</label>
                 <input id="settings-twint" class="input w-full font-mono" type="tel" placeholder="079 123 45 67"
-                  [class.input-error]="showsError(profileForm.twintPhone)" [formField]="profileForm.twintPhone" />
+                  [formField]="profileForm.twintPhone" />
                 <app-field-error [field]="profileForm.twintPhone" />
                 @if (!showsError(profileForm.twintPhone)) {
                   <p class="fieldset-label mt-1">{{ t().settings.twintHint }}</p>
@@ -126,7 +126,7 @@ interface ProfileModel {
               <div class="sm:w-48">
                 <label class="fieldset-label" for="settings-vat-rate">{{ t().settings.vatRateLabel }}</label>
                 <input id="settings-vat-rate" class="input w-full" type="number" step="0.1"
-                  [class.input-error]="showsError(profileForm.vatPercent)" [formField]="profileForm.vatPercent" />
+                  [formField]="profileForm.vatPercent" />
                 <app-field-error [field]="profileForm.vatPercent" />
               </div>
             </div>
@@ -140,13 +140,13 @@ interface ProfileModel {
                 <div>
                   <label class="fieldset-label" for="settings-terms">{{ t().settings.termsLabel }}</label>
                   <input id="settings-terms" class="input w-full" type="number" step="1"
-                    [class.input-error]="showsError(profileForm.paymentTermsDays)" [formField]="profileForm.paymentTermsDays" />
+                    [formField]="profileForm.paymentTermsDays" />
                   <app-field-error [field]="profileForm.paymentTermsDays" />
                 </div>
                 <div>
                   <label class="fieldset-label" for="settings-reminder-terms">{{ t().settings.reminderTermsLabel }}</label>
                   <input id="settings-reminder-terms" class="input w-full" type="number" step="1"
-                    [class.input-error]="showsError(profileForm.reminderTermsDays)" [formField]="profileForm.reminderTermsDays" />
+                    [formField]="profileForm.reminderTermsDays" />
                   <app-field-error [field]="profileForm.reminderTermsDays" />
                 </div>
               </div>
@@ -194,17 +194,20 @@ export class SettingsComponent {
     };
   });
 
-  protected readonly profileForm = form(this.model, (path) => {
-    requiredText(path.companyName, () => this.t().settings.companyNameRequired);
-    pattern(path.country, /^\s*[A-Za-z]{2}\s*$/, { message: () => this.t().common.invalidCountry });
-    this.optional(path.iban, normalizeIban, isValidQrBillIban, () => this.t().settings.invalidIban);
-    this.optional(path.phone, normalizePhone, isValidPhone, () => this.t().settings.invalidPhone);
-    this.optional(path.twintPhone, normalizePhone, isValidTwintPhone, () => this.t().settings.invalidTwint);
-    min(path.vatPercent, 0, { message: () => this.t().common.invalidPercent });
-    max(path.vatPercent, 100, { message: () => this.t().common.invalidPercent });
-    this.days(path.paymentTermsDays);
-    this.days(path.reminderTermsDays);
-  });
+  protected readonly profileForm = form(
+    this.model,
+    (path) => {
+      requiredText(path.companyName, () => this.t().settings.companyNameRequired);
+      countryCode(path.country, () => this.t().common.invalidCountry);
+      this.optional(path.iban, normalizeIban, isValidQrBillIban, () => this.t().settings.invalidIban);
+      this.optional(path.phone, normalizePhone, isValidPhone, () => this.t().settings.invalidPhone);
+      this.optional(path.twintPhone, normalizePhone, isValidTwintPhone, () => this.t().settings.invalidTwint);
+      percent(path.vatPercent, () => this.t().common.invalidPercent);
+      this.days(path.paymentTermsDays);
+      this.days(path.reminderTermsDays);
+    },
+    { submission: { action: () => this.save() } }
+  );
 
   /** An optional field: empty, or valid once normalized. */
   private optional(
@@ -221,34 +224,30 @@ export class SettingsComponent {
 
   /** A number of days, from 0 to 365. */
   private days(path: SchemaPath<number | null>): void {
-    validate(path, ({ value }) => {
-      const days = value();
-      return days != null && Number.isInteger(days) && days >= 0 && days <= 365
-        ? undefined
-        : { kind: 'days', message: this.t().settings.invalidTerms };
-    });
+    const message = () => this.t().settings.invalidTerms;
+    required(path, { message });
+    min(path, 0, { message });
+    max(path, 365, { message });
+    integer(path, message);
   }
 
-  protected save(event: Event): void {
-    event.preventDefault();
-    submit(this.profileForm, async () => {
-      const m = this.model();
-      const optional = (text: string) => text.trim() || null;
-      await this.store.save({
-        companyName: m.companyName.trim(),
-        addressLine1: m.addressLine1.trim(),
-        addressLine2: optional(m.addressLine2),
-        postalCode: m.postalCode.trim(),
-        city: m.city.trim(),
-        country: m.country.trim().toUpperCase() || 'CH',
-        iban: normalizeIban(m.iban) || null,
-        twintPhone: normalizePhone(m.twintPhone) || null,
-        phone: normalizePhone(m.phone) || null,
-        vatNumber: optional(m.vatNumber),
-        defaultVatRate: rateOf(m.vatPercent),
-        paymentTermsDays: m.paymentTermsDays ?? 30,
-        reminderTermsDays: m.reminderTermsDays ?? 10,
-      });
+  private async save(): Promise<void> {
+    const m = this.model();
+    const optional = (text: string) => text.trim() || null;
+    await this.store.save({
+      companyName: m.companyName.trim(),
+      addressLine1: m.addressLine1.trim(),
+      addressLine2: optional(m.addressLine2),
+      postalCode: m.postalCode.trim(),
+      city: m.city.trim(),
+      country: m.country.trim().toUpperCase() || 'CH',
+      iban: normalizeIban(m.iban) || null,
+      twintPhone: normalizePhone(m.twintPhone) || null,
+      phone: normalizePhone(m.phone) || null,
+      vatNumber: optional(m.vatNumber),
+      defaultVatRate: rateOf(m.vatPercent),
+      paymentTermsDays: m.paymentTermsDays ?? 30,
+      reminderTermsDays: m.reminderTermsDays ?? 10,
     });
   }
 }

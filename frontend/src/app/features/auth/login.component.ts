@@ -1,15 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
 import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
-import { showsError } from '../../shared/form-errors';
 
 @Component({
   selector: 'app-login',
-  imports: [AutofocusDirective, FieldErrorComponent, FormField],
+  imports: [AutofocusDirective, FieldErrorComponent, FormField, FormRoot],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div class="w-full max-w-sm">
@@ -24,14 +23,13 @@ import { showsError } from '../../shared/form-errors';
             @if (error()) {
               <div class="alert alert-error text-sm py-2" role="alert">{{ error() }}</div>
             }
-            <form class="flex flex-col gap-4" (submit)="signIn($event)">
+            <form class="flex flex-col gap-4" [formRoot]="loginForm">
               <label class="floating-label">
                 <input
                   type="email"
                   appAutofocus
                   [placeholder]="t().login.email"
                   class="input input-bordered w-full"
-                  [class.input-error]="showsError(loginForm.email)"
                   [formField]="loginForm.email"
                   autocomplete="email"
                 />
@@ -43,7 +41,6 @@ import { showsError } from '../../shared/form-errors';
                   type="password"
                   [placeholder]="t().login.password"
                   class="input input-bordered w-full"
-                  [class.input-error]="showsError(loginForm.password)"
                   [formField]="loginForm.password"
                   autocomplete="current-password"
                 />
@@ -67,30 +64,30 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
 
   protected readonly t = inject(I18nService).T;
-  protected readonly showsError = showsError;
   protected readonly loading = signal(false);
   protected readonly error = signal('');
 
   protected readonly model = signal({ email: '', password: '' });
-  protected readonly loginForm = form(this.model, (path) => {
-    required(path.email, { message: () => this.t().login.emailRequired });
-    email(path.email, { message: () => this.t().login.emailInvalid });
-    required(path.password, { message: () => this.t().login.passwordRequired });
-  });
+  protected readonly loginForm = form(
+    this.model,
+    (path) => {
+      required(path.email, { message: () => this.t().login.emailRequired });
+      email(path.email, { message: () => this.t().login.emailInvalid });
+      required(path.password, { message: () => this.t().login.passwordRequired });
+    },
+    { submission: { action: () => this.signIn() } }
+  );
 
-  protected signIn(event: Event): void {
-    event.preventDefault();
-    submit(this.loginForm, async () => {
-      this.error.set('');
-      this.loading.set(true);
-      try {
-        await this.auth.login(this.model().email.trim(), this.model().password);
-      } catch (error) {
-        this.error.set(this.failure(error));
-      } finally {
-        this.loading.set(false);
-      }
-    });
+  private async signIn(): Promise<void> {
+    this.error.set('');
+    this.loading.set(true);
+    try {
+      await this.auth.login(this.model().email.trim(), this.model().password);
+    } catch (error) {
+      this.error.set(this.failure(error));
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   private failure(error: unknown): string {

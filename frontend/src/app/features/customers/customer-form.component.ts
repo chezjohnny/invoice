@@ -1,10 +1,10 @@
 import { Component, inject, input, linkedSignal, output } from '@angular/core';
-import { FormField, email, form, pattern, submit } from '@angular/forms/signals';
+import { FormField, FormRoot, email, form, submit } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
-import { requiredText, showsError } from '../../shared/form-errors';
+import { countryCode, requiredText } from '../../shared/form-errors';
 import { Customer, CustomerData, PhoneEntry } from './customer.model';
 
 interface CustomerModel {
@@ -21,9 +21,9 @@ interface CustomerModel {
 
 @Component({
   selector: 'app-customer-form',
-  imports: [AutofocusDirective, FieldErrorComponent, FormActionsComponent, FormField],
+  imports: [AutofocusDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
   template: `
-    <form (submit)="save($event)">
+    <form [formRoot]="customerForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
         {{ customer() ? t().customers.editTitle : t().customers.newTitle }}
       </h1>
@@ -32,8 +32,7 @@ interface CustomerModel {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="fieldset-label" for="customer-last-name">{{ t().customers.lastNameLabel }}</label>
-            <input id="customer-last-name" appAutofocus class="input w-full" type="text"
-              [class.input-error]="showsError(customerForm.lastName)" [formField]="customerForm.lastName" />
+            <input id="customer-last-name" appAutofocus class="input w-full" type="text" [formField]="customerForm.lastName" />
             <app-field-error [field]="customerForm.lastName" />
           </div>
           <div>
@@ -44,8 +43,7 @@ interface CustomerModel {
 
         <div>
           <label class="fieldset-label" for="customer-email">{{ t().customers.emailLabel }}</label>
-          <input id="customer-email" class="input w-full" type="email"
-            [class.input-error]="showsError(customerForm.email)" [formField]="customerForm.email" />
+          <input id="customer-email" class="input w-full" type="email" [formField]="customerForm.email" />
           <app-field-error [field]="customerForm.email" />
         </div>
 
@@ -72,8 +70,7 @@ interface CustomerModel {
 
         <div>
           <label class="fieldset-label" for="customer-country">{{ t().customers.countryLabel }}</label>
-          <input id="customer-country" class="input w-24" type="text"
-            [class.input-error]="showsError(customerForm.country)" [formField]="customerForm.country" />
+          <input id="customer-country" class="input w-24" type="text" [formField]="customerForm.country" />
           <app-field-error [field]="customerForm.country" />
         </div>
 
@@ -117,7 +114,6 @@ export class CustomerFormComponent {
   readonly cancelled = output<void>();
 
   protected readonly t = inject(I18nService).T;
-  protected readonly showsError = showsError;
 
   protected readonly model = linkedSignal<CustomerModel>(() => {
     const c = this.customer();
@@ -134,11 +130,15 @@ export class CustomerFormComponent {
     };
   });
 
-  protected readonly customerForm = form(this.model, (path) => {
-    requiredText(path.lastName, () => this.t().customers.lastNameRequired);
-    email(path.email, { message: () => this.t().customers.invalidEmail });
-    pattern(path.country, /^\s*[A-Za-z]{2}\s*$/, { message: () => this.t().common.invalidCountry });
-  });
+  protected readonly customerForm = form(
+    this.model,
+    (path) => {
+      requiredText(path.lastName, () => this.t().customers.lastNameRequired);
+      email(path.email, { message: () => this.t().customers.invalidEmail });
+      countryCode(path.country, () => this.t().common.invalidCountry);
+    },
+    { submission: { action: async () => this.saved.emit(this.payload()) } }
+  );
 
   protected addPhone(): void {
     this.model.update((m) => ({ ...m, phones: [...m.phones, { label: '', number: '' }] }));
@@ -146,11 +146,6 @@ export class CustomerFormComponent {
 
   protected removePhone(index: number): void {
     this.model.update((m) => ({ ...m, phones: m.phones.filter((_, i) => i !== index) }));
-  }
-
-  protected save(event: Event): void {
-    event.preventDefault();
-    submit(this.customerForm, async () => this.saved.emit(this.payload()));
   }
 
   protected saveForInvoice(): void {

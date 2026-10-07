@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ArticleData } from './article.model';
 import { ArticleFormComponent } from './article-form.component';
+import { provideFormErrorClasses } from '../../shared/form-errors';
 
 describe('ArticleFormComponent', () => {
   let fixture: ComponentFixture<ArticleFormComponent>;
@@ -11,7 +12,7 @@ describe('ArticleFormComponent', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [ArticleFormComponent],
-      providers: [provideZonelessChangeDetection()],
+      providers: [provideZonelessChangeDetection(), provideFormErrorClasses()],
     });
     fixture = TestBed.createComponent(ArticleFormComponent);
     saved = [];
