@@ -85,8 +85,8 @@ export class MockArticleService implements IArticleService {
     return Promise.resolve([2026, 2025]);
   }
 
-  getAll(): Promise<Article[]> {
-    return Promise.resolve(this.articles.filter((a) => !a.isArchived).reverse());
+  getAll(archived = false): Promise<Article[]> {
+    return Promise.resolve(this.articles.filter((a) => a.isArchived === archived).reverse());
   }
 
   getById(id: string): Promise<Article> {

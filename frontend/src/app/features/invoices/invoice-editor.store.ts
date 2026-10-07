@@ -14,12 +14,16 @@ interface InvoiceEditorState {
   invoice: Invoice | null;
   customer: Customer | null;
   articles: Article[];
+  /** For the suggestions: what the customer bought before may be archived since. */
+  archivedArticles: Article[];
   loading: boolean;
 }
 
 /** Backs the invoice editor page: one draft, created or edited for one customer. */
 export const InvoiceEditorStore = signalStore(
-  withState<InvoiceEditorState>({ invoice: null, customer: null, articles: [], loading: true }),
+  withState<InvoiceEditorState>({
+    invoice: null, customer: null, articles: [], archivedArticles: [], loading: true,
+  }),
   withMethods((
     store,
     invoices = inject(INVOICE_SERVICE),
@@ -43,11 +47,12 @@ export const InvoiceEditorStore = signalStore(
         try {
           const invoice = 'invoiceId' in target ? await invoices.getById(target.invoiceId) : null;
           const customerId = invoice?.customerId ?? ('customerId' in target ? target.customerId : '');
-          const [customer, articles] = await Promise.all([
+          const [customer, articles, archivedArticles] = await Promise.all([
             customers.getById(customerId),
             articleService.getAll(),
+            articleService.getAll(true),
           ]);
-          patchState(store, { invoice, customer, articles });
+          patchState(store, { invoice, customer, articles, archivedArticles });
         } finally {
           patchState(store, { loading: false });
         }

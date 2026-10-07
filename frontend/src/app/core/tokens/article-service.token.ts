@@ -25,7 +25,8 @@ export interface IArticleService {
   salesYears(): Promise<number[]>;
   /** The active (or archived) articles, with their sales and withdrawals over the period. */
   exportCsv(archived: boolean, period: SalesPeriod): Promise<Blob>;
-  getAll(): Promise<Article[]>;
+  /** Every active article, or with `archived` every archived one. */
+  getAll(archived?: boolean): Promise<Article[]>;
   getById(id: string): Promise<Article>;
   create(data: ArticleData): Promise<Article>;
   update(id: string, data: ArticleData): Promise<Article>;

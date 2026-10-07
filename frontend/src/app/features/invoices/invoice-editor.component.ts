@@ -28,6 +28,7 @@ import { InvoiceEditorStore } from './invoice-editor.store';
             [invoice]="store.invoice()"
             [customer]="customer"
             [articles]="store.articles()"
+            [archivedArticles]="store.archivedArticles()"
             [canIssue]="!company.isIncomplete()"
             [defaultVatRate]="company.profile()?.defaultVatRate ?? null"
             [busy]="saving()"

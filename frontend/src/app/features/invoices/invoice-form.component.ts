@@ -27,10 +27,14 @@ function searchKey(value: string): string {
 }
 
 interface Recommendation {
-  articleId: string | null;
   description: string;
+  /** Active article: added with its current price and VAT. */
+  article: Article | null;
+  /** A free-text line's own price and VAT. */
   unitPrice: number;
   vatRate: number | null;
+  /** Its article is archived: shown, but no longer offered. */
+  archived: boolean;
 }
 
 @Component({
@@ -55,9 +59,15 @@ interface Recommendation {
             <p class="text-xs text-base-content/50 mb-2">{{ t().invoices.recommendations }}</p>
             <div class="flex flex-wrap gap-1.5">
               @for (rec of articleRecommendations(); track rec.description) {
-                <button type="button" class="btn btn-outline btn-xs" (click)="addRecommendation(rec)">
-                  + {{ rec.description }}
-                </button>
+                @if (rec.archived) {
+                  <span class="tooltip" [attr.data-tip]="t().invoices.archivedArticle">
+                    <button type="button" class="btn btn-outline btn-xs" disabled>{{ rec.description }}</button>
+                  </span>
+                } @else {
+                  <button type="button" class="btn btn-outline btn-xs" (click)="addRecommendation(rec)">
+                    + {{ rec.description }}
+                  </button>
+                }
               }
             </div>
           </div>
@@ -235,6 +245,7 @@ interface Recommendation {
 export class InvoiceFormComponent {
   readonly invoice = input<Invoice | null>(null);
   readonly articles = input<Article[]>([]);
+  readonly archivedArticles = input<Article[]>([]);
   readonly customer = input.required<Customer>();
   // Issuing needs a complete company profile (address + IBAN) for the QR-bill.
   readonly canIssue = input(true);
@@ -270,34 +281,33 @@ export class InvoiceFormComponent {
   });
   protected readonly pickerOpen = computed(() => this.pickerFocused() && this.pickerResults().length > 0);
 
+  // What the customer bought lately. Imported invoices often name an article in a
+  // free-text line: matched by name, it counts as that article, active or archived.
   protected readonly articleRecommendations = computed<Recommendation[]>(() => {
+    const byId = new Map(this.articles().map((a) => [a.id, a]));
+    const byName = new Map(this.articles().map((a) => [searchKey(a.name), a]));
+    const archivedIds = new Set(this.archivedArticles().map((a) => a.id));
+    const archivedNames = new Set(this.archivedArticles().map((a) => searchKey(a.name)));
     const seen = new Set<string>();
     const recs: Recommendation[] = [];
-    const articles = new Map(this.articles().map((a) => [a.id, a]));
     for (const inv of this.recentInvoices()) {
       for (const line of inv.lines) {
-        const key = line.articleId ?? line.descriptionSnapshot;
+        const name = searchKey(line.descriptionSnapshot);
+        const article = (line.articleId ? byId.get(line.articleId) : byName.get(name)) ?? null;
+        const archived =
+          article === null && (line.articleId ? archivedIds.has(line.articleId) : archivedNames.has(name));
+        // A deleted article is neither offered nor shown.
+        if (line.articleId && article === null && !archived) continue;
+        const key = article?.id ?? name;
         if (seen.has(key)) continue;
         seen.add(key);
-        if (line.articleId) {
-          // An archived (sold out) or deleted article is no longer offered:
-          // suggesting it as free text would bill it outside the stock.
-          const article = articles.get(line.articleId);
-          if (!article) continue;
-          recs.push({
-            articleId: article.id,
-            description: article.name,
-            unitPrice: article.unitPrice,
-            vatRate: article.vatRateOverride ?? this.defaultVatRate(),
-          });
-        } else {
-          recs.push({
-            articleId: null,
-            description: line.descriptionSnapshot,
-            unitPrice: line.unitPriceSnapshot,
-            vatRate: line.vatRateSnapshot,
-          });
-        }
+        recs.push({
+          description: article?.name ?? line.descriptionSnapshot,
+          article,
+          unitPrice: line.unitPriceSnapshot,
+          vatRate: line.vatRateSnapshot,
+          archived,
+        });
         if (recs.length >= MAX_RECOMMENDATIONS) return recs;
       }
     }
@@ -330,10 +340,14 @@ export class InvoiceFormComponent {
   }
 
   protected addRecommendation(rec: Recommendation): void {
+    if (rec.article) {
+      this.addArticle(rec.article);
+      return;
+    }
     this.lines.update((ls) => [
       ...ls,
       {
-        articleId: rec.articleId,
+        articleId: null,
         descriptionSnapshot: rec.description,
         quantity: '1',
         unitPriceSnapshot: String(rec.unitPrice),

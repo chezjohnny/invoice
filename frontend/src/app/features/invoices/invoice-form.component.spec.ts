@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Article } from '../articles/article.model';
 import { Customer } from '../customers/customer.model';
-import { InvoiceCreate } from './invoice.model';
+import { Invoice, InvoiceCreate, InvoiceLine } from './invoice.model';
 import { InvoiceFormComponent } from './invoice-form.component';
 
 const CUSTOMER: Customer = {
@@ -98,6 +98,47 @@ describe('InvoiceFormComponent article picker', () => {
     const lines = (await save()).lines;
     expect(lines).toEqual([
       { articleId: null, descriptionSnapshot: 'Livraison', quantity: 1, unitPriceSnapshot: 15, vatRateSnapshot: 0.081 },
+    ]);
+  });
+});
+
+describe('InvoiceFormComponent suggestions', () => {
+  function line(articleId: string | null, descriptionSnapshot: string): InvoiceLine {
+    return { id: descriptionSnapshot, articleId, descriptionSnapshot, quantity: 1, unitPriceSnapshot: 12, vatRateSnapshot: null };
+  }
+
+  it('greys out archived articles, linked or only named, and offers the active ones', async () => {
+    const recent: Invoice = {
+      id: 'i1', customerId: 'c1', customerName: '', invoiceNumber: '2601011', status: 'paid',
+      issueDate: null, dueDate: null, paidAt: null, discountPercent: 0, notes: '', paymentMethod: null,
+      reminders: [],
+      lines: [
+        line('old', 'Gamaret 2019'), // linked to an archived article
+        line(null, 'Fendant 2018'), // named after an archived article
+        line(null, 'pinot noir'), // named after an active article
+        line(null, 'Livraison'), // plain free text
+      ],
+    };
+    TestBed.configureTestingModule({
+      imports: [InvoiceFormComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: INVOICE_SERVICE, useValue: { list: async () => ({ items: [recent] }) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(InvoiceFormComponent);
+    fixture.componentRef.setInput('customer', CUSTOMER);
+    fixture.componentRef.setInput('articles', [article('a1', 'Pinot Noir')]);
+    fixture.componentRef.setInput('archivedArticles', [article('old', 'Gamaret 2019'), article('a9', 'Fendant 2018')]);
+    await fixture.whenStable();
+
+    const buttons = [...fixture.nativeElement.querySelectorAll('.rounded-lg button')] as HTMLButtonElement[];
+    const shown = buttons.map((b) => [b.textContent?.trim(), b.disabled]);
+    expect(shown).toEqual([
+      ['Gamaret 2019', true],
+      ['Fendant 2018', true],
+      ['+ Pinot Noir', false],
+      ['+ Livraison', false],
     ]);
   });
 });
