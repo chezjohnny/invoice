@@ -43,7 +43,8 @@ prépare au magasin.
 
 - 3–4. Menu → *Clients* → recherche par nom, e-mail ou **numéro de téléphone**,
   écrit de n'importe quelle façon (`079 123 45 67`, `+41791234567`, ou seulement
-  la fin). Sinon *Nouveau client* → *Enregistrer & créer une facture* : la fiche
+  la fin). Dans toutes les listes, la recherche part dès 3 caractères, ou tout de
+  suite avec Entrée. Sinon *Nouveau client* → *Enregistrer & créer une facture* : la fiche
   est créée et la nouvelle facture s'ouvre directement. Pour une société, son nom
   va dans *Nom ou raison sociale*, sans prénom ; une personne de contact
   (« Par Mme … ») va dans le complément d'adresse.
