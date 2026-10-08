@@ -307,10 +307,10 @@ de la commande (par exemple une bouteille par carton de 12).
 - 1. *Clients* → fiche → *Nouvelle facture* → les articles, un après l'autre.
 - 2. Le prix de chaque ligne se modifie dans l'éditeur (virgule ou point) ; il ne
   vaut que pour cette facture : le prix de l'article ne change pas.
-- 3. Sur la ligne de l'article, l'icône cadeau (*En offrir un de plus*) ajoute
-  juste en dessous une ligne *Offert* du même article, à 1 ; un nouveau clic en
-  offre un de plus. Son prix (0.00) et sa TVA (aucune) ne se modifient pas ; sa
-  quantité, si. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
+- 3. Sur la ligne de l'article, l'icône cadeau (*Offrir*) ajoute juste en dessous
+  une ligne *Offert* du même article, à 1, et reste enfoncée ; un nouveau clic
+  (*Ne plus offrir*) la retire. La quantité offerte se saisit sur la ligne
+  *Offert* ; son prix (0.00) et sa TVA (aucune) ne se modifient pas. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
   à 0.00 : le total n'en tient pas compte.
 - Pour changer l'ordre des lignes, on glisse une ligne par sa poignée (à gauche) ;
   ses lignes offertes juste en dessous la suivent : le cadeau reste sous son

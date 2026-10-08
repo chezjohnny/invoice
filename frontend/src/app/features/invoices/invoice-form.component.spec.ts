@@ -111,27 +111,26 @@ describe('InvoiceFormComponent article picker', () => {
     ]);
   });
 
-  it('offers bottles of an article on a line of their own, at 0 without VAT', async () => {
+  it('offers bottles of an article on a line of their own, at 0 without VAT, and takes them back', async () => {
     await type('pinot');
     await press('Enter');
-    const quantity = fixture.nativeElement.querySelector('input[type="number"]') as HTMLInputElement;
-    quantity.value = '12';
-    quantity.dispatchEvent(new Event('input'));
-    const offer = () => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[title^="En offrir"], button[title^="Offer"]')!;
-    offer().click();
+    const element = fixture.nativeElement as HTMLElement;
+    const quantities = () => [...element.querySelectorAll<HTMLInputElement>('input[type="number"]')];
+    quantities()[0].value = '12';
+    quantities()[0].dispatchEvent(new Event('input'));
+    const gift = () => element.querySelector<HTMLButtonElement>('button[aria-pressed]')!;
+    expect(gift().getAttribute('aria-pressed')).toBe('false');
+    gift().click();
     await fixture.whenStable();
-    offer().click();
-    await fixture.whenStable();
+    expect(gift().getAttribute('aria-pressed')).toBe('true');
+
     // The offered row has its own quantity, and neither price nor VAT to edit.
-    const quantities = () => [...fixture.nativeElement.querySelectorAll('input[type="number"]')] as HTMLInputElement[];
-    expect(quantities().map((q) => q.value)).toEqual(['12', '2']);
-    expect(fixture.nativeElement.querySelectorAll('input[inputmode="decimal"]').length).toBe(3); // the sold price and VAT, the discount
-    quantities()[1].value = '3';
-    quantities()[1].dispatchEvent(new Event('input'));
-    await fixture.whenStable();
-    expect(quantities().map((q) => q.value)).toEqual(['12', '3']);
+    expect(quantities().map((q) => q.value)).toEqual(['12', '1']);
+    expect(element.querySelectorAll('input[inputmode="decimal"]').length).toBe(3); // the sold price and VAT, the discount
     quantities()[1].value = '2';
     quantities()[1].dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    expect(quantities().map((q) => q.value)).toEqual(['12', '2']);
     // Picked again, it is sold, not offered.
     await type('pinot');
     await press('Enter');
@@ -141,13 +140,19 @@ describe('InvoiceFormComponent article picker', () => {
       { articleId: 'a1', descriptionSnapshot: 'Pinot Noir', quantity: 2, unitPriceSnapshot: 0, vatRateSnapshot: null, offered: true },
     ]);
     // 15 asked of the 10 in stock, sold and offered alike.
-    expect(fixture.nativeElement.querySelectorAll('.badge-warning').length).toBe(2);
+    expect(element.querySelectorAll('.badge-warning').length).toBe(2);
+
+    // The gift again: no longer offered.
+    gift().click();
+    await fixture.whenStable();
+    expect(gift().getAttribute('aria-pressed')).toBe('false');
+    expect((await save()).lines.map((l) => [l.quantity, l.offered])).toEqual([[13, false]]);
   });
 
   it('moves a line by drag and drop or the arrow keys, its offered bottles along with it', async () => {
     await type('pinot');
     await press('Enter');
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[title^="En offrir"], button[title^="Offer"]')!.click();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[aria-pressed]')!.click();
     await fixture.whenStable();
     await type('chass');
     await press('Enter');

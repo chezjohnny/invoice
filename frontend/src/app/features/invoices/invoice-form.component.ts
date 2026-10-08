@@ -136,8 +136,13 @@ interface Recommendation {
                             <div class="input input-sm input-primary w-full pr-1">
                               <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
                               <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                              <!-- On: the offered lines below; off again: they go -->
+                              @let offered = block.length > 1;
                               <button type="button" class="btn btn-ghost btn-xs px-1 shrink-0"
-                                [title]="t().invoices.offer" [attr.aria-label]="t().invoices.offer" (click)="offer(i)">
+                                [class.btn-active]="offered" [class.text-secondary]="offered" [attr.aria-pressed]="offered"
+                                [title]="offered ? t().invoices.unoffer : t().invoices.offer"
+                                [attr.aria-label]="offered ? t().invoices.unoffer : t().invoices.offer"
+                                (click)="toggleOffer(i)">
                                 <app-icon name="gift" />
                               </button>
                             </div>
@@ -448,29 +453,29 @@ export class InvoiceFormComponent {
   }
 
   /**
-   * One more of this article given away: on the line below it, created at 1.
-   * Sold or offered, the bottles leave the same stock.
+   * Gives this article away, on a line right below it created at 1 (its quantity
+   * set there), or no longer: its offered lines below go. Sold or offered, the
+   * bottles leave the same stock.
    */
-  protected offer(index: number): void {
-    const sold = this.model().lines[index];
-    const offered = this.model().lines.findIndex((l) => l.offered && l.articleId === sold.articleId);
+  protected toggleOffer(index: number): void {
+    const carried = this.blocks().find((block) => block[0] === index)?.slice(1) ?? [];
     this.model.update((m) => {
-      const lines = [...m.lines];
-      if (offered >= 0) {
-        lines[offered] = { ...lines[offered], quantity: (lines[offered].quantity ?? 0) + 1 };
-      } else {
-        // A new object, not a spread of the sold line: Signal Forms keys each array
-        // item by a symbol stored on it, which a spread would copy, binding both
-        // lines to the same fields.
-        lines.splice(index + 1, 0, {
-          articleId: sold.articleId,
-          descriptionSnapshot: sold.descriptionSnapshot,
-          quantity: 1,
-          unitPriceSnapshot: 0,
-          vatPercent: null,
-          offered: true,
-        });
+      if (carried.length > 0) {
+        return { ...m, lines: m.lines.filter((_, i) => !carried.includes(i)) };
       }
+      const sold = m.lines[index];
+      const lines = [...m.lines];
+      // A new object, not a spread of the sold line: Signal Forms keys each array
+      // item by a symbol stored on it, which a spread would copy, binding both
+      // lines to the same fields.
+      lines.splice(index + 1, 0, {
+        articleId: sold.articleId,
+        descriptionSnapshot: sold.descriptionSnapshot,
+        quantity: 1,
+        unitPriceSnapshot: 0,
+        vatPercent: null,
+        offered: true,
+      });
       return { ...m, lines };
     });
   }
