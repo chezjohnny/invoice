@@ -1,333 +1,341 @@
-# Workflows d'usage
+# Usage workflows
 
-Ce document décrit les situations de travail réelles du vendeur, et comment
-l'application y répond. Pour chaque workflow :
+This document describes the seller's real working situations and how the app
+supports them. For each workflow:
 
-- **Étapes** : ce que fait le vendeur ;
-- **Dans l'application** : le parcours actuel, écran par écran ;
-- **Manques** : ce qui ralentit ou bloque le workflow aujourd'hui.
+- **Steps**: what the seller does;
+- **In the app**: the current path, screen by screen;
+- **Gaps**: what slows the workflow down or blocks it today.
 
-Tous les formulaires (facture, client, article, sortie de stock) s'ouvrent sur
-une page à part : plein écran sur mobile, boutons collés en bas, et le bouton
-retour du téléphone annule. Seules les confirmations (paiement, rappel,
-suppression) restent des fenêtres.
+Every form (invoice, customer, article, stock withdrawal) opens on a page of
+its own: full screen on mobile, buttons pinned at the bottom, and the phone's
+back button cancels. Only confirmations (payment, reminder, deletion) stay
+dialogs.
 
-Vocabulaire :
+The labels quoted below are those of the English interface; the French one
+works the same way.
 
-| Terme métier | Dans l'application |
+Vocabulary:
+
+| Business term | In the app |
 |---|---|
-| Pré-commande | Facture en **brouillon** |
-| Valider la commande | **Émettre** la facture (numéro attribué, stock décompté) |
-| Reçu / quittance | PDF d'une facture **payée** : « Acquittée … le … », sans échéance ni QR-bill |
-| N° de référence | **Numéro de facture** (`2610051` : date AAMMJJ + n° du jour, chiffres seulement) : message TWINT et information du QR-bill |
+| Pre-order | **Draft** invoice |
+| Confirm the order | **Issue** the invoice (number given, stock taken) |
+| Receipt | PDF of a **paid** invoice: "Paid … on …", without due date or QR-bill |
+| Reference number | **Invoice number** (`2610051`: date YYMMDD + number of the day, digits only): the TWINT message and the QR-bill's additional information |
 
 ---
 
-## 1. Créer une pré-commande (par téléphone, sur mobile)
+## 1. Take a pre-order (by phone, on mobile)
 
-Le client appelle ; le vendeur saisit la commande sur son téléphone, puis la
-prépare au magasin.
+The customer calls; the seller enters the order on their phone, then prepares
+it at the shop.
 
-**Étapes**
+**Steps**
 
-1. Répondre à l'appel.
-2. Ouvrir l'application.
-3. Rechercher le client.
-4. Créer la fiche client si elle n'existe pas.
-5. Ajouter une pré-commande avec les articles demandés.
-6. Rentrer au magasin.
-7. Préparer la commande, puis la valider.
-8. Le client vient la chercher.
+1. Answer the call.
+2. Open the app.
+3. Look up the customer.
+4. Create the customer if they do not exist yet.
+5. Add a pre-order with the articles asked for.
+6. Go back to the shop.
+7. Prepare the order, then confirm it.
+8. The customer comes to pick it up.
 
-**Dans l'application**
+**In the app**
 
-- 3–4. Menu → *Clients* → recherche par nom, e-mail ou **numéro de téléphone**,
-  écrit de n'importe quelle façon (`079 123 45 67`, `+41791234567`, ou seulement
-  la fin). Dans toutes les listes, la recherche part dès 3 caractères, ou tout de
-  suite avec Entrée. Sinon *Nouveau client* → *Enregistrer & créer une facture* : la fiche
-  est créée et la nouvelle facture s'ouvre directement. Pour une société, son nom
-  va dans *Nom ou raison sociale*, sans prénom ; une personne de contact
-  (« Par Mme … ») va dans le complément d'adresse.
-- 5. Fiche client → *Nouvelle facture* → *Ajouter un article…* : chaque article
-  choisi (à la souris, ou au clavier avec les flèches et Entrée) s'ajoute à la
-  facture, ou augmente sa quantité s'il y est déjà ; *+ Ligne de texte libre* pour
-  une ligne hors stock → *Enregistrer* (brouillon).
-- 7. *Factures* → onglet *Brouillon* → *Modifier* → ajuster les quantités →
-  *Émettre & Imprimer*, ou *Payer & Imprimer* si le client paie en espèces au retrait.
+- 3–4. Menu → *Customers* → search by name, email or **phone number**, written
+  any way (`079 123 45 67`, `+41791234567`, or only its end). In every list, the
+  search starts from 3 characters, or at once with Enter. Otherwise *New
+  customer* → *Save & create invoice*: the customer is created and the new
+  invoice opens straight away. For a company, its name goes in *Last name or
+  company*, without a first name; a contact person ("Par Mme …") goes in
+  *Address line 2*.
+- 5. Customer page → *New invoice* → *Add an article…*: each article picked
+  (with the mouse, or the keyboard with the arrows and Enter) is added to the
+  invoice, or raises its quantity if it is already there; *+ Free-text line* for
+  a line outside the stock → *Save draft*.
+- 7. *Invoices* → *Draft* tab → *Edit* → adjust the quantities → *Issue & Print*,
+  or *Pay & Print* if the customer pays cash on pickup.
 
-**Manques**
+**Gaps**
 
-- La recherche par téléphone ne trouve que les clients dont le numéro est
-  saisi sur la fiche.
+- The phone search only finds the customers whose number is entered on their
+  record.
 
-## 2. Servir un client au magasin
+## 2. Serve a customer at the shop
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Ajouter les articles choisis par le client.
-3. Préparer la marchandise.
-4. Valider la commande et imprimer :
-   - le **reçu** si le client paie tout de suite ;
-   - la **facture** (avec QR-bill) sinon.
-5. Si le client a payé, imprimer une copie papier pour la comptabilité.
-6. Le client part avec la marchandise.
+1. Open the app.
+2. Add the articles the customer chose.
+3. Prepare the goods.
+4. Confirm the order and print:
+   - the **receipt** if the customer pays at once;
+   - the **invoice** (with QR-bill) otherwise.
+5. If the customer paid, print a paper copy for the accounts.
+6. The customer leaves with the goods.
 
-**Dans l'application**
+**In the app**
 
-- 2. *Clients* → fiche → *Nouvelle facture* → *Ajouter un article…*, un article après l'autre.
-- 4. Choisir le mode de paiement :
-  - *Espèces* → *Payer & Imprimer* : la facture est émise, marquée payée
-    aujourd'hui, et le reçu se télécharge ;
-  - *TWINT* ou *Virement (IBAN)* → *Émettre & Imprimer* : la facture se télécharge.
-- 5. Imprimer le PDF une deuxième fois.
+- 2. *Customers* → customer page → *New invoice* → *Add an article…*, one article
+  after the other.
+- 4. Choose the payment method:
+  - *Cash* → *Pay & Print*: the invoice is issued, marked paid today, and the
+    receipt downloads;
+  - *TWINT* or *Bank transfer (IBAN)* → *Issue & Print*: the invoice downloads.
+- 5. Print the PDF a second time.
 
-**Manques**
+**Gaps**
 
-- Une facture exige un **client** : un client de passage oblige à créer une
-  fiche, ou à utiliser une fiche générique « Client comptoir » à créer soi-même.
-- Dans le formulaire, *Payer & Imprimer* n'existe que pour les espèces : un client
-  qui paie sur place par **TWINT** passe par *Émettre & Imprimer*, puis *Payer* →
-  *Payer & Imprimer* dans la liste.
+- An invoice needs a **customer**: a walk-in customer means creating a record,
+  or using a generic "Counter customer" record to create once.
+- In the form, *Pay & Print* only exists for cash: a customer who pays on the
+  spot with **TWINT** goes through *Issue & Print*, then *Pay* → *Pay & Print* in
+  the list.
 
-## 3. Recevoir un paiement TWINT
+## 3. Receive a TWINT payment
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Rechercher le client, ou la facture avec le n° de référence (message TWINT).
-3. Valider le paiement, ajuster la date si besoin, imprimer une copie pour la
-   comptabilité.
+1. Open the app.
+2. Look up the customer, or the invoice by its reference number (the TWINT
+   message).
+3. Confirm the payment, adjust the date if needed, print a copy for the
+   accounts.
 
-**Dans l'application**
+**In the app**
 
-- 2. *Factures* → recherche (numéro, client ou article) → onglet *Émise*.
-- 3. *Payer* sur la ligne → fenêtre *Enregistrer le paiement* : date (aujourd'hui
-  par défaut, pas dans le futur) et mode de paiement (celui prévu sur la facture,
-  à corriger au besoin) → *Payer & Imprimer* télécharge le reçu pour la
-  comptabilité. La même fenêtre s'ouvre depuis la fiche client.
+- 2. *Invoices* → search (number, customer or article) → *Issued* tab.
+- 3. *Pay* on the row → *Record the payment* dialog: date (today by default, not
+  in the future) and payment method (the one planned on the invoice, to correct
+  if needed) → *Pay & Print* downloads the receipt for the accounts. The same
+  dialog opens from the customer page.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 4. Recevoir un paiement e-banking
+## 4. Receive an e-banking payment
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Rechercher la facture avec le n° de référence (communication du virement).
-3. Valider le paiement, ajuster la date si besoin, imprimer une copie pour la
-   comptabilité.
+1. Open the app.
+2. Look up the invoice by its reference number (the transfer's message).
+3. Confirm the payment, adjust the date if needed, print a copy for the
+   accounts.
 
-**Dans l'application**
+**In the app**
 
-Même parcours que le paiement TWINT. Le QR-bill n'a pas de référence
-structurée (`NON`) : le numéro de facture figure dans l'*information
-supplémentaire*, que la banque reporte dans la communication du virement.
+Same path as a TWINT payment. The QR-bill has no structured reference (`NON`):
+the invoice number is in its *additional information*, which the bank copies
+into the transfer's message.
 
-**Manques**
+**Gaps**
 
-- Pas de rapprochement automatique (import d'un relevé bancaire camt.054) : chaque
-  paiement se valide à la main.
+- No automatic matching (import of a camt.054 bank statement): each payment is
+  confirmed by hand.
 
-## 5. Contrôle trimestriel
+## 5. Quarterly check
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Aller dans *Articles*.
-3. Choisir la période (année, trimestre).
-4. Relever, par article, les ventes, le stock et les sorties de la période.
+1. Open the app.
+2. Go to *Articles*.
+3. Choose the period (year, quarter).
+4. Note, for each article, the sales, the stock and the withdrawals of the
+   period.
 
-**Dans l'application**
+**In the app**
 
-*Articles* → *Ventes* : année → trimestre. Les colonnes *Vendus* et *Sorties*
-suivent la période choisie ; *Stock* est le stock **actuel**.
+*Articles* → *Sales*: year → quarter. The *Sold* and *Withdrawn* columns follow
+the period chosen; *Stock* is the **current** stock.
 
-*Exporter CSV* télécharge tous les articles actifs de la période choisie, sans
-tenir compte de la recherche (`articles-2025-Q2.csv`) : prix, TVA propre à
-l'article (vide s'il suit le taux de l'entreprise), stock, vendus et sorties. Avec
-*Afficher les archivés*, il exporte les articles archivés
-(`articles-archived-2025-Q2.csv`).
+*Export CSV* downloads all the active articles of the period chosen, whatever
+the search (`articles-2025-Q2.csv`): price, the article's own VAT (empty when it
+follows the company's rate), stock, sold and withdrawn. With *Show archived*, it
+exports the archived articles (`articles-archived-2025-Q2.csv`).
 
-**Manques**
+**Gaps**
 
-- Le stock affiché est celui d'aujourd'hui, pas celui de **fin de période** : un
-  contrôle fait en retard ne donne pas le bon chiffre.
+- The stock shown is today's, not the one at the **end of the period**: a check
+  done late does not give the right figure.
 
-## 6. Ajouter un article
+## 6. Add an article
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Aller dans *Articles*.
-3. Ajouter l'article avec son stock initial.
+1. Open the app.
+2. Go to *Articles*.
+3. Add the article with its initial stock.
 
-**Dans l'application**
+**In the app**
 
-*Articles* → *Nouvel article* → nom, prix, TVA, quantité en stock.
+*Articles* → *New article* → name, price, VAT, stock quantity.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 7. Inventaire (vérification du stock)
+## 7. Inventory (stock check)
 
-**Étapes**
+**Steps**
 
-1. Compter le stock de chaque article.
-2. Ouvrir l'application.
-3. Retrouver chaque article et corriger son stock.
+1. Count the stock of each article.
+2. Open the app.
+3. Find each article and correct its stock.
 
-**Dans l'application**
+**In the app**
 
-*Articles* → *Inventaire* : la colonne *Stock* devient un champ par article. Saisir
-la quantité comptée ; elle remplace le stock en quittant le champ (Tab, Entrée), et
-une coche ✓ marque les articles déjà comptés. Le mode est désactivé sur la liste
-des articles archivés.
+*Articles* → *Inventory*: the *Stock* column becomes a field per article. Enter
+the quantity counted; it replaces the stock when leaving the field (Tab, Enter),
+and a ✓ marks the articles already counted. The mode is disabled on the list of
+archived articles.
 
-La correction ne laisse volontairement pas de trace : seul le nouveau stock compte.
+On purpose, the correction leaves no trace: only the new stock counts.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 8. Envoyer des rappels
+## 8. Send reminders
 
-**Étapes**
+**Steps**
 
-1. Aller dans le tableau de bord.
-2. Retrouver les factures en retard.
-3. Imprimer les rappels.
+1. Go to the dashboard.
+2. Find the overdue invoices.
+3. Print the reminders.
 
-**Dans l'application**
+**In the app**
 
-*Tableau de bord* → carte *Factures en retard* (de la plus ancienne à la plus
-récente, avec les jours de retard et les rappels déjà envoyés) → cloche
-*Créer un rappel* → *Créer & imprimer*.
+*Dashboard* → *Overdue invoices* card (oldest first, with the days late and the
+reminders already sent) → bell *Create a reminder* → *Create & print*.
 
-- Le rappel est **enregistré** (1er, 2e…) avec sa date et un nouveau délai : la
-  date du rappel + le *délai de rappel* des paramètres (10 jours par défaut).
-- Son PDF reprend la facture, titrée « Rappel » ou « 2e rappel », avec la date du
-  rappel, le nouveau délai, un court texte et le même QR-bill.
-- Seule la cloche crée un rappel : l'icône PDF à côté, ou la liste des rappels
-  dans le détail de la facture, le réimprime sans en créer un nouveau.
-- La même cloche figure sur les factures en retard de la liste des factures et
-  de la fiche client.
+- The reminder is **recorded** (1st, 2nd…) with its date and a new deadline: the
+  reminder's date + the *Reminder deadline* of the settings (10 days by
+  default).
+- Its PDF repeats the invoice, titled "Reminder" or "Reminder no. 2", with the
+  reminder's date, the new deadline, a short text and the same QR-bill.
+- Only the bell creates a reminder: the PDF icon next to it, or the list of
+  reminders in the invoice's details, prints it again without creating a new
+  one.
+- The same bell is on the overdue invoices of the invoice list and of the
+  customer page.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 9. Enregistrer une sortie de stock
+## 9. Record a stock withdrawal
 
-Des articles quittent le stock sans être facturés : dégustation, lot offert,
-bouteille cassée.
+Articles leave the stock without being invoiced: tasting, a lot given away, a
+broken bottle.
 
-**Étapes**
+**Steps**
 
-1. Ouvrir l'application.
-2. Noter l'article, la quantité et le motif.
+1. Open the app.
+2. Note the article, the quantity and the reason.
 
-**Dans l'application**
+**In the app**
 
-*Sorties de stock* → *Nouvelle sortie* → article, cherché en tapant une partie de son
-nom comme dans une facture (son stock est affiché ; ✕ pour en choisir un autre), date,
-quantité, motif (*Dégustation*, *Promotion / cadeau*, *Perte / casse*, *Autre*)
-et une note. Le stock diminue aussitôt ; la sortie apparaît dans la colonne
-*Sorties* des articles, sur la période choisie.
+*Stock withdrawals* → *New withdrawal* → article, searched by typing part of its
+name as in an invoice (its stock is shown; ✕ to pick another), date, quantity,
+reason (*Tasting*, *Promotion / gift*, *Loss / breakage*, *Other*) and a note.
+The stock goes down at once; the withdrawal shows in the *Withdrawn* column of
+the articles, over the period chosen.
 
-Une sortie ne se modifie pas : en cas d'erreur, on la supprime (le stock revient)
-et on la saisit à nouveau.
+A withdrawal cannot be edited: after a mistake, delete it (the stock comes back)
+and enter it again.
 
-Les articles offerts sur une facture y apparaissent aussi, en *Promotion /
-cadeau*, avec un lien vers leur facture : ceux-là ne se suppriment pas ici, mais
-en annulant la facture (workflow 12).
+The articles offered on an invoice show here too, as *Promotion / gift*, with a
+link to their invoice: those are not deleted here, but by cancelling the
+invoice (workflow 12).
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 10. Configurer l'entreprise
+## 10. Set up the company
 
-À la première connexion, le profil de l'entreprise est vide.
+At the first sign-in, the company profile is empty.
 
-**Étapes**
+**Steps**
 
-1. Saisir l'adresse, l'IBAN et, si besoin, le numéro TWINT, la TVA et les délais.
+1. Enter the address, the IBAN and, if needed, the TWINT number, the VAT and the
+   deadlines.
 
-**Dans l'application**
+**In the app**
 
-*Paramètres* : tant que l'adresse ou l'IBAN manquent, un bandeau le rappelle
-(*Compléter*) et aucune facture ne peut être émise. Le taux de TVA par défaut
-s'applique aux articles sans taux propre ; vide, l'entreprise n'est pas assujettie.
-Le numéro TWINT ajoute au PDF un bloc « Payer avec TWINT ».
+*Settings*: while the address or the IBAN is missing, a banner says so
+(*Complete it*) and no invoice can be issued. The default VAT rate applies to
+the articles without a rate of their own; empty, the company is not
+VAT-registered. The TWINT number adds a "Pay with TWINT" block to the PDF.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 11. Annuler une facture
+## 11. Cancel an invoice
 
-**Étapes**
+**Steps**
 
-1. Retrouver la facture.
-2. L'annuler.
+1. Find the invoice.
+2. Cancel it.
 
-**Dans l'application**
+**In the app**
 
-*Factures* (ou la fiche client) → icône *Annuler la facture* sur la ligne, immédiate,
-sans confirmation :
+*Invoices* (or the customer page) → *Cancel invoice* icon on the row, at once,
+without confirmation:
 
-- une facture **émise** reste dans la liste, annulée, avec son numéro ; ses
-  articles reviennent dans le stock ;
-- un **brouillon** annulé peut ensuite être supprimé (*Supprimer le brouillon
-  annulé*) : il n'avait pas de numéro. Une facture émise ne se supprime jamais.
+- an **issued** invoice stays in the list, cancelled, with its number; its
+  articles go back into the stock;
+- a cancelled **draft** can then be deleted (*Delete the cancelled draft*): it
+  had no number. An issued invoice is never deleted.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.
 
-## 12. Faire une facture pour un professionnel (Café)
+## 12. Invoice a business customer (café)
 
-Un café commande par quantité : on lui fait un prix, et on lui offre une partie
-de la commande (par exemple une bouteille par carton de 12).
+A café orders by quantity: it gets a price, and part of the order is given away
+(one bottle per case of 12, for example).
 
-**Étapes**
+**Steps**
 
-1. Ajouter les articles commandés.
-2. Adapter le prix des articles pour le prix de quantité.
-3. Offrir une partie de la commande.
-4. Valider la commande : les articles offerts sortent du stock comme une
-   promotion, pas comme une vente.
+1. Add the articles ordered.
+2. Adapt the articles' price for the quantity deal.
+3. Give away part of the order.
+4. Confirm the order: the articles given away leave the stock as a promotion,
+   not as a sale.
 
-**Dans l'application**
+**In the app**
 
-- 1. *Clients* → fiche → *Nouvelle facture* → les articles, un après l'autre.
-- 2. Le prix de chaque ligne se modifie dans l'éditeur (virgule ou point) ; il ne
-  vaut que pour cette facture : le prix de l'article ne change pas.
-- 3. Sur la ligne de l'article, l'icône cadeau (*Offrir*) ajoute juste en dessous
-  une ligne *Offert* du même article, à 1, et reste enfoncée ; un nouveau clic
-  (*Ne plus offrir*) la retire. La quantité offerte se saisit sur la ligne
-  *Offert* ; son prix (0.00) et sa TVA (aucune) ne se modifient pas. Le ✕ d'une
-  ligne offerte ne retire que le cadeau ; celui de l'article vendu retire aussi
-  ses lignes offertes. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
-  à 0.00 : le total n'en tient pas compte.
-- Pour changer l'ordre des lignes, on glisse une ligne par sa poignée (à gauche) ;
-  ses lignes offertes juste en dessous la suivent : le cadeau reste sous son
-  article, sur la facture comme sur le PDF. Au clavier, les flèches ↑ ↓ sur la
-  poignée font de même.
-- 4. À l'émission, les articles offerts quittent le stock avec les autres, mais
-  ne comptent pas dans *Vendus* : ils deviennent une sortie de stock
-  *Promotion / cadeau*, datée du jour, avec un lien vers la facture (colonne
-  *Sorties* des articles).
+- 1. *Customers* → customer page → *New invoice* → the articles, one after the
+  other.
+- 2. The price of each line is edited in the editor (comma or point); it only
+  holds for this invoice: the article's price does not change.
+- 3. On the article's line, the gift icon (*Offer for free*) adds right below it
+  a *Free* line of the same article, at 1, and stays pressed; another click (*No
+  longer offer*) removes it. The quantity offered is entered on the *Free* line;
+  its price (0.00) and VAT (none) cannot be edited. The ✕ of a free line only
+  removes the gift; that of the article sold also removes its free lines. The
+  PDF prints it on a line of its own, "Pinot Noir (free)" ("(offert)" in
+  French), at 0.00: the total leaves it out.
+- To change the order of the lines, drag a line by its handle (on the left); its
+  free lines right below it follow: the gift stays under its article, on the
+  invoice as on the PDF. With the keyboard, the ↑ ↓ arrows on the handle do the
+  same.
+- 4. On issue, the articles given away leave the stock with the others, but do
+  not count as *Sold*: they become a *Promotion / gift* stock withdrawal, dated
+  that day, with a link to the invoice (the articles' *Withdrawn* column).
 
-Cette sortie suit sa facture : elle ne se supprime pas depuis *Sorties de stock*
-(le lien *Facture …* remplace le bouton de suppression). Annuler la facture la
-retire, et le stock revient. Un cadeau saisi par erreur sur une facture émise se
-corrige comme toute erreur : annuler la facture et la refaire.
+That withdrawal follows its invoice: it cannot be deleted from *Stock
+withdrawals* (the *Invoice …* link replaces the delete button). Cancelling the
+invoice removes it, and the stock comes back. A gift entered by mistake on an
+issued invoice is corrected like any mistake: cancel the invoice and enter it
+again.
 
-**Manques**
+**Gaps**
 
-Aucun.
+None.

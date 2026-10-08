@@ -11,7 +11,7 @@ What exists today; the architecture decisions below explain the rules.
 - **Dashboard**: KPIs, overdue invoices with reminders, recent invoices
 - **Settings**: company profile (address, phone, IBAN, TWINT, VAT, payment and reminder terms)
 - **UI**: EN/FR, night mode, URL-synced list state (back button, permalinks), new-version detection; every form is a page of its own
-- Day-to-day usage: `docs/workflows.md` (French)
+- Day-to-day usage: `docs/workflows.md`
 
 ## Repo structure
 ```

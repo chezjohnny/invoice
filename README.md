@@ -7,7 +7,13 @@ and a bilingual (EN/FR) interface. One admin user per tenant.
 
 - **Invoicing workflow** — `draft → issued → paid → cancelled`; invoice lines are
   immutable once issued; payment method (cash, TWINT, bank transfer) and date;
-  payment reminders; a paid invoice prints as a receipt.
+  payment reminders; a paid invoice prints as a receipt; internal notes, never
+  printed.
+- **Invoice editor** — articles picked by name; per-line price for quantity deals;
+  offered (free) article lines, printed at 0.00 and recorded on issue as
+  promotion stock withdrawals rather than sales; lines reordered by drag and
+  drop, a gift staying under its article. Prices are typed with a comma or a
+  point; amounts show the Swiss way (`CHF 1’250.50`).
 - **Swiss QR-bill** — PDF with the payment part and receipt of the SIX
   Implementation Guidelines v2.3 (structured addresses), optional TWINT block.
 - **Articles & customers** — create, edit, archive and restore; customers as persons or companies,
@@ -18,20 +24,22 @@ and a bilingual (EN/FR) interface. One admin user per tenant.
 - **Multi-tenant** — every customer, article, invoice and stock withdrawal belongs
   to a tenant (`tenant_id`; invoice lines and reminders through their invoice);
   JWT auth with access token auto-refresh.
-- **Bilingual UI** — reactive EN/FR translations, night mode.
+- **Bilingual UI** — reactive EN/FR translations, night mode, list state in the
+  URL (back button, permalinks), new-version detection.
 - **CHF only** — Swiss SME focus, no currency field.
 - **Server-side pagination & search** on all list endpoints.
 
 The day-to-day usage workflows (phone pre-order, counter sale, payments,
-quarterly check, inventory, reminders) and how the app supports them are
-described in [docs/workflows.md](docs/workflows.md) (in French).
+quarterly check, inventory, reminders, stock withdrawals, a café's order with
+offered bottles) and how the app supports them are
+described in [docs/workflows.md](docs/workflows.md).
 
 ## Tech stack
 
 | Layer | Stack |
 |---|---|
 | Backend | Python 3.14, FastAPI, SQLAlchemy 2 (async), Alembic, `uv` |
-| Frontend | Angular 22 (zoneless, standalone), Tailwind v4, DaisyUI, `@ngrx/signals` |
+| Frontend | Angular 22 (zoneless, standalone, Signal Forms), Angular CDK (drag and drop), Tailwind v4, DaisyUI, `@ngrx/signals` |
 | Database | SQLite (dev and production) |
 | Auth | JWT (PyJWT) |
 
@@ -85,8 +93,8 @@ make dev-mock
 Any email and password sign in; the data lives in memory and is lost on reload.
 
 The demo data (`backend/fixtures/demo.json`) covers persons and companies,
-archived records, payments, overdue invoices with reminders and stock
-withdrawals. Its dates count back from the day it was generated: run
+archived records, payments, overdue invoices with reminders, offered bottles
+(one per dozen ordered) and stock withdrawals. Its dates count back from the day it was generated: run
 `make backend-fixtures-generate`, then `make backend-fixtures ARGS=--reset`, to
 bring them up to date.
 
