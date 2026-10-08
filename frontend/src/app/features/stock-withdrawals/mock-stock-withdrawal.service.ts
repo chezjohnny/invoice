@@ -4,6 +4,7 @@ import {
 } from '../../core/tokens/stock-withdrawal-service.token';
 import { Page } from '../../core/models/page.model';
 import { sortItems } from '../../shared/sort';
+import { Invoice } from '../invoices/invoice.model';
 import { StockWithdrawal, StockWithdrawalCreate } from './stock-withdrawal.model';
 
 // Article ids and names match MockArticleService.
@@ -26,11 +27,6 @@ const INITIAL: StockWithdrawal[] = [
   {
     id: '3', articleId: '1', articleName: ARTICLE_NAMES['1'], date: '2026-10-01',
     quantity: 2, reason: 'promotion', note: 'Tombola du club', invoiceId: null, invoiceNumber: null,
-  },
-  {
-    // Offered on an invoice (the dashboard mock's 2608011): only cancelling it removes this.
-    id: '4', articleId: '2', articleName: ARTICLE_NAMES['2'], date: '2026-10-02',
-    quantity: 1, reason: 'promotion', note: '', invoiceId: 'inv-2', invoiceNumber: '2608011',
   },
 ];
 
@@ -66,6 +62,24 @@ export class MockStockWithdrawalService implements IStockWithdrawalService {
     };
     this.withdrawals.push(withdrawal);
     return Promise.resolve(withdrawal);
+  }
+
+  /** What issuing an invoice records of its offered lines, server side with the API. */
+  giveAway(invoice: Invoice): void {
+    for (const line of invoice.lines) {
+      if (!line.offered || line.articleId === null) continue;
+      this.withdrawals.push({
+        id: String(this.nextId++), articleId: line.articleId,
+        articleName: ARTICLE_NAMES[line.articleId] ?? line.descriptionSnapshot,
+        date: invoice.issueDate!, quantity: line.quantity, reason: 'promotion', note: '',
+        invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber,
+      });
+    }
+  }
+
+  /** What cancelling the invoice takes back. */
+  takeBack(invoiceId: string): void {
+    this.withdrawals = this.withdrawals.filter((w) => w.invoiceId !== invoiceId);
   }
 
   delete(id: string): Promise<void> {

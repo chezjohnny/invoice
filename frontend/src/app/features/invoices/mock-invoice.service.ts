@@ -1,15 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
+import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
 import { Page } from '../../core/models/page.model';
 import { sortItems } from '../../shared/sort';
 import { customerDisplayName } from '../customers/customer.model';
 import { Invoice, InvoiceCreate, InvoiceUpdate, Payment, PaymentMethod, invoiceTotal } from './invoice.model';
 import { localIsoDate } from '../../shared/dates';
+import { MockStockWithdrawalService } from '../stock-withdrawals/mock-stock-withdrawal.service';
 
 @Injectable()
 export class MockInvoiceService implements IInvoiceService {
   private readonly customers = inject(CUSTOMER_SERVICE);
+  // The offered lines become withdrawals on issue, as with the API: in mock mode only.
+  private readonly withdrawals = inject(STOCK_WITHDRAWAL_SERVICE, { optional: true });
   private invoices: Invoice[] = [];
   private nextNum = 1;
 
@@ -103,6 +107,7 @@ export class MockInvoiceService implements IInvoiceService {
     const stem = today.slice(2).replaceAll('-', '');
     const sequence = this.invoices.filter((i) => i.invoiceNumber?.startsWith(stem)).length + 1;
     inv.invoiceNumber = `${stem}${sequence}`;
+    if (this.withdrawals instanceof MockStockWithdrawalService) this.withdrawals.giveAway(inv);
     return Promise.resolve(inv);
   }
 
@@ -128,6 +133,7 @@ export class MockInvoiceService implements IInvoiceService {
 
   cancel(id: string): Promise<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
+    if (this.withdrawals instanceof MockStockWithdrawalService) this.withdrawals.takeBack(id);
     inv.status = 'cancelled';
     return Promise.resolve(inv);
   }
