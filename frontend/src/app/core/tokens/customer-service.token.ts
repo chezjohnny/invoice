@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import type { Observable } from 'rxjs';
 import type { Customer, CustomerData } from '../../features/customers/customer.model';
 import type { Page } from '../models/page.model';
 import type { Sort } from '../../shared/sort';
@@ -12,13 +13,13 @@ export interface CustomerListParams {
 }
 
 export interface ICustomerService {
-  list(params: CustomerListParams): Promise<Page<Customer>>;
-  getById(id: string): Promise<Customer>;
-  create(data: CustomerData): Promise<Customer>;
-  update(id: string, data: CustomerData): Promise<Customer>;
-  archive(id: string): Promise<void>;
-  restore(id: string): Promise<void>;
-  exportCsv(): Promise<Blob>;
+  list(params: CustomerListParams): Observable<Page<Customer>>;
+  getById(id: string): Observable<Customer>;
+  create(data: CustomerData): Observable<Customer>;
+  update(id: string, data: CustomerData): Observable<Customer>;
+  archive(id: string): Observable<void>;
+  restore(id: string): Observable<void>;
+  exportCsv(): Observable<Blob>;
 }
 
 export const CUSTOMER_SERVICE = new InjectionToken<ICustomerService>('CustomerService');

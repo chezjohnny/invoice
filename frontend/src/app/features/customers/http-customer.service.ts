@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
 import { Page, PageDto, toPage } from '../../core/models/page.model';
 import { withSort } from '../../shared/sort';
@@ -30,49 +30,39 @@ interface CustomerDto {
 export class HttpCustomerService implements ICustomerService {
   private readonly http = inject(HttpClient);
 
-  list(params: CustomerListParams): Promise<Page<Customer>> {
+  list(params: CustomerListParams): Observable<Page<Customer>> {
     const httpParams = new HttpParams()
       .set('search', params.search ?? '')
       .set('archived', String(params.archived ?? false))
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
-    return firstValueFrom(
-      this.http.get<PageDto<CustomerDto>>('/api/customers', {
-        params: withSort(httpParams, params.sort),
-      })
-    ).then((dto) => toPage(dto, this.toCustomer));
+    return this.http.get<PageDto<CustomerDto>>('/api/customers', {
+      params: withSort(httpParams, params.sort),
+    }).pipe(map((dto) => toPage(dto, this.toCustomer)));
   }
 
-  getById(id: string): Promise<Customer> {
-    return firstValueFrom(
-      this.http.get<CustomerDto>(`/api/customers/${id}`)
-    ).then(this.toCustomer);
+  getById(id: string): Observable<Customer> {
+    return this.http.get<CustomerDto>(`/api/customers/${id}`).pipe(map(this.toCustomer));
   }
 
-  create(data: CustomerData): Promise<Customer> {
-    return firstValueFrom(
-      this.http.post<CustomerDto>('/api/customers', this.toDto(data))
-    ).then(this.toCustomer);
+  create(data: CustomerData): Observable<Customer> {
+    return this.http.post<CustomerDto>('/api/customers', this.toDto(data)).pipe(map(this.toCustomer));
   }
 
-  update(id: string, data: CustomerData): Promise<Customer> {
-    return firstValueFrom(
-      this.http.put<CustomerDto>(`/api/customers/${id}`, this.toDto(data))
-    ).then(this.toCustomer);
+  update(id: string, data: CustomerData): Observable<Customer> {
+    return this.http.put<CustomerDto>(`/api/customers/${id}`, this.toDto(data)).pipe(map(this.toCustomer));
   }
 
-  archive(id: string): Promise<void> {
-    return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/archive`, {}));
-  }
-  restore(id: string): Promise<void> {
-    return firstValueFrom(this.http.patch<void>(`/api/customers/${id}/restore`, {}));
+  archive(id: string): Observable<void> {
+    return this.http.patch<void>(`/api/customers/${id}/archive`, {});
   }
 
+  restore(id: string): Observable<void> {
+    return this.http.patch<void>(`/api/customers/${id}/restore`, {});
+  }
 
-  exportCsv(): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get('/api/customers/export.csv', { responseType: 'blob' })
-    );
+  exportCsv(): Observable<Blob> {
+    return this.http.get('/api/customers/export.csv', { responseType: 'blob' });
   }
 
   private toCustomer(dto: CustomerDto): Customer {

@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { Page } from '../../core/models/page.model';
@@ -18,8 +19,8 @@ const CUSTOMERS: Customer[] = [
   },
 ];
 
-function makePage(items: Customer[]): Page<Customer> {
-  return { items, total: items.length, page: 1, perPage: 20, pages: 1 };
+function makePage(items: Customer[], page = 1): Page<Customer> {
+  return { items, total: items.length, page, perPage: 20, pages: Math.max(page, 1) };
 }
 
 describe('CustomerStore', () => {
@@ -35,17 +36,19 @@ describe('CustomerStore', () => {
         {
           provide: CUSTOMER_SERVICE,
           useValue: {
-            list: async (params: { archived?: boolean }) =>
-              makePage(customers.filter((c) => c.isArchived === (params.archived ?? false))),
-            archive: async (id: string) => {
+            list: (params: { archived?: boolean; page?: number }) =>
+              of(makePage(customers.filter((c) => c.isArchived === (params.archived ?? false)), params.page)),
+            archive: (id: string) => {
               const c = customers.find((c) => c.id === id);
               if (c) c.isArchived = true;
+              return of(undefined);
             },
-            restore: async (id: string) => {
+            restore: (id: string) => {
               const c = customers.find((c) => c.id === id);
               if (c) c.isArchived = false;
+              return of(undefined);
             },
-            exportCsv: async () => new Blob([''], { type: 'text/csv' }),
+            exportCsv: () => of(new Blob([''], { type: 'text/csv' })),
           },
         },
       ],
@@ -53,38 +56,38 @@ describe('CustomerStore', () => {
     store = TestBed.inject(CustomerStore);
   });
 
-  it('loads customers on init', async () => {
-    await store.load();
+  it('loads customers on init', () => {
+    store.load();
     expect(store.items().length).toBe(2);
     expect(store.total()).toBe(2);
   });
 
-  it('setSearch resets page to 1', async () => {
-    await store.load();
+  it('setSearch resets page to 1', () => {
+    store.load();
     store.setSearch('alice');
     expect(store.page()).toBe(1);
     expect(store.search()).toBe('alice');
   });
 
-  it('archive removes customer from list', async () => {
-    await store.load();
-    await store.archive('1');
+  it('archive removes customer from list', () => {
+    store.load();
+    store.archive('1');
     expect(store.items().find((c) => c.id === '1')).toBeUndefined();
   });
 
-  it('shows archived customers and restores them to the active list', async () => {
-    await store.load();
-    await store.archive('1');
-    await store.setPage(2);
+  it('shows archived customers and restores them to the active list', () => {
+    store.load();
+    store.archive('1');
+    store.setPage(2);
 
-    await store.setArchived(true);
+    store.setArchived(true);
     expect(store.page()).toBe(1);
     expect(store.items().map((c) => c.id)).toEqual(['1']);
 
-    await store.restore('1');
+    store.restore('1');
     expect(store.items()).toEqual([]);
 
-    await store.setArchived(false);
+    store.setArchived(false);
     expect(store.items().some((c) => c.id === '1')).toBe(true);
   });
 

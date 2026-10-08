@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
@@ -95,7 +96,7 @@ export class MockInvoiceService implements IInvoiceService {
 
   /** The API joins it in; here, from the customers' mock. */
   private async customerName(customerId: string): Promise<string> {
-    return customerDisplayName(await this.customers.getById(customerId));
+    return customerDisplayName(await firstValueFrom(this.customers.getById(customerId)));
   }
 
   issue(id: string): Promise<Invoice> {

@@ -41,7 +41,7 @@ describe('InvoiceEditorStore', () => {
       providers: [
         provideZonelessChangeDetection(),
         InvoiceEditorStore,
-        { provide: CUSTOMER_SERVICE, useValue: { getById: async () => CUSTOMER } },
+        { provide: CUSTOMER_SERVICE, useValue: { getById: () => of(CUSTOMER) } },
         { provide: ARTICLE_SERVICE, useValue: { getAll: () => of([]) } },
         {
           provide: INVOICE_SERVICE,

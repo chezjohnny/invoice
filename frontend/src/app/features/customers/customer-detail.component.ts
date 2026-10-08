@@ -1,11 +1,12 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { SearchInputComponent } from '../../shared/components/search-input.component';
 import { InvoiceTableComponent } from '../invoices/invoice-table.component';
 import { InvoiceStore } from '../invoices/invoice.store';
-import { Customer, customerDisplayName } from './customer.model';
+import { customerDisplayName } from './customer.model';
 
 @Component({
   selector: 'app-customer-detail',
@@ -78,7 +79,12 @@ export class CustomerDetailComponent {
   protected readonly invoices = inject(InvoiceStore);
   private readonly customerService = inject(CUSTOMER_SERVICE);
 
-  protected readonly customer = signal<Customer | null>(null);
+  private readonly customerId = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
+  private readonly loaded = rxResource({
+    params: () => this.customerId,
+    stream: ({ params: id }) => this.customerService.getById(id),
+  });
+  protected readonly customer = computed(() => (this.loaded.hasValue() ? this.loaded.value() : null));
   protected readonly address = computed(() => {
     const c = this.customer();
     if (!c) return '';
@@ -86,19 +92,10 @@ export class CustomerDetailComponent {
       .filter(Boolean)
       .join(', ');
   });
-  protected readonly loading = signal(true);
+  protected readonly loading = this.loaded.isLoading;
 
   constructor() {
-    const id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
-    this.load(id);
-  }
-
-  private async load(id: string): Promise<void> {
-    const [customer] = await Promise.all([
-      this.customerService.getById(id),
-      this.invoices.showCustomer(id),
-    ]);
-    this.customer.set(customer);
-    this.loading.set(false);
+    // The invoice table shows its own spinner while they load.
+    this.invoices.showCustomer(this.customerId);
   }
 }

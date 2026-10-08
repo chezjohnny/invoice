@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
@@ -12,7 +13,7 @@ describe('MockInvoiceService', () => {
         provideZonelessChangeDetection(),
         MockInvoiceService,
         { provide: STOCK_WITHDRAWAL_SERVICE, useClass: MockStockWithdrawalService },
-        { provide: CUSTOMER_SERVICE, useValue: { getById: async () => ({ firstName: 'Jean', lastName: 'Dupont' }) } },
+        { provide: CUSTOMER_SERVICE, useValue: { getById: () => of({ firstName: 'Jean', lastName: 'Dupont' }) } },
       ],
     });
     const invoices = TestBed.inject(MockInvoiceService);

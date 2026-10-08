@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { CustomerListParams, ICustomerService } from '../../core/tokens/customer-service.token';
 import { Page } from '../../core/models/page.model';
 import { sortItems } from '../../shared/sort';
@@ -48,7 +49,7 @@ export class MockCustomerService implements ICustomerService {
   private customers = structuredClone(INITIAL);
   private nextId = INITIAL.length + 1;
 
-  list(params: CustomerListParams): Promise<Page<Customer>> {
+  list(params: CustomerListParams): Observable<Page<Customer>> {
     const search = (params.search ?? '').toLowerCase();
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
@@ -74,46 +75,46 @@ export class MockCustomerService implements ICustomerService {
     const total = sorted.length;
     const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
-    return Promise.resolve({ items, total, page, perPage, pages });
+    return of({ items, total, page, perPage, pages });
   }
 
-  getById(id: string): Promise<Customer> {
+  getById(id: string): Observable<Customer> {
     const customer = this.customers.find((c) => c.id === id);
-    if (!customer) return Promise.reject(new Error(`Customer ${id} not found`));
-    return Promise.resolve(customer);
+    if (!customer) return throwError(() => new Error(`Customer ${id} not found`));
+    return of(customer);
   }
 
-  create(data: CustomerData): Promise<Customer> {
+  create(data: CustomerData): Observable<Customer> {
     const customer: Customer = { ...data, id: String(this.nextId++), isArchived: false };
     this.customers.push(customer);
-    return Promise.resolve(customer);
+    return of(customer);
   }
 
-  update(id: string, data: CustomerData): Promise<Customer> {
+  update(id: string, data: CustomerData): Observable<Customer> {
     const index = this.customers.findIndex((c) => c.id === id);
     this.customers[index] = { ...this.customers[index], ...data };
-    return Promise.resolve(this.customers[index]);
+    return of(this.customers[index]);
   }
 
-  archive(id: string): Promise<void> {
+  archive(id: string): Observable<void> {
     const c = this.customers.find((c) => c.id === id);
     if (c) c.isArchived = true;
-    return Promise.resolve();
+    return of(undefined);
   }
 
-  restore(id: string): Promise<void> {
+  restore(id: string): Observable<void> {
     const c = this.customers.find((c) => c.id === id);
     if (c) c.isArchived = false;
-    return Promise.resolve();
+    return of(undefined);
   }
 
-  exportCsv(): Promise<Blob> {
+  exportCsv(): Observable<Blob> {
     const lines = ['first_name,last_name,email,address_line1,address_line2,postal_code,city,country'];
     for (const c of this.customers.filter((c) => !c.isArchived)) {
       lines.push(
         `${c.firstName},${c.lastName},${c.email ?? ''},${c.addressLine1},${c.addressLine2 ?? ''},${c.postalCode},${c.city},${c.country}`
       );
     }
-    return Promise.resolve(new Blob([lines.join('\n')], { type: 'text/csv' }));
+    return of(new Blob([lines.join('\n')], { type: 'text/csv' }));
   }
 }

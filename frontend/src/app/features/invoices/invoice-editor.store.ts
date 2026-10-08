@@ -49,8 +49,9 @@ export const InvoiceEditorStore = signalStore(
           const invoice = 'invoiceId' in target ? await invoices.getById(target.invoiceId) : null;
           const customerId = invoice?.customerId ?? ('customerId' in target ? target.customerId : '');
           const [customer, articles, archivedArticles] = await Promise.all([
-            customers.getById(customerId),
-            // The article service returns Observables; this store, not moved yet, awaits them.
+            // The customer and article services return Observables; this store,
+            // not moved yet, awaits them.
+            firstValueFrom(customers.getById(customerId)),
             firstValueFrom(articleService.getAll()),
             firstValueFrom(articleService.getAll(true)),
           ]);
