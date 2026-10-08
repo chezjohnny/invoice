@@ -3,8 +3,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
@@ -31,13 +30,13 @@ def _kpi(invoices: Sequence[Invoice]) -> InvoiceKpi:
 
 
 @router.get("/stats", response_model=DashboardStats)
-async def get_dashboard_stats(
+def get_dashboard_stats(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> DashboardStats:
     tenant_id = current_user.tenant_id
     invoices = list(
-        await db.scalars(
+        db.scalars(
             select(Invoice)
             .where(Invoice.tenant_id == tenant_id)
             .options(selectinload(Invoice.lines), selectinload(Invoice.reminders))
@@ -60,14 +59,14 @@ async def get_dashboard_stats(
         if i.status == InvoiceStatus.PAID and i.paid_at is not None and i.paid_at.year == today.year
     ]
     recent = invoices[:RECENT_INVOICES]
-    names = await customer_names(db, tenant_id, (i.customer_id for i in [*recent, *overdue]))
+    names = customer_names(db, tenant_id, (i.customer_id for i in [*recent, *overdue]))
 
-    customer_count = await db.scalar(
+    customer_count = db.scalar(
         select(func.count(Customer.id)).where(
             Customer.tenant_id == tenant_id, Customer.is_archived.is_(False)
         )
     )
-    article_count = await db.scalar(
+    article_count = db.scalar(
         select(func.count(Article.id)).where(
             Article.tenant_id == tenant_id, Article.is_archived.is_(False)
         )

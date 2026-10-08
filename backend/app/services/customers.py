@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Iterable
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 
@@ -17,14 +17,14 @@ def full_name(customer: Customer) -> str:
     return " ".join(part for part in (customer.first_name, customer.last_name) if part)
 
 
-async def customer_names(
-    db: AsyncSession, tenant_id: uuid.UUID, ids: Iterable[uuid.UUID]
+def customer_names(
+    db: Session, tenant_id: uuid.UUID, ids: Iterable[uuid.UUID]
 ) -> dict[uuid.UUID, str]:
     """Display names of these customers of the tenant, in one query."""
     wanted = set(ids)
     if not wanted:
         return {}
-    rows = await db.execute(
+    rows = db.execute(
         select(Customer.id, Customer.first_name, Customer.last_name).where(
             Customer.tenant_id == tenant_id, Customer.id.in_(wanted)
         )

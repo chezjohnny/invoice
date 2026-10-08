@@ -6,10 +6,11 @@ from typing import Any
 from uuid import UUID
 
 import pytest
-from httpx import AsyncClient, Response
+from fastapi.testclient import TestClient
+from httpx import Response
 from qrbill import QRBill
 from sqlalchemy import update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine
@@ -202,7 +203,6 @@ def test_address_puts_a_contact_above_the_street_and_a_po_box_below():
     assert _party_lines("Garage SA", "Rue du Lac 1", None, "", "") == ["Garage SA", "Rue du Lac 1"]
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "change",
     [
@@ -214,17 +214,16 @@ def test_address_puts_a_contact_above_the_street_and_a_po_box_below():
         {"discount_percent": "-5"},
     ],
 )
-async def test_invoice_amounts_are_bounded(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, change: dict[str, Any]
+def test_invoice_amounts_are_bounded(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, change: dict[str, Any]
 ):
     payload = {"customer_id": customer_id, "lines": [LINE]} | change
-    resp = await client.post(INVOICES, json=payload, headers=auth_headers)
+    resp = client.post(INVOICES, json=payload, headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_create_invoice(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
-    resp = await client.post(
+def test_create_invoice(client: TestClient, auth_headers: dict[str, str], customer_id: str):
+    resp = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -240,10 +239,9 @@ async def test_create_invoice(client: AsyncClient, auth_headers: dict[str, str],
     assert data["payment_method"] is None
 
 
-@pytest.mark.anyio
-async def test_get_invoice(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
+def test_get_invoice(client: TestClient, auth_headers: dict[str, str], customer_id: str):
     invoice_id = (
-        await client.post(
+        client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -253,20 +251,17 @@ async def test_get_invoice(client: AsyncClient, auth_headers: dict[str, str], cu
         )
     ).json()["id"]
 
-    resp = await client.get(f"{INVOICES}/{invoice_id}", headers=auth_headers)
+    resp = client.get(f"{INVOICES}/{invoice_id}", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["id"] == invoice_id
     assert len(resp.json()["lines"]) == 1
 
     other = "00000000-0000-0000-0000-000000000000"
-    assert (await client.get(f"{INVOICES}/{other}", headers=auth_headers)).status_code == 404
+    assert client.get(f"{INVOICES}/{other}", headers=auth_headers).status_code == 404
 
 
-@pytest.mark.anyio
-async def test_invoice_payment_method(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str
-):
-    resp = await client.post(
+def test_invoice_payment_method(client: TestClient, auth_headers: dict[str, str], customer_id: str):
+    resp = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -277,7 +272,7 @@ async def test_invoice_payment_method(
     )
     assert resp.json()["payment_method"] == "twint"
 
-    resp = await client.put(
+    resp = client.put(
         f"{INVOICES}/{resp.json()['id']}",
         json={
             "customer_id": customer_id,
@@ -288,7 +283,7 @@ async def test_invoice_payment_method(
     )
     assert resp.json()["payment_method"] == "iban"
 
-    resp = await client.post(
+    resp = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -300,42 +295,38 @@ async def test_invoice_payment_method(
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_list_invoices(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
-    await client.post(
-        INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
-    )
-    resp = await client.get(INVOICES, headers=auth_headers)
+def test_list_invoices(client: TestClient, auth_headers: dict[str, str], customer_id: str):
+    client.post(INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers)
+    resp = client.get(INVOICES, headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()["items"]) == 1
 
 
-@pytest.mark.anyio
-async def test_invoice_history_newest_first(
-    client: AsyncClient,
+def test_invoice_history_newest_first(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
-    db_session: AsyncSession,
+    db_session: Session,
 ):
-    older = await client.post(
+    older = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
-    newer = await client.post(
+    newer = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(older.json()["id"]))
         .values(created_at=datetime(2020, 1, 1))
     )
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(newer.json()["id"]))
         .values(created_at=datetime(2025, 1, 1))
     )
-    await db_session.commit()
+    db_session.commit()
 
-    response = await client.get(f"{INVOICES}?customer_id={customer_id}", headers=auth_headers)
+    response = client.get(f"{INVOICES}?customer_id={customer_id}", headers=auth_headers)
 
     assert [invoice["id"] for invoice in response.json()["items"]] == [
         newer.json()["id"],
@@ -343,34 +334,33 @@ async def test_invoice_history_newest_first(
     ]
 
 
-@pytest.mark.anyio
-async def test_history_orders_by_issue_date_before_creation(
-    client: AsyncClient,
+def test_history_orders_by_issue_date_before_creation(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
-    db_session: AsyncSession,
+    db_session: Session,
 ):
-    older = await client.post(
+    older = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
-    newer = await client.post(
+    newer = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
     # Created together (as imported invoices were): the issue date decides.
     created_at = datetime(2026, 9, 29, 17, 36, 42)
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(older.json()["id"]))
         .values(issue_date=date(2022, 1, 5), created_at=created_at)
     )
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(newer.json()["id"]))
         .values(issue_date=date(2025, 11, 21), created_at=created_at)
     )
-    await db_session.commit()
+    db_session.commit()
 
-    response = await client.get(f"{INVOICES}?customer_id={customer_id}", headers=auth_headers)
+    response = client.get(f"{INVOICES}?customer_id={customer_id}", headers=auth_headers)
 
     assert [invoice["id"] for invoice in response.json()["items"]] == [
         newer.json()["id"],
@@ -378,9 +368,8 @@ async def test_history_orders_by_issue_date_before_creation(
     ]
 
 
-@pytest.mark.anyio
-async def test_update_invoice(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
-    create = await client.post(
+def test_update_invoice(client: TestClient, auth_headers: dict[str, str], customer_id: str):
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -390,7 +379,7 @@ async def test_update_invoice(client: AsyncClient, auth_headers: dict[str, str],
     )
     invoice_id = create.json()["id"]
     updated_line = {**LINE, "description_snapshot": "Updated service"}
-    resp = await client.put(
+    resp = client.put(
         f"{INVOICES}/{invoice_id}",
         json={
             "customer_id": customer_id,
@@ -402,11 +391,10 @@ async def test_update_invoice(client: AsyncClient, auth_headers: dict[str, str],
     assert resp.json()["lines"][0]["description_snapshot"] == "Updated service"
 
 
-@pytest.mark.anyio
-async def test_search_matches_number_line_or_customer_words(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_search_matches_number_line_or_customer_words(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    fendant = await client.post(
+    fendant = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -414,7 +402,7 @@ async def test_search_matches_number_line_or_customer_words(
         },
         headers=auth_headers,
     )
-    other = await client.post(
+    other = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -422,29 +410,28 @@ async def test_search_matches_number_line_or_customer_words(
         },
         headers=auth_headers,
     )
-    issued = await client.post(f"{INVOICES}/{other.json()['id']}/issue", headers=auth_headers)
+    issued = client.post(f"{INVOICES}/{other.json()['id']}/issue", headers=auth_headers)
 
-    async def found(search: str) -> list[str]:
-        resp = await client.get(INVOICES, params={"search": search}, headers=auth_headers)
+    def found(search: str) -> list[str]:
+        resp = client.get(INVOICES, params={"search": search}, headers=auth_headers)
         return [i["id"] for i in resp.json()["items"]]
 
     # Words in any order, regardless of case and accents.
-    assert await found("NOIR desir 2024") == [fendant.json()["id"]]
-    assert await found("2024 désir") == [fendant.json()["id"]]
-    assert await found("desir 2023") == []
-    assert sorted(await found("dupont jean")) == sorted([fendant.json()["id"], other.json()["id"]])
-    assert await found("100%") == []
-    by_number = await client.get(
+    assert found("NOIR desir 2024") == [fendant.json()["id"]]
+    assert found("2024 désir") == [fendant.json()["id"]]
+    assert found("desir 2023") == []
+    assert sorted(found("dupont jean")) == sorted([fendant.json()["id"], other.json()["id"]])
+    assert found("100%") == []
+    by_number = client.get(
         f"{INVOICES}?search={issued.json()['invoice_number']}", headers=auth_headers
     )
     assert [i["id"] for i in by_number.json()["items"]] == [other.json()["id"]]
 
 
-@pytest.mark.anyio
-async def test_issue_invoice(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_issue_invoice(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -453,7 +440,7 @@ async def test_issue_invoice(
         headers=auth_headers,
     )
     invoice_id = create.json()["id"]
-    resp = await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "issued"
@@ -464,41 +451,40 @@ async def test_issue_invoice(
     assert data["due_date"] == (issued_on + timedelta(days=30)).isoformat()  # profile terms
 
 
-@pytest.mark.anyio
-async def test_issue_numbers_restart_each_day(
-    client: AsyncClient,
+def test_issue_numbers_restart_each_day(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
-    db_session: AsyncSession,
+    db_session: Session,
 ):
-    async def issue() -> dict[str, Any]:
-        create = await client.post(
+    def issue() -> dict[str, Any]:
+        create = client.post(
             INVOICES, json={"customer_id": customer_id, "lines": [LINE]}, headers=auth_headers
         )
-        resp = await client.post(f"{INVOICES}/{create.json()['id']}/issue", headers=auth_headers)
+        resp = client.post(f"{INVOICES}/{create.json()['id']}/issue", headers=auth_headers)
         invoice: dict[str, Any] = resp.json()
         return invoice
 
-    first = await issue()
+    first = issue()
     yesterday = date.today() - timedelta(days=1)
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(first["id"]))
         .values(invoice_number=f"{yesterday:%y%m%d}1")
     )
-    await db_session.commit()
+    db_session.commit()
 
-    second = await issue()
+    second = issue()
     today = f"{date.fromisoformat(second['issue_date']):%y%m%d}"
     assert second["invoice_number"] == f"{today}1"
-    assert (await issue())["invoice_number"] == f"{today}2"
+    assert issue()["invoice_number"] == f"{today}2"
     # Unpadded: the tenth of the day follows the ninth, also when sorted by number.
     for _ in range(8):
-        await issue()
-    assert (await issue())["invoice_number"] == f"{today}11"
+        issue()
+    assert issue()["invoice_number"] == f"{today}11"
     listed = (
-        await client.get(
+        client.get(
             INVOICES,
             params={"sort": "number", "order": "desc", "per_page": 3},
             headers=auth_headers,
@@ -507,29 +493,27 @@ async def test_issue_numbers_restart_each_day(
     assert [i["invoice_number"] for i in listed] == [f"{today}11", f"{today}10", f"{today}9"]
 
 
-@pytest.mark.anyio
-async def test_issue_number_skips_numbers_with_letters(
-    complete_profile: None, make_invoice: MakeInvoice, db_session: AsyncSession
+def test_issue_number_skips_numbers_with_letters(
+    complete_profile: None, make_invoice: MakeInvoice, db_session: Session
 ):
-    first = await make_invoice("issue")
+    first = make_invoice("issue")
     stem = first["invoice_number"][:6]
     # Numbers imported before 1.0 may end with letters: they never count.
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(first["id"]))
         .values(invoice_number=f"{stem}5840pr")
     )
-    await db_session.commit()
+    db_session.commit()
 
-    second = await make_invoice("issue")
+    second = make_invoice("issue")
     assert second["invoice_number"] == f"{stem}1"
 
 
-@pytest.mark.anyio
-async def test_issue_invoice_requires_complete_profile(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str
+def test_issue_invoice_requires_complete_profile(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -538,44 +522,42 @@ async def test_issue_invoice_requires_complete_profile(
         headers=auth_headers,
     )
     invoice_id = create.json()["id"]
-    resp = await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
     assert resp.status_code == 422
     assert "incomplete" in resp.json()["detail"]
 
-    listed = await client.get(INVOICES, headers=auth_headers)
+    listed = client.get(INVOICES, headers=auth_headers)
     assert listed.json()["items"][0]["status"] == "draft"
 
 
-@pytest.mark.anyio
-async def test_pay_invoice(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pay_invoice(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    resp = await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "paid"
     assert resp.json()["paid_at"] == date.today().isoformat()
 
 
-@pytest.mark.anyio
-async def test_update_payment_date(
-    client: AsyncClient,
+def test_update_payment_date(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
 
-    response = await client.patch(
+    response = client.patch(
         f"{INVOICES}/{invoice_id}/payment-date",
         json={"paid_at": "2025-03-12"},
         headers=auth_headers,
@@ -585,17 +567,16 @@ async def test_update_payment_date(
     assert response.json()["paid_at"] == "2025-03-12"
 
 
-@pytest.mark.anyio
-async def test_pay_with_date_and_method(
-    client: AsyncClient,
+def test_pay_with_date_and_method(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
 ):
-    async def issued(method: str | None) -> str:
+    def issued(method: str | None) -> str:
         invoice_id = str(
             (
-                await client.post(
+                client.post(
                     INVOICES,
                     json={
                         "customer_id": customer_id,
@@ -606,19 +587,19 @@ async def test_pay_with_date_and_method(
                 )
             ).json()["id"]
         )
-        await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+        client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
         return invoice_id
 
     # Without a body: paid today, the planned payment method kept.
-    invoice_id = await issued("iban")
-    data = (await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)).json()
+    invoice_id = issued("iban")
+    data = client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers).json()
     assert data["status"] == "paid"
     assert data["paid_at"] == date.today().isoformat()
     assert data["payment_method"] == "iban"
 
     # A TWINT payment received a few days ago on an invoice planned as a transfer.
-    invoice_id = await issued("iban")
-    resp = await client.post(
+    invoice_id = issued("iban")
+    resp = client.post(
         f"{INVOICES}/{invoice_id}/pay",
         json={
             "paid_at": "2026-09-28",
@@ -630,29 +611,29 @@ async def test_pay_with_date_and_method(
     assert resp.json()["paid_at"] == "2026-09-28"
     assert resp.json()["payment_method"] == "twint"
 
-    invoice_id = await issued(None)
-    resp = await client.post(
+    invoice_id = issued(None)
+    resp = client.post(
         f"{INVOICES}/{invoice_id}/pay", json={"payment_method": "card"}, headers=auth_headers
     )
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_update_payment_method(
-    client: AsyncClient,
+def test_update_payment_method(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
 ):
-    async def patch(invoice_id: str, method: str) -> Response:
-        return await client.patch(
+    def patch(invoice_id: str, method: str) -> Response:
+        response: Response = client.patch(
             f"{INVOICES}/{invoice_id}/payment-method",
             json={"payment_method": method},
             headers=auth_headers,
         )
+        return response
 
     invoice_id = (
-        await client.post(
+        client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -662,18 +643,18 @@ async def test_update_payment_method(
             headers=auth_headers,
         )
     ).json()["id"]
-    assert (await patch(invoice_id, "twint")).status_code == 409  # draft: through PUT
+    assert patch(invoice_id, "twint").status_code == 409  # draft: through PUT
 
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    resp = await patch(invoice_id, "twint")
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = patch(invoice_id, "twint")
     assert resp.status_code == 200
     assert resp.json()["payment_method"] == "twint"
 
-    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
-    assert (await patch(invoice_id, "iban")).json()["payment_method"] == "iban"
+    client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    assert patch(invoice_id, "iban").json()["payment_method"] == "iban"
 
     cancelled_id = (
-        await client.post(
+        client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -682,65 +663,61 @@ async def test_update_payment_method(
             headers=auth_headers,
         )
     ).json()["id"]
-    await client.post(f"{INVOICES}/{cancelled_id}/cancel", headers=auth_headers)
-    assert (await patch(cancelled_id, "cash")).status_code == 409
+    client.post(f"{INVOICES}/{cancelled_id}/cancel", headers=auth_headers)
+    assert patch(cancelled_id, "cash").status_code == 409
 
 
-@pytest.mark.anyio
-async def test_cancel_draft(client: AsyncClient, auth_headers: dict[str, str], customer_id: str):
-    create = await client.post(
+def test_cancel_draft(client: TestClient, auth_headers: dict[str, str], customer_id: str):
+    create = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
     invoice_id = create.json()["id"]
-    resp = await client.post(f"{INVOICES}/{invoice_id}/cancel", headers=auth_headers)
+    resp = client.post(f"{INVOICES}/{invoice_id}/cancel", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "cancelled"
 
 
-@pytest.mark.anyio
-async def test_delete_only_drafts_cancelled_before_issue(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_delete_only_drafts_cancelled_before_issue(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    async def invoice(*steps: str) -> str:
-        create = await client.post(
+    def invoice(*steps: str) -> str:
+        create = client.post(
             INVOICES, json={"customer_id": customer_id, "lines": [LINE]}, headers=auth_headers
         )
         invoice_id: str = create.json()["id"]
         for step in steps:
-            await client.post(f"{INVOICES}/{invoice_id}/{step}", headers=auth_headers)
+            client.post(f"{INVOICES}/{invoice_id}/{step}", headers=auth_headers)
         return invoice_id
 
-    for kept in (await invoice(), await invoice("issue"), await invoice("issue", "cancel")):
-        resp = await client.delete(f"{INVOICES}/{kept}", headers=auth_headers)
+    for kept in (invoice(), invoice("issue"), invoice("issue", "cancel")):
+        resp = client.delete(f"{INVOICES}/{kept}", headers=auth_headers)
         assert resp.status_code == 409
 
-    cancelled_draft = await invoice("cancel")
-    resp = await client.delete(f"{INVOICES}/{cancelled_draft}", headers=auth_headers)
+    cancelled_draft = invoice("cancel")
+    resp = client.delete(f"{INVOICES}/{cancelled_draft}", headers=auth_headers)
     assert resp.status_code == 204
-    listed = await client.get(INVOICES, headers=auth_headers)
+    listed = client.get(INVOICES, headers=auth_headers)
     assert cancelled_draft not in [i["id"] for i in listed.json()["items"]]
     assert listed.json()["total"] == 3
 
 
-@pytest.mark.anyio
-async def test_cancel_issued(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_cancel_issued(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    resp = await client.post(f"{INVOICES}/{invoice_id}/cancel", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = client.post(f"{INVOICES}/{invoice_id}/cancel", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "cancelled"
 
 
-@pytest.mark.anyio
-async def test_download_pdf(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_download_pdf(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -749,8 +726,8 @@ async def test_download_pdf(
         headers=auth_headers,
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    resp = await client.get(f"{INVOICES}/{invoice_id}/pdf", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    resp = client.get(f"{INVOICES}/{invoice_id}/pdf", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert len(resp.content) > 1000
@@ -761,11 +738,10 @@ def _pdf_text(content: bytes) -> str:
     return b"".join(zlib.decompress(s) for s in streams if s[:1] == b"x").decode("latin-1")
 
 
-@pytest.mark.anyio
-async def test_pdf_shows_twint_payment_only_when_configured(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_shows_twint_payment_only_when_configured(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -774,27 +750,26 @@ async def test_pdf_shows_twint_payment_only_when_configured(
         headers=auth_headers,
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
     pdf_url = f"{INVOICES}/{invoice_id}/pdf"
 
-    without = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    without = _pdf_text(client.get(pdf_url, headers=auth_headers).content)
     assert "TWINT" not in without
 
-    profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
+    profile = client.get("/tenant/profile", headers=auth_headers).json()
     writable = {k: v for k, v in profile.items() if k not in ("id", "tenant_id", "is_complete")}
-    await client.put(
+    client.put(
         "/tenant/profile", json={**writable, "twint_phone": "079 123 45 67"}, headers=auth_headers
     )
-    text = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+    text = _pdf_text(client.get(f"{pdf_url}?lang=en", headers=auth_headers).content)
     assert "Pay with TWINT" in text
     assert "079 123 45 67" in text
 
 
-@pytest.mark.anyio
-async def test_pdf_shows_payment_date_once_paid(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_shows_payment_date_once_paid(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -803,24 +778,24 @@ async def test_pdf_shows_payment_date_once_paid(
         headers=auth_headers,
     )
     invoice_id = create.json()["id"]
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
     pdf_url = f"{INVOICES}/{invoice_id}/pdf"
-    unpaid = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    unpaid = _pdf_text(client.get(pdf_url, headers=auth_headers).content)
     assert "Acquittée" not in unpaid
     assert "Récépissé" in unpaid
     assert "Échéance" in unpaid
 
-    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
-    await client.patch(
+    client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    client.patch(
         f"{INVOICES}/{invoice_id}/payment-date",
         json={"paid_at": "2026-03-12"},
         headers=auth_headers,
     )
-    french = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    french = _pdf_text(client.get(pdf_url, headers=auth_headers).content)
     assert "Acquittée le 12.03.2026" in french
     assert "Récépissé" not in french
     assert "Échéance" not in french
-    english = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+    english = _pdf_text(client.get(f"{pdf_url}?lang=en", headers=auth_headers).content)
     assert "Paid on 12.03.2026" in english
 
     for method, text in [
@@ -828,42 +803,40 @@ async def test_pdf_shows_payment_date_once_paid(
         ("twint", "Acquittée par TWINT le 12.03.2026"),
         ("iban", "Acquittée par virement le 12.03.2026"),
     ]:
-        await client.patch(
+        client.patch(
             f"{INVOICES}/{invoice_id}/payment-method",
             json={"payment_method": method},
             headers=auth_headers,
         )
-        assert text in _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
-    english = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+        assert text in _pdf_text(client.get(pdf_url, headers=auth_headers).content)
+    english = _pdf_text(client.get(f"{pdf_url}?lang=en", headers=auth_headers).content)
     assert "Paid by bank transfer on 12.03.2026" in english
 
 
-@pytest.mark.anyio
-async def test_company_customer_is_named_without_a_first_name(
-    client: AsyncClient, auth_headers: dict[str, str], complete_profile: None
+def test_company_customer_is_named_without_a_first_name(
+    client: TestClient, auth_headers: dict[str, str], complete_profile: None
 ):
-    customer = await client.post(
+    customer = client.post(
         CUSTOMERS,
         json={"last_name": "Garage du Lac SA", "postal_code": "1932", "city": "Bovernier"},
         headers=auth_headers,
     )
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={"customer_id": customer.json()["id"], "lines": [LINE]},
         headers=auth_headers,
     )
-    listed = (await client.get(INVOICES, headers=auth_headers)).json()["items"]
+    listed = client.get(INVOICES, headers=auth_headers).json()["items"]
     assert listed[0]["customer_name"] == "Garage du Lac SA"
     pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
-    text = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    text = _pdf_text(client.get(pdf_url, headers=auth_headers).content)
     assert "(Garage du Lac SA)" in text
 
 
-@pytest.mark.anyio
-async def test_pdf_header_shows_company_phone(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_header_shows_company_phone(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -872,36 +845,30 @@ async def test_pdf_header_shows_company_phone(
         headers=auth_headers,
     )
     pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
-    assert "Tél." not in _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "Tél." not in _pdf_text(client.get(pdf_url, headers=auth_headers).content)
 
-    profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
+    profile = client.get("/tenant/profile", headers=auth_headers).json()
     writable = {k: v for k, v in profile.items() if k not in ("id", "tenant_id", "is_complete")}
-    await client.put(
-        "/tenant/profile", json={**writable, "phone": "024 123 45 67"}, headers=auth_headers
-    )
-    assert "Tél. : 024 123 45 67" in _pdf_text(
-        (await client.get(pdf_url, headers=auth_headers)).content
-    )
+    client.put("/tenant/profile", json={**writable, "phone": "024 123 45 67"}, headers=auth_headers)
+    assert "Tél. : 024 123 45 67" in _pdf_text(client.get(pdf_url, headers=auth_headers).content)
 
 
-@pytest.mark.anyio
-async def test_pdf_leaves_out_the_internal_notes(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_leaves_out_the_internal_notes(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={"customer_id": customer_id, "lines": [LINE], "notes": "Internal reminder"},
         headers=auth_headers,
     )
-    pdf = await client.get(f"{INVOICES}/{create.json()['id']}/pdf", headers=auth_headers)
+    pdf = client.get(f"{INVOICES}/{create.json()['id']}/pdf", headers=auth_headers)
     assert "Internal reminder" not in _pdf_text(pdf.content)
 
 
-@pytest.mark.anyio
-async def test_pdf_language(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_language(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    create = await client.post(
+    create = client.post(
         INVOICES,
         json={
             "customer_id": customer_id,
@@ -911,29 +878,28 @@ async def test_pdf_language(
     )
     pdf_url = f"{INVOICES}/{create.json()['id']}/pdf"
 
-    french = _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    french = _pdf_text(client.get(pdf_url, headers=auth_headers).content)
     assert "Facture" in french and "Récépissé" in french
     assert "Invoice" not in french
 
-    english = _pdf_text((await client.get(f"{pdf_url}?lang=en", headers=auth_headers)).content)
+    english = _pdf_text(client.get(f"{pdf_url}?lang=en", headers=auth_headers).content)
     assert "Invoice" in english and "Receipt" in english
 
-    resp = await client.get(f"{pdf_url}?lang=de", headers=auth_headers)
+    resp = client.get(f"{pdf_url}?lang=de", headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_invoice_tenant_isolation(
-    client: AsyncClient,
+def test_invoice_tenant_isolation(
+    client: TestClient,
     auth_headers: dict[str, str],
     other_headers: dict[str, str],
     customer_id: str,
     article_id: str,
     make_invoice: MakeInvoice,
 ):
-    invoice_id = (await make_invoice())["id"]
+    invoice_id = make_invoice()["id"]
 
-    resp = await client.get(INVOICES, headers=other_headers)
+    resp = client.get(INVOICES, headers=other_headers)
     assert resp.json()["total"] == 0
     assert resp.json()["items"] == []
     for method, path in [
@@ -953,7 +919,7 @@ async def test_invoice_tenant_isolation(
             "PUT": {"customer_id": customer_id, "lines": []},
             "PATCH": {"paid_at": "2026-01-01", "payment_method": "cash"},
         }.get(method)
-        resp = await client.request(
+        resp = client.request(
             method,
             f"{INVOICES}/{invoice_id}{path}",
             headers=other_headers,
@@ -963,12 +929,12 @@ async def test_invoice_tenant_isolation(
 
     # Nor can another tenant bill this tenant's customer or article.
     other_line = {**LINE, "article_id": article_id}
-    resp = await client.post(
+    resp = client.post(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=other_headers
     )
     assert resp.status_code == 400
     own_customer = (
-        await client.post(
+        client.post(
             CUSTOMERS,
             json={
                 "first_name": "Ana",
@@ -983,7 +949,7 @@ async def test_invoice_tenant_isolation(
             headers=other_headers,
         )
     ).json()["id"]
-    resp = await client.post(
+    resp = client.post(
         INVOICES, json={"customer_id": own_customer, "lines": [other_line]}, headers=other_headers
     )
     assert resp.status_code == 400
@@ -995,12 +961,11 @@ def test_chf_uses_swiss_thousands_separator():
     assert _chf(Decimal("1234567.89"), " ") == "1 234 567.89"
 
 
-@pytest.mark.anyio
-async def test_sort_invoices(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_sort_invoices(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    async def create(quantity: int, discount: str = "0") -> str:
-        resp = await client.post(
+    def create(quantity: int, discount: str = "0") -> str:
+        resp = client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -1011,38 +976,37 @@ async def test_sort_invoices(
         )
         return str(resp.json()["id"])
 
-    small = await create(1)  # 50 + VAT = 54.05
-    big = await create(3, discount="50")  # 150 - 50 % + VAT = 81.08
-    medium = await create(2)  # 100 + VAT = 108.10
-    await client.post(f"{INVOICES}/{medium}/issue", headers=auth_headers)
-    await client.post(f"{INVOICES}/{big}/issue", headers=auth_headers)
-    await client.post(f"{INVOICES}/{big}/pay", headers=auth_headers)
+    small = create(1)  # 50 + VAT = 54.05
+    big = create(3, discount="50")  # 150 - 50 % + VAT = 81.08
+    medium = create(2)  # 100 + VAT = 108.10
+    client.post(f"{INVOICES}/{medium}/issue", headers=auth_headers)
+    client.post(f"{INVOICES}/{big}/issue", headers=auth_headers)
+    client.post(f"{INVOICES}/{big}/pay", headers=auth_headers)
 
-    async def ids(query: str) -> list[str]:
-        resp = await client.get(f"{INVOICES}?{query}", headers=auth_headers)
+    def ids(query: str) -> list[str]:
+        resp = client.get(f"{INVOICES}?{query}", headers=auth_headers)
         assert resp.status_code == 200, resp.text
         return [i["id"] for i in resp.json()["items"]]
 
-    assert await ids("sort=total") == [small, big, medium]
-    assert await ids("sort=total&order=desc") == [medium, big, small]
+    assert ids("sort=total") == [small, big, medium]
+    assert ids("sort=total&order=desc") == [medium, big, small]
     # Workflow order: draft, issued, paid.
-    assert await ids("sort=status") == [small, medium, big]
+    assert ids("sort=status") == [small, medium, big]
     # The draft has no number yet: last in both directions.
-    assert (await ids("sort=number"))[-1] == small
-    assert (await ids("sort=number&order=desc"))[-1] == small
-    assert len(await ids("sort=customer")) == 3
+    assert ids("sort=number")[-1] == small
+    assert ids("sort=number&order=desc")[-1] == small
+    assert len(ids("sort=customer")) == 3
 
 
-@pytest.mark.anyio
-async def test_payment_reminders(
-    client: AsyncClient,
+def test_payment_reminders(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
-    db_session: AsyncSession,
+    db_session: Session,
 ):
     invoice_id = (
-        await client.post(
+        client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -1052,65 +1016,57 @@ async def test_payment_reminders(
         )
     ).json()["id"]
     reminders = f"{INVOICES}/{invoice_id}/reminders"
-    assert (await client.post(reminders, headers=auth_headers)).status_code == 409  # draft
+    assert client.post(reminders, headers=auth_headers).status_code == 409  # draft
 
-    await client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
-    assert (await client.post(reminders, headers=auth_headers)).status_code == 409  # not due yet
+    client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
+    assert client.post(reminders, headers=auth_headers).status_code == 409  # not due yet
 
     today = date.today()
-    await db_session.execute(
+    db_session.execute(
         update(Invoice)
         .where(Invoice.id == UUID(invoice_id))
         .values(due_date=today - timedelta(days=1))
     )
-    await db_session.commit()
+    db_session.commit()
 
-    first = await client.post(reminders, headers=auth_headers)
+    first = client.post(reminders, headers=auth_headers)
     assert first.status_code == 201
     deadline = (today + timedelta(days=10)).isoformat()  # reminder_terms_days of the profile
     assert first.json()["reminders"] == [
         {"number": 1, "sent_on": today.isoformat(), "due_on": deadline},
     ]
-    second = (await client.post(reminders, headers=auth_headers)).json()
+    second = client.post(reminders, headers=auth_headers).json()
     assert [r["number"] for r in second["reminders"]] == [1, 2]
     # Listed with the invoice, and reported on the dashboard.
-    listed = (await client.get(INVOICES, headers=auth_headers)).json()["items"][0]
+    listed = client.get(INVOICES, headers=auth_headers).json()["items"][0]
     assert len(listed["reminders"]) == 2
-    overdue = (await client.get("/dashboard/stats", headers=auth_headers)).json()[
-        "overdue_invoices"
-    ]
+    overdue = client.get("/dashboard/stats", headers=auth_headers).json()["overdue_invoices"]
     assert overdue[0]["reminder_count"] == 2
     assert overdue[0]["last_reminder_on"] == today.isoformat()
 
     # Printing a reminder again creates none.
-    pdf = await client.get(f"{reminders}/2/pdf", headers=auth_headers)
+    pdf = client.get(f"{reminders}/2/pdf", headers=auth_headers)
     assert pdf.status_code == 200
     text = _pdf_text(pdf.content)
     assert "2e rappel" in text
     assert "Récépissé" in text  # still payable with the QR-bill
-    english = _pdf_text(
-        (await client.get(f"{reminders}/1/pdf?lang=en", headers=auth_headers)).content
-    )
+    english = _pdf_text(client.get(f"{reminders}/1/pdf?lang=en", headers=auth_headers).content)
     assert "Reminder" in english
     assert (
-        len(
-            (await client.get(f"{INVOICES}/{invoice_id}", headers=auth_headers)).json()["reminders"]
-        )
-        == 2
+        len(client.get(f"{INVOICES}/{invoice_id}", headers=auth_headers).json()["reminders"]) == 2
     )
-    assert (await client.get(f"{reminders}/3/pdf", headers=auth_headers)).status_code == 404
+    assert client.get(f"{reminders}/3/pdf", headers=auth_headers).status_code == 404
 
     # Paid: no more reminders.
-    await client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
-    assert (await client.post(reminders, headers=auth_headers)).status_code == 409
+    client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
+    assert client.post(reminders, headers=auth_headers).status_code == 409
 
 
-@pytest.mark.anyio
-async def test_pdf_prints_the_vat_number_only_when_registered(
-    client: AsyncClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
+def test_pdf_prints_the_vat_number_only_when_registered(
+    client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
     invoice_id = (
-        await client.post(
+        client.post(
             INVOICES,
             json={
                 "customer_id": customer_id,
@@ -1120,18 +1076,18 @@ async def test_pdf_prints_the_vat_number_only_when_registered(
         )
     ).json()["id"]
     pdf_url = f"{INVOICES}/{invoice_id}/pdf"
-    assert "N° TVA" not in _pdf_text((await client.get(pdf_url, headers=auth_headers)).content)
+    assert "N° TVA" not in _pdf_text(client.get(pdf_url, headers=auth_headers).content)
 
-    profile = (await client.get("/tenant/profile", headers=auth_headers)).json()
+    profile = client.get("/tenant/profile", headers=auth_headers).json()
     writable = {k: v for k, v in profile.items() if k not in ("id", "tenant_id", "is_complete")}
-    resp = await client.put(
+    resp = client.put(
         "/tenant/profile",
         json={**writable, "vat_number": "CHE-123.456.789 TVA"},
         headers=auth_headers,
     )
     assert resp.status_code == 200
     assert "N° TVA : CHE-123.456.789 TVA" in _pdf_text(
-        (await client.get(pdf_url, headers=auth_headers)).content
+        client.get(pdf_url, headers=auth_headers).content
     )
 
 
@@ -1145,34 +1101,30 @@ def _article_line(article_id: str, quantity: int) -> dict[str, object]:
     }
 
 
-async def _stock(client: AsyncClient, headers: dict[str, str], article_id: str) -> int:
-    return int(
-        (await client.get(f"/articles/{article_id}", headers=headers)).json()["stock_quantity"]
-    )
+def _stock(client: TestClient, headers: dict[str, str], article_id: str) -> int:
+    return int(client.get(f"/articles/{article_id}", headers=headers).json()["stock_quantity"])
 
 
-@pytest.mark.anyio
-async def test_issue_takes_the_stock_and_cancel_gives_it_back(
-    client: AsyncClient,
+def test_issue_takes_the_stock_and_cancel_gives_it_back(
+    client: TestClient,
     auth_headers: dict[str, str],
     article_id: str,
     complete_profile: None,
     make_invoice: MakeInvoice,
 ):
-    draft = await make_invoice(lines=[_article_line(article_id, 3)])
-    assert await _stock(client, auth_headers, article_id) == 10  # a draft takes nothing
+    draft = make_invoice(lines=[_article_line(article_id, 3)])
+    assert _stock(client, auth_headers, article_id) == 10  # a draft takes nothing
 
-    issued = await make_invoice("issue", lines=[_article_line(article_id, 4)])
-    assert await _stock(client, auth_headers, article_id) == 6
+    issued = make_invoice("issue", lines=[_article_line(article_id, 4)])
+    assert _stock(client, auth_headers, article_id) == 6
 
-    await client.post(f"{INVOICES}/{draft['id']}/cancel", headers=auth_headers)
-    assert await _stock(client, auth_headers, article_id) == 6  # nothing to give back
+    client.post(f"{INVOICES}/{draft['id']}/cancel", headers=auth_headers)
+    assert _stock(client, auth_headers, article_id) == 6  # nothing to give back
 
-    await client.post(f"{INVOICES}/{issued['id']}/cancel", headers=auth_headers)
-    assert await _stock(client, auth_headers, article_id) == 10
+    client.post(f"{INVOICES}/{issued['id']}/cancel", headers=auth_headers)
+    assert _stock(client, auth_headers, article_id) == 10
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("steps", "action"),
     [
@@ -1186,8 +1138,8 @@ async def test_issue_takes_the_stock_and_cancel_gives_it_back(
         (("issue", "cancel"), "cancel"),
     ],
 )
-async def test_actions_refused_in_the_wrong_status(
-    client: AsyncClient,
+def test_actions_refused_in_the_wrong_status(
+    client: TestClient,
     auth_headers: dict[str, str],
     customer_id: str,
     complete_profile: None,
@@ -1195,47 +1147,43 @@ async def test_actions_refused_in_the_wrong_status(
     steps: tuple[str, ...],
     action: str,
 ):
-    invoice_id = (await make_invoice(*steps))["id"]
+    invoice_id = make_invoice(*steps)["id"]
     url = f"{INVOICES}/{invoice_id}"
     if action == "PUT":
-        resp = await client.put(
-            url, json={"customer_id": customer_id, "lines": []}, headers=auth_headers
-        )
+        resp = client.put(url, json={"customer_id": customer_id, "lines": []}, headers=auth_headers)
     elif action == "payment-date":
-        resp = await client.patch(
+        resp = client.patch(
             f"{url}/payment-date", json={"paid_at": "2026-01-01"}, headers=auth_headers
         )
     else:
-        resp = await client.post(f"{url}/{action}", headers=auth_headers)
+        resp = client.post(f"{url}/{action}", headers=auth_headers)
     assert resp.status_code == 409
 
 
-@pytest.mark.anyio
-async def test_list_invoices_by_status(
-    client: AsyncClient,
+def test_list_invoices_by_status(
+    client: TestClient,
     auth_headers: dict[str, str],
     complete_profile: None,
     make_invoice: MakeInvoice,
 ):
-    draft = await make_invoice()
-    issued = await make_invoice("issue")
-    paid = await make_invoice("issue", "pay")
+    draft = make_invoice()
+    issued = make_invoice("issue")
+    paid = make_invoice("issue", "pay")
 
-    async def ids(status: str) -> list[str]:
-        resp = await client.get(INVOICES, params={"status": status}, headers=auth_headers)
+    def ids(status: str) -> list[str]:
+        resp = client.get(INVOICES, params={"status": status}, headers=auth_headers)
         return [i["id"] for i in resp.json()["items"]]
 
-    assert await ids("draft") == [draft["id"]]
-    assert await ids("issued") == [issued["id"]]
-    assert await ids("paid") == [paid["id"]]
-    assert await ids("cancelled") == []
-    resp = await client.get(INVOICES, params={"status": "sent"}, headers=auth_headers)
+    assert ids("draft") == [draft["id"]]
+    assert ids("issued") == [issued["id"]]
+    assert ids("paid") == [paid["id"]]
+    assert ids("cancelled") == []
+    resp = client.get(INVOICES, params={"status": "sent"}, headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_lines_keep_the_order_they_are_sent_in(
-    client: AsyncClient, auth_headers: dict[str, str], make_invoice: MakeInvoice
+def test_lines_keep_the_order_they_are_sent_in(
+    client: TestClient, auth_headers: dict[str, str], make_invoice: MakeInvoice
 ):
     def line(description: str) -> dict[str, Any]:
         return {
@@ -1248,15 +1196,15 @@ async def test_lines_keep_the_order_they_are_sent_in(
 
     # Saved in one go, the lines share their created_at: only the position orders them.
     names = ["Zèbre", "Abricot", "Moka", "Bière", "Yaourt"]
-    invoice = await make_invoice(lines=[line(name) for name in names])
+    invoice = make_invoice(lines=[line(name) for name in names])
     assert [line["description_snapshot"] for line in invoice["lines"]] == names
 
     reordered = names[::-1]
-    resp = await client.put(
+    resp = client.put(
         f"{INVOICES}/{invoice['id']}",
         json={"customer_id": invoice["customer_id"], "lines": [line(n) for n in reordered]},
         headers=auth_headers,
     )
     assert [line["description_snapshot"] for line in resp.json()["lines"]] == reordered
-    resp = await client.get(f"{INVOICES}/{invoice['id']}", headers=auth_headers)
+    resp = client.get(f"{INVOICES}/{invoice['id']}", headers=auth_headers)
     assert [line["description_snapshot"] for line in resp.json()["lines"]] == reordered

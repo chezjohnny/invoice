@@ -4,7 +4,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import ScalarSelect, extract, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.api.crud import get_owned, set_archived
 from app.api.deps import get_current_user
@@ -36,7 +36,7 @@ ArticleSort = Literal[
 
 
 @router.get("", response_model=PagedResponse[ArticleListItem])
-async def list_articles(
+def list_articles(
     search: str = Query(""),
     archived: bool = Query(False),
     sales_year: int | None = Query(None, ge=1900, le=9999),
@@ -46,7 +46,7 @@ async def list_articles(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> PagedResponse[ArticleListItem]:
     _check_period(sales_year, sales_quarter)
     conditions = [
@@ -72,9 +72,9 @@ async def list_articles(
         }
         ordering = [*sort_clauses(columns[sort], order), Article.id]
 
-    total = (await db.scalar(select(func.count(Article.id)).where(*conditions))) or 0
+    total = (db.scalar(select(func.count(Article.id)).where(*conditions))) or 0
     rows = (
-        await db.execute(
+        db.execute(
             select(Article, sold, withdrawn)
             .where(*conditions)
             .order_by(*ordering)
@@ -94,12 +94,12 @@ async def list_articles(
 
 
 @router.get("/sales-years", response_model=list[int])
-async def list_sales_years(
+def list_sales_years(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> list[int]:
     year = extract("year", Invoice.issue_date)
-    result = await db.scalars(
+    result = db.scalars(
         select(year)
         .where(
             Invoice.tenant_id == current_user.tenant_id,
@@ -113,17 +113,17 @@ async def list_sales_years(
 
 
 @router.get("/export.csv")
-async def export_articles_csv(
+def export_articles_csv(
     archived: bool = Query(False),
     sales_year: int | None = Query(None, ge=1900, le=9999),
     sales_quarter: int | None = Query(None, ge=1, le=4),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Response:
     """The active (or archived) articles, with their sales and withdrawals over the period."""
     _check_period(sales_year, sales_quarter)
     rows = (
-        await db.execute(
+        db.execute(
             select(
                 Article,
                 _sold_quantity(sales_year, sales_quarter),
@@ -164,60 +164,60 @@ async def export_articles_csv(
 
 
 @router.get("/{article_id}", response_model=ArticleResponse)
-async def get_article(
+def get_article(
     article_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Article:
-    return await _get_article(article_id, current_user.tenant_id, db)
+    return _get_article(article_id, current_user.tenant_id, db)
 
 
 @router.post("", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED)
-async def create_article(
+def create_article(
     body: ArticleCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Article:
     article = Article(**body.model_dump(), tenant_id=current_user.tenant_id)
     db.add(article)
-    await db.commit()
-    await db.refresh(article)
+    db.commit()
+    db.refresh(article)
     return article
 
 
 @router.put("/{article_id}", response_model=ArticleResponse)
-async def update_article(
+def update_article(
     article_id: uuid.UUID,
     body: ArticleUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Article:
-    article = await _get_article(article_id, current_user.tenant_id, db)
+    article = _get_article(article_id, current_user.tenant_id, db)
     for field, value in body.model_dump().items():
         setattr(article, field, value)
-    await db.commit()
-    await db.refresh(article)
+    db.commit()
+    db.refresh(article)
     return article
 
 
 @router.patch("/{article_id}/archive", response_model=ArticleResponse)
-async def archive_article(
+def archive_article(
     article_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Article:
-    article = await _get_article(article_id, current_user.tenant_id, db)
-    return await set_archived(db, article, archived=True)
+    article = _get_article(article_id, current_user.tenant_id, db)
+    return set_archived(db, article, archived=True)
 
 
 @router.patch("/{article_id}/restore", response_model=ArticleResponse)
-async def restore_article(
+def restore_article(
     article_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Article:
-    article = await _get_article(article_id, current_user.tenant_id, db)
-    return await set_archived(db, article, archived=False)
+    article = _get_article(article_id, current_user.tenant_id, db)
+    return set_archived(db, article, archived=False)
 
 
 def _sold_quantity(sales_year: int | None, sales_quarter: int | None) -> ScalarSelect[int]:
@@ -263,5 +263,5 @@ def _sales_period(year: int, quarter: int | None) -> tuple[date, date]:
     return start, end
 
 
-async def _get_article(article_id: uuid.UUID, tenant_id: uuid.UUID, db: AsyncSession) -> Article:
-    return await get_owned(db, Article, article_id, tenant_id)
+def _get_article(article_id: uuid.UUID, tenant_id: uuid.UUID, db: Session) -> Article:
+    return get_owned(db, Article, article_id, tenant_id)

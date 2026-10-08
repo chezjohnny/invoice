@@ -4,8 +4,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import case, delete, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.crud import get_owned, get_profile
 from app.api.deps import get_current_user
@@ -37,7 +36,7 @@ InvoiceSort = Literal["number", "customer", "date", "due", "paid_at", "total", "
 
 
 @router.get("", response_model=PagedResponse[InvoiceResponse])
-async def list_invoices(
+def list_invoices(
     search: str = Query(""),
     status_filter: InvoiceStatus | None = Query(None, alias="status"),
     customer_id: uuid.UUID | None = Query(None),
@@ -46,7 +45,7 @@ async def list_invoices(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> PagedResponse[InvoiceResponse]:
     conditions = [Invoice.tenant_id == current_user.tenant_id]
     if customer_id:
@@ -96,10 +95,10 @@ async def list_invoices(
         }
         ordering = [*sort_clauses(columns[sort], order), Invoice.id]
 
-    total = (await db.scalar(select(func.count(Invoice.id)).where(*conditions))) or 0
+    total = (db.scalar(select(func.count(Invoice.id)).where(*conditions))) or 0
     items = list(
         (
-            await db.execute(
+            db.execute(
                 query.options(selectinload(Invoice.lines), selectinload(Invoice.reminders))
                 .order_by(*ordering)
                 .offset((page - 1) * per_page)
@@ -109,7 +108,7 @@ async def list_invoices(
         .scalars()
         .all()
     )
-    names = await customer_names(db, current_user.tenant_id, (i.customer_id for i in items))
+    names = customer_names(db, current_user.tenant_id, (i.customer_id for i in items))
     response_items = [
         InvoiceResponse.model_validate(inv).model_copy(
             update={"customer_name": names.get(inv.customer_id, "")}
@@ -120,21 +119,21 @@ async def list_invoices(
 
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
-async def get_invoice(
+def get_invoice(
     invoice_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    return await _load_invoice(invoice_id, current_user.tenant_id, db)
+    return _load_invoice(invoice_id, current_user.tenant_id, db)
 
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
-async def create_invoice(
+def create_invoice(
     body: InvoiceCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    await _validate_refs(body, current_user.tenant_id, db)
+    _validate_refs(body, current_user.tenant_id, db)
     invoice = Invoice(
         tenant_id=current_user.tenant_id,
         customer_id=body.customer_id,
@@ -144,22 +143,22 @@ async def create_invoice(
         lines=_lines(body),
     )
     db.add(invoice)
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.put("/{invoice_id}", response_model=InvoiceResponse)
-async def update_invoice(
+def update_invoice(
     invoice_id: uuid.UUID,
     body: InvoiceUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     if invoice.status != InvoiceStatus.DRAFT:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only draft invoices can be edited")
 
-    await _validate_refs(body, current_user.tenant_id, db)
+    _validate_refs(body, current_user.tenant_id, db)
     invoice.customer_id = body.customer_id
     invoice.discount_percent = body.discount_percent
     invoice.notes = body.notes
@@ -167,21 +166,21 @@ async def update_invoice(
     # Replaced as a whole: the delete-orphan cascade removes the previous lines.
     invoice.lines = _lines(body)
 
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.post("/{invoice_id}/issue", response_model=InvoiceResponse)
-async def issue_invoice(
+def issue_invoice(
     invoice_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     if invoice.status != InvoiceStatus.DRAFT:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only draft invoices can be issued")
 
-    profile = await get_profile(db, current_user.tenant_id)
+    profile = get_profile(db, current_user.tenant_id)
     if not profile.is_complete:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -189,25 +188,25 @@ async def issue_invoice(
         )
 
     today = date.today()
-    invoice.invoice_number = await next_invoice_number(db, current_user.tenant_id, today)
+    invoice.invoice_number = next_invoice_number(db, current_user.tenant_id, today)
     invoice.issue_date = today
     invoice.due_date = today + timedelta(days=profile.payment_terms_days)
     invoice.status = InvoiceStatus.ISSUED
-    await _move_stock(db, invoice, -1)
+    _move_stock(db, invoice, -1)
     _give_away(db, invoice)
 
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.post("/{invoice_id}/pay", response_model=InvoiceResponse)
-async def pay_invoice(
+def pay_invoice(
     invoice_id: uuid.UUID,
     body: InvoicePayment | None = None,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     if invoice.status != InvoiceStatus.ISSUED:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only issued invoices can be paid")
     payment = body or InvoicePayment()
@@ -215,50 +214,50 @@ async def pay_invoice(
     invoice.paid_at = payment.paid_at or date.today()
     if payment.payment_method is not None:
         invoice.payment_method = payment.payment_method
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.patch("/{invoice_id}/payment-date", response_model=InvoiceResponse)
-async def update_payment_date(
+def update_payment_date(
     invoice_id: uuid.UUID,
     body: InvoicePaymentDateUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     if invoice.status != InvoiceStatus.PAID:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only paid invoices have a payment date")
     invoice.paid_at = body.paid_at
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.patch("/{invoice_id}/payment-method", response_model=InvoiceResponse)
-async def update_payment_method(
+def update_payment_method(
     invoice_id: uuid.UUID,
     body: InvoicePaymentMethodUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     # A draft changes it through PUT; a cancelled invoice is no longer paid.
     if invoice.status not in (InvoiceStatus.ISSUED, InvoiceStatus.PAID):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Only issued or paid invoices can change payment method"
         )
     invoice.payment_method = body.payment_method
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.post("/{invoice_id}/cancel", response_model=InvoiceResponse)
-async def cancel_invoice(
+def cancel_invoice(
     invoice_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     if invoice.status not in (InvoiceStatus.DRAFT, InvoiceStatus.ISSUED):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -266,21 +265,21 @@ async def cancel_invoice(
         )
 
     if invoice.status == InvoiceStatus.ISSUED:
-        await _move_stock(db, invoice, +1)
-        await db.execute(delete(StockWithdrawal).where(StockWithdrawal.invoice_id == invoice.id))
+        _move_stock(db, invoice, +1)
+        db.execute(delete(StockWithdrawal).where(StockWithdrawal.invoice_id == invoice.id))
 
     invoice.status = InvoiceStatus.CANCELLED
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_invoice(
+def delete_invoice(
     invoice_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> None:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     # Only a draft cancelled before issue: an issued invoice is an accounting
     # record to keep, and deleting the day's last number would hand it out again.
     if invoice.status != InvoiceStatus.CANCELLED or invoice.invoice_number is not None:
@@ -288,20 +287,20 @@ async def delete_invoice(
             status.HTTP_409_CONFLICT,
             "Only invoices cancelled before being issued can be deleted",
         )
-    await db.delete(invoice)
-    await db.commit()
+    db.delete(invoice)
+    db.commit()
 
 
 @router.get("/{invoice_id}/pdf")
-async def download_pdf(
+def download_pdf(
     invoice_id: uuid.UUID,
     lang: Lang = Query("fr"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Response:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     filename = invoice.invoice_number or f"invoice-{invoice.id}"
-    return await _pdf_response(invoice, None, filename, lang, current_user.tenant_id, db)
+    return _pdf_response(invoice, None, filename, lang, current_user.tenant_id, db)
 
 
 @router.post(
@@ -309,22 +308,22 @@ async def download_pdf(
     response_model=InvoiceResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_reminder(
+def create_reminder(
     invoice_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Invoice:
     """Record the next payment reminder of an overdue invoice, dated today.
 
     Only this explicit step creates one: printing a reminder again never does.
     """
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     today = date.today()
     # Still payable on the due date itself: overdue starts the day after.
     overdue = invoice.due_date is not None and invoice.due_date < today
     if invoice.status != InvoiceStatus.ISSUED or not overdue:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only overdue invoices get a reminder")
-    profile = await get_profile(db, current_user.tenant_id)
+    profile = get_profile(db, current_user.tenant_id)
     invoice.reminders.append(
         InvoiceReminder(
             number=len(invoice.reminders) + 1,
@@ -332,36 +331,36 @@ async def create_reminder(
             due_on=today + timedelta(days=profile.reminder_terms_days),
         )
     )
-    await db.commit()
-    return await _load_invoice(invoice.id, current_user.tenant_id, db)
+    db.commit()
+    return _load_invoice(invoice.id, current_user.tenant_id, db)
 
 
 @router.get("/{invoice_id}/reminders/{number}/pdf")
-async def download_reminder_pdf(
+def download_reminder_pdf(
     invoice_id: uuid.UUID,
     number: int,
     lang: Lang = Query("fr"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Response:
-    invoice = await _load_invoice(invoice_id, current_user.tenant_id, db)
+    invoice = _load_invoice(invoice_id, current_user.tenant_id, db)
     reminder = next((r for r in invoice.reminders if r.number == number), None)
     if reminder is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reminder not found")
     filename = f"{invoice.invoice_number}-R{number}"
-    return await _pdf_response(invoice, reminder, filename, lang, current_user.tenant_id, db)
+    return _pdf_response(invoice, reminder, filename, lang, current_user.tenant_id, db)
 
 
-async def _pdf_response(
+def _pdf_response(
     invoice: Invoice,
     reminder: InvoiceReminder | None,
     filename: str,
     lang: Lang,
     tenant_id: uuid.UUID,
-    db: AsyncSession,
+    db: Session,
 ) -> Response:
-    customer = await get_owned(db, Customer, invoice.customer_id, tenant_id)
-    profile = await get_profile(db, tenant_id)
+    customer = get_owned(db, Customer, invoice.customer_id, tenant_id)
+    profile = get_profile(db, tenant_id)
     pdf_bytes = generate_invoice_pdf(invoice, customer, profile, lang, reminder)
     return Response(
         content=pdf_bytes,
@@ -380,11 +379,9 @@ _STATUS_RANK = {
 }
 
 
-async def _validate_refs(
-    body: InvoiceCreate | InvoiceUpdate, tenant_id: uuid.UUID, db: AsyncSession
-) -> None:
+def _validate_refs(body: InvoiceCreate | InvoiceUpdate, tenant_id: uuid.UUID, db: Session) -> None:
     """Ensure the customer and every referenced article belong to the tenant."""
-    customer = await db.scalar(
+    customer = db.scalar(
         select(Customer.id).where(Customer.id == body.customer_id, Customer.tenant_id == tenant_id)
     )
     if customer is None:
@@ -397,7 +394,7 @@ async def _validate_refs(
     if article_ids:
         found = set(
             (
-                await db.execute(
+                db.execute(
                     select(Article.id).where(
                         Article.id.in_(article_ids),
                         Article.tenant_id == tenant_id,
@@ -415,8 +412,8 @@ async def _validate_refs(
             )
 
 
-async def _load_invoice(invoice_id: uuid.UUID, tenant_id: uuid.UUID, db: AsyncSession) -> Invoice:
-    return await get_owned(
+def _load_invoice(invoice_id: uuid.UUID, tenant_id: uuid.UUID, db: Session) -> Invoice:
+    return get_owned(
         db,
         Invoice,
         invoice_id,
@@ -431,7 +428,7 @@ def _lines(body: InvoiceCreate | InvoiceUpdate) -> list[InvoiceLine]:
     return [InvoiceLine(**line.model_dump(), position=n) for n, line in enumerate(body.lines)]
 
 
-async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:
+def _move_stock(db: Session, invoice: Invoice, sign: int) -> None:
     """Issuing takes the invoiced articles from the stock (-1), cancelling gives them back
     (+1): sold and offered alike, the offered ones also recorded as withdrawals."""
     quantities: dict[uuid.UUID, int] = {}
@@ -442,11 +439,11 @@ async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:
         articles = select(Article).where(
             Article.tenant_id == invoice.tenant_id, Article.id.in_(quantities)
         )
-        for article in await db.scalars(articles):
+        for article in db.scalars(articles):
             article.stock_quantity += sign * quantities[article.id]
 
 
-def _give_away(db: AsyncSession, invoice: Invoice) -> None:
+def _give_away(db: Session, invoice: Invoice) -> None:
     """The offered lines of an invoice being issued, as promotion withdrawals of its day:
     what the stock lost to them, outside the sales. _move_stock() already took them."""
     assert invoice.issue_date is not None

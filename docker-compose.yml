@@ -12,7 +12,7 @@ services:
     environment:
       # SQLite is plenty at single-user SME scale and makes backups trivial
       # (one file). The four slashes are intentional: absolute /data/invoice.db.
-      INVOICE_DATABASE_URL: ${INVOICE_DATABASE_URL:-sqlite+aiosqlite:////data/invoice.db}
+      INVOICE_DATABASE_URL: ${INVOICE_DATABASE_URL:-sqlite:////data/invoice.db}
       INVOICE_SECRET_KEY: ${INVOICE_SECRET_KEY:?INVOICE_SECRET_KEY must be set in .env}
       INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES: ${INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       INVOICE_REFRESH_TOKEN_EXPIRE_DAYS: ${INVOICE_REFRESH_TOKEN_EXPIRE_DAYS:-7}

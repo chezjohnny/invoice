@@ -1,10 +1,11 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Relative to the working directory: backend/dev.db, also shared with the
     # Docker dev stack, which mounts backend/ onto /app.
-    database_url: str = "sqlite+aiosqlite:///./dev.db"
+    database_url: str = "sqlite:///./dev.db"
     secret_key: str = "dev-insecure-change-me-in-production-secret"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
@@ -16,6 +17,13 @@ class Settings(BaseSettings):
     root_path: str = ""
 
     model_config = {"env_file": ".env", "env_prefix": "INVOICE_"}
+
+    @field_validator("database_url")
+    @classmethod
+    def _sync_driver(cls, url: str) -> str:
+        # The .env files written for the former async engine (aiosqlite) keep
+        # working: until they are all updated, their URL takes the sync driver.
+        return url.replace("sqlite+aiosqlite://", "sqlite://", 1)
 
 
 settings = Settings()

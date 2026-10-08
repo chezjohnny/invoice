@@ -11,15 +11,15 @@ import uuid
 from datetime import date
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice
 
 
-async def next_invoice_number(db: AsyncSession, tenant_id: uuid.UUID, day: date) -> str:
+def next_invoice_number(db: Session, tenant_id: uuid.UUID, day: date) -> str:
     # Six digits, so a stem only ever matches the numbers of its own day.
     stem = f"{day:%y%m%d}"
-    numbers = await db.scalars(
+    numbers = db.scalars(
         select(Invoice.invoice_number).where(
             Invoice.tenant_id == tenant_id,
             Invoice.invoice_number.startswith(stem, autoescape=True),

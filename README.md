@@ -119,7 +119,7 @@ Settings are read from environment variables (via `pydantic-settings`) with the
 
 | Variable | Default | Notes |
 |---|---|---|
-| `INVOICE_DATABASE_URL` | `sqlite+aiosqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db` |
+| `INVOICE_DATABASE_URL` | `sqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db`; a former `sqlite+aiosqlite://` URL is still read as `sqlite://` |
 | `INVOICE_SECRET_KEY` | dev-only placeholder | **must** be overridden in production (≥ 32 bytes) |
 | `INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
 | `INVOICE_ALGORITHM` | `HS256` | JWT signing algorithm |
@@ -277,15 +277,15 @@ month. The QR-bill payload is checked against the `qrbill` library in the tests.
 
 ## Interactive shell
 
-A Flask-shell-style REPL (IPython) with a live async session and all models in
-scope; top-level `await` works:
+A Flask-shell-style REPL (IPython) with a live session and all models in
+scope:
 
 ```bash
 make backend-shell
 ```
 ```python
-(await db.scalars(select(Customer).limit(5))).all()
-await db.scalar(select(func.count(Invoice.id)))
+db.scalars(select(Customer).limit(5)).all()
+db.scalar(select(func.count(Invoice.id)))
 ```
 
 ## License

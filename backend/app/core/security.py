@@ -3,33 +3,25 @@ from typing import Literal
 
 import bcrypt
 import jwt
-from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
 
-# bcrypt is slow on purpose (some 0.2 s), to slow down password guessing: it runs
-# in a thread, so that the event loop keeps serving the other requests meanwhile.
 
-
-def _hash(password: str) -> str:
+def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
-async def hash_password(password: str) -> str:
-    return await run_in_threadpool(_hash, password)
-
-
-async def verify_password(plain: str, hashed: str) -> bool:
-    return await run_in_threadpool(bcrypt.checkpw, plain.encode(), hashed.encode())
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 # Checked against when the email is unknown, so that a login takes as long
 # either way and does not tell which addresses have an account.
-_UNKNOWN_USER_HASH = _hash("no account has this password")
+_UNKNOWN_USER_HASH = hash_password("no account has this password")
 
 
-async def verify_unknown_user(plain: str) -> None:
-    await verify_password(plain, _UNKNOWN_USER_HASH)
+def verify_unknown_user(plain: str) -> None:
+    verify_password(plain, _UNKNOWN_USER_HASH)
 
 
 # The type claim keeps the two apart: a 7-day refresh token must not open the

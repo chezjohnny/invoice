@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import getpass
 import json
 import sys
@@ -13,9 +12,9 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
-from app.core.database import AsyncSessionLocal, Base, engine
+from app.core.database import Base, SessionLocal, engine
 from app.models.invoice import (
     Invoice,
     InvoiceLine,
@@ -29,24 +28,24 @@ from app.services.invoices import effective_vat_rate
 from app.services.tenants import TenantError, create_tenant, set_password
 
 
-async def _load_fixtures(path: Path, reset: bool) -> None:
+def _load_fixtures(path: Path, reset: bool) -> None:
     data = json.loads(path.read_text())
 
-    async with AsyncSessionLocal() as db:
-        created = await _load_tenant(db, data["tenant"], reset)
+    with SessionLocal() as db:
+        created = _load_tenant(db, data["tenant"], reset)
         if not created:
             return
 
         tenant = (
-            await db.execute(select(Tenant).where(Tenant.subdomain == data["tenant"]["subdomain"]))
+            db.execute(select(Tenant).where(Tenant.subdomain == data["tenant"]["subdomain"]))
         ).scalar_one()
 
-        article_map = await _load_articles(db, tenant.id, data.get("articles", []))
-        customer_map = await _load_customers(db, tenant.id, data.get("customers", []))
-        await _load_invoices(db, tenant.id, data.get("invoices", []), article_map, customer_map)
-        await _load_stock_withdrawals(db, tenant.id, data.get("stock_withdrawals", []), article_map)
+        article_map = _load_articles(db, tenant.id, data.get("articles", []))
+        customer_map = _load_customers(db, tenant.id, data.get("customers", []))
+        _load_invoices(db, tenant.id, data.get("invoices", []), article_map, customer_map)
+        _load_stock_withdrawals(db, tenant.id, data.get("stock_withdrawals", []), article_map)
 
-        await db.commit()
+        db.commit()
 
     print(f"✓ Fixtures loaded from {path}")
 
@@ -61,27 +60,27 @@ def _ask_password() -> str:
     return password
 
 
-async def _create_tenant(name: str, subdomain: str, email: str) -> None:
+def _create_tenant(name: str, subdomain: str, email: str) -> None:
     password = _ask_password()
-    async with AsyncSessionLocal() as db:
-        await create_tenant(db, name=name, subdomain=subdomain, email=email, password=password)
-        await db.commit()
+    with SessionLocal() as db:
+        create_tenant(db, name=name, subdomain=subdomain, email=email, password=password)
+        db.commit()
 
 
-async def _set_password(email: str, sign_out: bool) -> None:
+def _set_password(email: str, sign_out: bool) -> None:
     password = _ask_password()
-    async with AsyncSessionLocal() as db:
-        await set_password(db, email=email, password=password, sign_out=sign_out)
-        await db.commit()
+    with SessionLocal() as db:
+        set_password(db, email=email, password=password, sign_out=sign_out)
+        db.commit()
 
 
-async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> bool:
+def _load_tenant(db: Session, spec: dict[str, Any], reset: bool) -> bool:
     """Return True if tenant was created (or reset), False if skipped."""
     existing_tenant = (
-        await db.execute(select(Tenant).where(Tenant.subdomain == spec["subdomain"]))
+        db.execute(select(Tenant).where(Tenant.subdomain == spec["subdomain"]))
     ).scalar_one_or_none()
     existing_user = (
-        await db.execute(select(User).where(User.email == spec["admin_email"]))
+        db.execute(select(User).where(User.email == spec["admin_email"]))
     ).scalar_one_or_none()
 
     already_exists = existing_tenant is not None or existing_user is not None
@@ -99,17 +98,17 @@ async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> b
 
             # Articles have no DB-level CASCADE from tenants, so delete them first,
             # after the stock withdrawals that restrict their deletion
-            await db.execute(
+            db.execute(
                 delete(StockWithdrawal).where(StockWithdrawal.tenant_id == existing_tenant.id)
             )
-            await db.execute(delete(Article).where(Article.tenant_id == existing_tenant.id))
+            db.execute(delete(Article).where(Article.tenant_id == existing_tenant.id))
             # All other child tables (customers, invoices, profile, users) have ondelete=CASCADE
-            await db.execute(delete(Tenant).where(Tenant.id == existing_tenant.id))
+            db.execute(delete(Tenant).where(Tenant.id == existing_tenant.id))
         elif existing_user:
-            await db.execute(delete(User).where(User.email == spec["admin_email"]))
-        await db.flush()
+            db.execute(delete(User).where(User.email == spec["admin_email"]))
+        db.flush()
 
-    user = await create_tenant(
+    user = create_tenant(
         db,
         name=spec["name"],
         subdomain=spec["subdomain"],
@@ -117,7 +116,7 @@ async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> b
         password=spec["admin_password"],
     )
     profile = (
-        await db.execute(select(TenantProfile).where(TenantProfile.tenant_id == user.tenant_id))
+        db.execute(select(TenantProfile).where(TenantProfile.tenant_id == user.tenant_id))
     ).scalar_one()
     p = spec["profile"]
     profile.company_name = p["company_name"]
@@ -133,14 +132,12 @@ async def _load_tenant(db: AsyncSession, spec: dict[str, Any], reset: bool) -> b
         profile.default_vat_rate = Decimal(str(p["default_vat_rate"]))
     profile.payment_terms_days = p.get("payment_terms_days", 30)
     profile.reminder_terms_days = p.get("reminder_terms_days", 10)
-    await db.flush()
+    db.flush()
     print(f"  ✓ Tenant '{spec['name']}' — login: {spec['admin_email']} / {spec['admin_password']}")
     return True
 
 
-async def _load_articles(
-    db: AsyncSession, tenant_id: object, specs: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _load_articles(db: Session, tenant_id: object, specs: list[dict[str, Any]]) -> dict[str, Any]:
     from app.models.article import Article
 
     name_to_id: dict[str, Any] = {}
@@ -159,15 +156,13 @@ async def _load_articles(
             is_archived=spec.get("is_archived", False),
         )
         db.add(article)
-        await db.flush()
+        db.flush()
         name_to_id[spec["name"]] = article.id
     print(f"  ✓ {len(specs)} articles")
     return name_to_id
 
 
-async def _load_customers(
-    db: AsyncSession, tenant_id: object, specs: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _load_customers(db: Session, tenant_id: object, specs: list[dict[str, Any]]) -> dict[str, Any]:
     from app.models.customer import Customer
 
     email_to_id: dict[str, Any] = {}
@@ -186,22 +181,22 @@ async def _load_customers(
             is_archived=spec.get("is_archived", False),
         )
         db.add(customer)
-        await db.flush()
+        db.flush()
         if spec.get("email"):
             email_to_id[spec["email"]] = customer.id
     print(f"  ✓ {len(specs)} customers")
     return email_to_id
 
 
-async def _load_invoices(
-    db: AsyncSession,
+def _load_invoices(
+    db: Session,
     tenant_id: object,
     specs: list[dict[str, Any]],
     article_map: dict[str, Any],
     customer_map: dict[str, Any],
 ) -> None:
     profile = (
-        await db.execute(select(TenantProfile).where(TenantProfile.tenant_id == tenant_id))
+        db.execute(select(TenantProfile).where(TenantProfile.tenant_id == tenant_id))
     ).scalar_one()
     for spec in specs:
         customer_id = customer_map.get(spec["customer_email"])
@@ -225,7 +220,7 @@ async def _load_invoices(
             notes=spec.get("notes", ""),
         )
         db.add(invoice)
-        await db.flush()
+        db.flush()
 
         for position, line_spec in enumerate(spec.get("lines", [])):
             article_id = article_map.get(line_spec["article_name"])
@@ -234,9 +229,7 @@ async def _load_invoices(
                 continue
             from app.models.article import Article
 
-            article = (
-                await db.execute(select(Article).where(Article.id == article_id))
-            ).scalar_one()
+            article = (db.execute(select(Article).where(Article.id == article_id))).scalar_one()
             offered = line_spec.get("offered", False)
             line = InvoiceLine(
                 invoice_id=invoice.id,
@@ -274,8 +267,8 @@ async def _load_invoices(
     print(f"  ✓ {len(specs)} invoices")
 
 
-async def _load_stock_withdrawals(
-    db: AsyncSession, tenant_id: Any, specs: list[dict[str, Any]], article_map: dict[str, Any]
+def _load_stock_withdrawals(
+    db: Session, tenant_id: Any, specs: list[dict[str, Any]], article_map: dict[str, Any]
 ) -> None:
     """As recorded: the fixture stock is already the current one, none is taken."""
     for spec in specs:
@@ -300,11 +293,11 @@ def run_shell() -> None:
     from app.models.article import Article
     from app.models.customer import Customer
 
-    db = AsyncSessionLocal()
+    db = SessionLocal()
     namespace: dict[str, Any] = {
         "db": db,
         "engine": engine,
-        "AsyncSessionLocal": AsyncSessionLocal,
+        "SessionLocal": SessionLocal,
         "Base": Base,
         "settings": settings,
         "select": select,
@@ -327,9 +320,9 @@ def run_shell() -> None:
     models = ", ".join(sorted(k for k in namespace if k[0].isupper()))
     banner = (
         f"Invoice shell — DB: {settings.database_url}\n"
-        "  Preloaded: db (AsyncSession), engine, settings, select/func/delete/update\n"
+        "  Preloaded: db (Session), engine, settings, select/func/delete/update\n"
         f"  Models: {models}\n"
-        "  Top-level await works, e.g.  await db.scalar(select(func.count(User.id)))\n"
+        "  e.g.  db.scalar(select(func.count(User.id)))\n"
     )
 
     try:
@@ -340,11 +333,7 @@ def run_shell() -> None:
     except ImportError:
         import code
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        namespace["run"] = loop.run_until_complete
         print(banner)
-        print("  (IPython not installed — no top-level await; use run(coro) instead)")
         code.interact(local=namespace)
 
 
@@ -393,14 +382,14 @@ def main() -> None:
         if not path.exists():
             print(f"Error: fixtures file not found: {path}", file=sys.stderr)
             sys.exit(1)
-        asyncio.run(_load_fixtures(path, args.reset))
+        _load_fixtures(path, args.reset)
     elif args.command in ("create-tenant", "set-password"):
         try:
             if args.command == "create-tenant":
-                asyncio.run(_create_tenant(args.name, args.subdomain, args.email))
+                _create_tenant(args.name, args.subdomain, args.email)
                 print(f"✓ Tenant '{args.name}' created — login: {args.email}")
             else:
-                asyncio.run(_set_password(args.email, args.sign_out))
+                _set_password(args.email, args.sign_out)
                 ended = ", open sessions ended" if args.sign_out else ""
                 print(f"✓ Password changed for {args.email}{ended}")
         except TenantError as exc:

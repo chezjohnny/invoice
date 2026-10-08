@@ -26,7 +26,7 @@ app = FastAPI(
 
 
 @app.exception_handler(IntegrityError)
-async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     logger.error("Database integrity error on %s %s", request.method, request.url.path)
     logger.exception(exc)
     return JSONResponse(
@@ -53,5 +53,5 @@ app.include_router(tenant.router)
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+def health() -> dict[str, str]:
     return {"status": "ok"}

@@ -1,7 +1,7 @@
 import pytest
-from httpx import AsyncClient
+from fastapi.testclient import TestClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.tenant import TenantProfile
 
@@ -24,9 +24,8 @@ VALID = {
 }
 
 
-@pytest.mark.anyio
-async def test_new_tenant_profile_is_incomplete(client: AsyncClient, auth_headers: dict[str, str]):
-    resp = await client.get(PROFILE, headers=auth_headers)
+def test_new_tenant_profile_is_incomplete(client: TestClient, auth_headers: dict[str, str]):
+    resp = client.get(PROFILE, headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["company_name"] == "Cave Test"
@@ -35,9 +34,8 @@ async def test_new_tenant_profile_is_incomplete(client: AsyncClient, auth_header
     assert data["is_complete"] is False
 
 
-@pytest.mark.anyio
-async def test_update_profile(client: AsyncClient, auth_headers: dict[str, str]):
-    resp = await client.put(PROFILE, json=VALID, headers=auth_headers)
+def test_update_profile(client: TestClient, auth_headers: dict[str, str]):
+    resp = client.put(PROFILE, json=VALID, headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["is_complete"] is True
@@ -45,46 +43,38 @@ async def test_update_profile(client: AsyncClient, auth_headers: dict[str, str])
     assert data["twint_phone"] == "+41791234567"
     assert data["default_vat_rate"] == "0.0810"
 
-    reread = await client.get(PROFILE, headers=auth_headers)
+    reread = client.get(PROFILE, headers=auth_headers)
     assert reread.json() == data
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "phone", ["0791234567", "+41 79 123 45 67", "0041 79 123 45 67", "079/123.45.67"]
 )
-async def test_twint_phone_is_normalised(
-    client: AsyncClient, auth_headers: dict[str, str], phone: str
-):
-    resp = await client.put(PROFILE, json={**VALID, "twint_phone": phone}, headers=auth_headers)
+def test_twint_phone_is_normalised(client: TestClient, auth_headers: dict[str, str], phone: str):
+    resp = client.put(PROFILE, json={**VALID, "twint_phone": phone}, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["twint_phone"] == "+41791234567"
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("phone", "expected"),
     [("024 123 45 67", "+41241234567"), ("+33 1 23 45 67 89", "+33123456789")],
 )
-async def test_phone_is_normalised(
-    client: AsyncClient, auth_headers: dict[str, str], phone: str, expected: str
+def test_phone_is_normalised(
+    client: TestClient, auth_headers: dict[str, str], phone: str, expected: str
 ):
-    resp = await client.put(PROFILE, json={**VALID, "phone": phone}, headers=auth_headers)
+    resp = client.put(PROFILE, json={**VALID, "phone": phone}, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["phone"] == expected
 
 
-@pytest.mark.anyio
-async def test_invalid_phone_is_rejected(client: AsyncClient, auth_headers: dict[str, str]):
-    resp = await client.put(PROFILE, json={**VALID, "phone": "12"}, headers=auth_headers)
+def test_invalid_phone_is_rejected(client: TestClient, auth_headers: dict[str, str]):
+    resp = client.put(PROFILE, json={**VALID, "phone": "12"}, headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_blank_optional_fields_are_stored_as_null(
-    client: AsyncClient, auth_headers: dict[str, str]
-):
-    resp = await client.put(
+def test_blank_optional_fields_are_stored_as_null(client: TestClient, auth_headers: dict[str, str]):
+    resp = client.put(
         PROFILE,
         json={**VALID, "iban": "", "twint_phone": " ", "vat_number": "  ", "address_line2": ""},
         headers=auth_headers,
@@ -97,7 +87,6 @@ async def test_blank_optional_fields_are_stored_as_null(
     assert data["is_complete"] is False
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "payload",
     [
@@ -113,44 +102,40 @@ async def test_blank_optional_fields_are_stored_as_null(
         {"reminder_terms_days": -1},
     ],
 )
-async def test_invalid_profile_payloads(
-    client: AsyncClient, auth_headers: dict[str, str], payload: dict[str, object]
+def test_invalid_profile_payloads(
+    client: TestClient, auth_headers: dict[str, str], payload: dict[str, object]
 ):
-    resp = await client.put(PROFILE, json={**VALID, **payload}, headers=auth_headers)
+    resp = client.put(PROFILE, json={**VALID, **payload}, headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_profile_tenant_isolation(
-    client: AsyncClient, auth_headers: dict[str, str], other_headers: dict[str, str]
+def test_profile_tenant_isolation(
+    client: TestClient, auth_headers: dict[str, str], other_headers: dict[str, str]
 ):
-    await client.put(PROFILE, json=VALID, headers=auth_headers)
+    client.put(PROFILE, json=VALID, headers=auth_headers)
 
-    resp = await client.get(PROFILE, headers=other_headers)
+    resp = client.get(PROFILE, headers=other_headers)
     assert resp.json()["company_name"] == "Other"
     assert resp.json()["is_complete"] is False
 
 
-@pytest.mark.anyio
-async def test_profile_requires_auth(client: AsyncClient):
-    assert (await client.get(PROFILE)).status_code == 401
+def test_profile_requires_auth(client: TestClient):
+    assert client.get(PROFILE).status_code == 401
 
 
-@pytest.mark.anyio
-async def test_partial_payload_is_rejected(client: AsyncClient, auth_headers: dict[str, str]):
+def test_partial_payload_is_rejected(client: TestClient, auth_headers: dict[str, str]):
     """PUT replaces the whole profile, so an incomplete body must not be
     completed with defaults — that would silently wipe the omitted fields."""
-    await client.put(PROFILE, json=VALID, headers=auth_headers)
+    client.put(PROFILE, json=VALID, headers=auth_headers)
 
-    resp = await client.put(PROFILE, json={"company_name": "Cave du Coteau"}, headers=auth_headers)
+    resp = client.put(PROFILE, json={"company_name": "Cave du Coteau"}, headers=auth_headers)
     assert resp.status_code == 422
 
-    unchanged = (await client.get(PROFILE, headers=auth_headers)).json()
+    unchanged = client.get(PROFILE, headers=auth_headers).json()
     assert unchanged["city"] == "Rolle"
     assert unchanged["payment_terms_days"] == 15
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "payload",
     [
@@ -161,25 +146,24 @@ async def test_partial_payload_is_rejected(client: AsyncClient, auth_headers: di
         {"vat_number": "x" * 21},
     ],
 )
-async def test_oversize_values_are_rejected(
-    client: AsyncClient, auth_headers: dict[str, str], payload: dict[str, object]
+def test_oversize_values_are_rejected(
+    client: TestClient, auth_headers: dict[str, str], payload: dict[str, object]
 ):
     """The columns are bounded; without matching limits the INSERT would fail
     with a DataError (500) instead of a field-level 422."""
-    resp = await client.put(PROFILE, json={**VALID, **payload}, headers=auth_headers)
+    resp = client.put(PROFILE, json={**VALID, **payload}, headers=auth_headers)
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_get_serves_a_profile_the_input_rules_would_reject(
-    client: AsyncClient, auth_headers: dict[str, str], db_session: AsyncSession
+def test_get_serves_a_profile_the_input_rules_would_reject(
+    client: TestClient, auth_headers: dict[str, str], db_session: Session
 ):
     """Rows written before the IBAN rules (fixtures, earlier versions) must stay
     readable, otherwise the page that would fix them is unreachable."""
-    profile = (await db_session.execute(select(TenantProfile))).scalar_one()
+    profile = db_session.execute(select(TenantProfile)).scalar_one()
     profile.iban = "FR7630006000011234567890189"
-    await db_session.commit()
+    db_session.commit()
 
-    resp = await client.get(PROFILE, headers=auth_headers)
+    resp = client.get(PROFILE, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["iban"] == "FR7630006000011234567890189"

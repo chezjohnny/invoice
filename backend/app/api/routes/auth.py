@@ -3,7 +3,7 @@ import uuid
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import (
@@ -24,14 +24,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
-    result = await db.execute(select(User).where(User.email == body.email))
+def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    result = db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
     if user is None:
-        await verify_unknown_user(body.password)
+        verify_unknown_user(body.password)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
-    if not await verify_password(body.password, user.hashed_password):
+    if not verify_password(body.password, user.hashed_password):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
 
     if not user.is_active:
@@ -41,13 +41,13 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> Token
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
+def refresh(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     try:
         user_id, version = decode_token(body.refresh_token, "refresh")
     except jwt.PyJWTError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token") from exc
 
-    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    result = db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:

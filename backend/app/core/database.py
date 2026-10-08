@@ -1,14 +1,16 @@
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 from typing import Any
 
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 from app.core.search import sqlite_phone_key, sqlite_search_key
 
-engine = create_async_engine(settings.database_url, echo=False)
+# FastAPI runs a sync route and its dependencies in its threadpool, not always
+# on the same thread: a connection may be used by another thread than the one
+# that opened it (never by two at once, one session per request).
+engine = create_engine(settings.database_url, echo=False, connect_args={"check_same_thread": False})
 
 
 def configure_sqlite_connection(dbapi_conn: Any, _record: Any) -> None:
@@ -25,16 +27,15 @@ def configure_sqlite_connection(dbapi_conn: Any, _record: Any) -> None:
     cursor.close()
 
 
-if settings.database_url.startswith("sqlite"):
-    event.listen(engine.sync_engine, "connect", configure_sqlite_connection)
+event.listen(engine, "connect", configure_sqlite_connection)
 
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
 
 class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncGenerator[AsyncSession]:
-    async with AsyncSessionLocal() as session:
+def get_db() -> Generator[Session]:
+    with SessionLocal() as session:
         yield session
