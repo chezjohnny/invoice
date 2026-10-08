@@ -1,4 +1,3 @@
-from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -17,13 +16,6 @@ class Settings(BaseSettings):
     root_path: str = ""
 
     model_config = {"env_file": ".env", "env_prefix": "INVOICE_"}
-
-    @field_validator("database_url")
-    @classmethod
-    def _sync_driver(cls, url: str) -> str:
-        # The .env files written for the former async engine (aiosqlite) keep
-        # working: until they are all updated, their URL takes the sync driver.
-        return url.replace("sqlite+aiosqlite://", "sqlite://", 1)
 
 
 settings = Settings()

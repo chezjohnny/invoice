@@ -119,7 +119,7 @@ Settings are read from environment variables (via `pydantic-settings`) with the
 
 | Variable | Default | Notes |
 |---|---|---|
-| `INVOICE_DATABASE_URL` | `sqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db`; a former `sqlite+aiosqlite://` URL is still read as `sqlite://` |
+| `INVOICE_DATABASE_URL` | `sqlite:///./dev.db` | relative to `backend/`; production uses `/data/invoice.db` |
 | `INVOICE_SECRET_KEY` | dev-only placeholder | **must** be overridden in production (≥ 32 bytes) |
 | `INVOICE_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
 | `INVOICE_ALGORITHM` | `HS256` | JWT signing algorithm |
