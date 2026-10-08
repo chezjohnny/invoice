@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   IStockWithdrawalService, StockWithdrawalListParams,
 } from '../../core/tokens/stock-withdrawal-service.token';
@@ -25,33 +25,29 @@ interface StockWithdrawalDto {
 export class HttpStockWithdrawalService implements IStockWithdrawalService {
   private readonly http = inject(HttpClient);
 
-  list(params: StockWithdrawalListParams): Promise<Page<StockWithdrawal>> {
+  list(params: StockWithdrawalListParams): Observable<Page<StockWithdrawal>> {
     let httpParams = new HttpParams()
       .set('search', params.search ?? '')
       .set('page', String(params.page ?? 1))
       .set('per_page', String(params.perPage ?? 20));
     if (params.reason) httpParams = httpParams.set('reason', params.reason);
-    return firstValueFrom(
-      this.http.get<PageDto<StockWithdrawalDto>>('/api/stock-withdrawals', {
-        params: withSort(httpParams, params.sort),
-      })
-    ).then((dto) => toPage(dto, this.toStockWithdrawal));
+    return this.http.get<PageDto<StockWithdrawalDto>>('/api/stock-withdrawals', {
+      params: withSort(httpParams, params.sort),
+    }).pipe(map((dto) => toPage(dto, this.toStockWithdrawal)));
   }
 
-  create(data: StockWithdrawalCreate): Promise<StockWithdrawal> {
-    return firstValueFrom(
-      this.http.post<StockWithdrawalDto>('/api/stock-withdrawals', {
-        article_id: data.articleId,
-        date: data.date,
-        quantity: data.quantity,
-        reason: data.reason,
-        note: data.note,
-      })
-    ).then(this.toStockWithdrawal);
+  create(data: StockWithdrawalCreate): Observable<StockWithdrawal> {
+    return this.http.post<StockWithdrawalDto>('/api/stock-withdrawals', {
+      article_id: data.articleId,
+      date: data.date,
+      quantity: data.quantity,
+      reason: data.reason,
+      note: data.note,
+    }).pipe(map(this.toStockWithdrawal));
   }
 
-  delete(id: string): Promise<void> {
-    return firstValueFrom(this.http.delete<void>(`/api/stock-withdrawals/${id}`));
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/stock-withdrawals/${id}`);
   }
 
   private toStockWithdrawal(dto: StockWithdrawalDto): StockWithdrawal {

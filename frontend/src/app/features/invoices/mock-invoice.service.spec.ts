@@ -1,5 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { of } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
@@ -19,7 +19,7 @@ describe('MockInvoiceService', () => {
     const invoices = TestBed.inject(MockInvoiceService);
     const withdrawals = TestBed.inject(STOCK_WITHDRAWAL_SERVICE);
     const promotions = async () =>
-      (await withdrawals.list({ reason: 'promotion' })).items.filter((w) => w.invoiceId !== null);
+      (await firstValueFrom(withdrawals.list({ reason: 'promotion' }))).items.filter((w) => w.invoiceId !== null);
 
     const draft = await invoices.create({
       customerId: '1', discountPercent: 0, notes: '', paymentMethod: 'cash',

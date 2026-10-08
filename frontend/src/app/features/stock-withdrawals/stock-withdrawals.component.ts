@@ -140,9 +140,9 @@ export class StockWithdrawalsComponent {
   protected readonly reasonBadge = REASON_BADGE;
   protected readonly pendingDelete = signal<StockWithdrawal | null>(null);
 
-  protected async onDeleteConfirmed(withdrawal: StockWithdrawal): Promise<void> {
+  protected onDeleteConfirmed(withdrawal: StockWithdrawal): void {
     this.pendingDelete.set(null);
-    await this.store.delete(withdrawal.id);
+    this.store.delete(withdrawal.id);
   }
 
   protected deleteMessage(withdrawal: StockWithdrawal): string {

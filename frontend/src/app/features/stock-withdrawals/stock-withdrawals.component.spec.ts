@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
@@ -25,7 +26,7 @@ describe('StockWithdrawalsComponent', () => {
         provideRouter([]),
         {
           provide: STOCK_WITHDRAWAL_SERVICE,
-          useValue: { list: async () => ({ items: WITHDRAWALS, total: 2, page: 1, perPage: 20, pages: 1 }) },
+          useValue: { list: () => of({ items: WITHDRAWALS, total: 2, page: 1, perPage: 20, pages: 1 }) },
         },
       ],
     });

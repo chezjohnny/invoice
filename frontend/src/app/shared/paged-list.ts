@@ -73,7 +73,7 @@ export function pagedListMethods<T>(store: ListSource<T>, load: () => Promise<vo
 }
 
 // Observable versions of the above, for the stores moved to rxMethod (articles,
-// customers so far); the Promise ones go once every store has moved.
+// customers, stock withdrawals so far); the Promise ones go once every store has moved.
 
 /**
  * Loads a page each time it is called. A request still running is cancelled

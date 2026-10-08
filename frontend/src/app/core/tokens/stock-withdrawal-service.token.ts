@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import type { Observable } from 'rxjs';
 import type {
   StockWithdrawal, StockWithdrawalCreate, StockWithdrawalReason,
 } from '../../features/stock-withdrawals/stock-withdrawal.model';
@@ -15,9 +16,9 @@ export interface StockWithdrawalListParams {
 }
 
 export interface IStockWithdrawalService {
-  list(params: StockWithdrawalListParams): Promise<Page<StockWithdrawal>>;
-  create(data: StockWithdrawalCreate): Promise<StockWithdrawal>;
-  delete(id: string): Promise<void>;
+  list(params: StockWithdrawalListParams): Observable<Page<StockWithdrawal>>;
+  create(data: StockWithdrawalCreate): Observable<StockWithdrawal>;
+  delete(id: string): Observable<void>;
 }
 
 export const STOCK_WITHDRAWAL_SERVICE = new InjectionToken<IStockWithdrawalService>('StockWithdrawalService');

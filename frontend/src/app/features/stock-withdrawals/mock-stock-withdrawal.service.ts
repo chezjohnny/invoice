@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import {
   IStockWithdrawalService, StockWithdrawalListParams,
 } from '../../core/tokens/stock-withdrawal-service.token';
@@ -35,7 +36,7 @@ export class MockStockWithdrawalService implements IStockWithdrawalService {
   private withdrawals = structuredClone(INITIAL);
   private nextId = INITIAL.length + 1;
 
-  list(params: StockWithdrawalListParams): Promise<Page<StockWithdrawal>> {
+  list(params: StockWithdrawalListParams): Observable<Page<StockWithdrawal>> {
     const search = (params.search ?? '').toLowerCase();
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
@@ -52,16 +53,16 @@ export class MockStockWithdrawalService implements IStockWithdrawalService {
     const total = sorted.length;
     const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
-    return Promise.resolve({ items, total, page, perPage, pages });
+    return of({ items, total, page, perPage, pages });
   }
 
-  create(data: StockWithdrawalCreate): Promise<StockWithdrawal> {
+  create(data: StockWithdrawalCreate): Observable<StockWithdrawal> {
     const withdrawal = {
       ...data, id: String(this.nextId++), articleName: ARTICLE_NAMES[data.articleId] ?? '',
       invoiceId: null, invoiceNumber: null,
     };
     this.withdrawals.push(withdrawal);
-    return Promise.resolve(withdrawal);
+    return of(withdrawal);
   }
 
   /** What issuing an invoice records of its offered lines, server side with the API. */
@@ -82,8 +83,8 @@ export class MockStockWithdrawalService implements IStockWithdrawalService {
     this.withdrawals = this.withdrawals.filter((w) => w.invoiceId !== invoiceId);
   }
 
-  delete(id: string): Promise<void> {
+  delete(id: string): Observable<void> {
     this.withdrawals = this.withdrawals.filter((w) => w.id !== id);
-    return Promise.resolve();
+    return of(undefined);
   }
 }

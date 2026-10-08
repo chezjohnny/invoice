@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { Page } from '../../core/models/page.model';
 import {
@@ -28,14 +29,15 @@ describe('StockWithdrawalStore', () => {
         {
           provide: STOCK_WITHDRAWAL_SERVICE,
           useValue: {
-            list: async (params: StockWithdrawalListParams): Promise<Page<StockWithdrawal>> => {
+            list: (params: StockWithdrawalListParams): Observable<Page<StockWithdrawal>> => {
               lastParams = params;
               const items = withdrawals.filter((w) => !params.reason || w.reason === params.reason);
-              return { items, total: items.length, page: params.page ?? 1, perPage: 20, pages: 1 };
+              return of({ items, total: items.length, page: params.page ?? 1, perPage: 20, pages: 1 });
             },
-            delete: async (id: string): Promise<void> => {
-              if (failDelete) throw new Error('not found');
+            delete: (id: string): Observable<void> => {
+              if (failDelete) return throwError(() => new Error('not found'));
               withdrawals = withdrawals.filter((w) => w.id !== id);
+              return of(undefined);
             },
           },
         },
@@ -44,31 +46,31 @@ describe('StockWithdrawalStore', () => {
     store = TestBed.inject(StockWithdrawalStore);
   });
 
-  it('loads withdrawals on init', async () => {
-    await store.load();
+  it('loads withdrawals on init', () => {
+    store.load();
     expect(store.items().length).toBe(2);
     expect(store.total()).toBe(2);
   });
 
-  it('filters by reason from the first page', async () => {
-    await store.setPage(2);
-    await store.setReasonFilter('loss');
+  it('filters by reason from the first page', () => {
+    store.setPage(2);
+    store.setReasonFilter('loss');
     expect(lastParams.reason).toBe('loss');
     expect(lastParams.page).toBe(1);
     expect(store.items().map((w) => w.id)).toEqual(['2']);
-    await store.setReasonFilter(null);
+    store.setReasonFilter(null);
     expect(store.items().length).toBe(2);
   });
 
-  it('deletes a withdrawal and reloads', async () => {
-    await store.delete('1');
+  it('deletes a withdrawal and reloads', () => {
+    store.delete('1');
     expect(store.items().map((w) => w.id)).toEqual(['2']);
   });
 
-  it('clears loading when a mutation is rejected', async () => {
-    await store.load();
+  it('clears loading when a mutation is rejected', () => {
+    store.load();
     failDelete = true;
-    await expect(store.delete('1')).rejects.toThrow();
+    store.delete('1');
     expect(store.loading()).toBe(false);
   });
 });
