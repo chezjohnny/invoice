@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { NotificationService } from '../../core/notifications/notification.service';
 import { TENANT_SERVICE } from '../../core/tokens/tenant-service.token';
@@ -52,12 +53,9 @@ describe('CompanyStore', () => {
         {
           provide: TENANT_SERVICE,
           useValue: {
-            getProfile: async () => {
-              if (failNext) throw new Error('boom');
-              return profile;
-            },
-            updateProfile: async (data: CompanyProfileData) => {
-              if (failNext) throw new Error('boom');
+            getProfile: () => (failNext ? throwError(() => new Error('boom')) : of(profile)),
+            updateProfile: (data: CompanyProfileData) => {
+              if (failNext) return throwError(() => new Error('boom'));
               profile = {
                 ...profile,
                 ...data,
@@ -65,7 +63,7 @@ describe('CompanyStore', () => {
                   data.companyName && data.addressLine1 && data.postalCode && data.city && data.iban
                 ),
               };
-              return profile;
+              return of(profile);
             },
           },
         },
@@ -79,30 +77,30 @@ describe('CompanyStore', () => {
     expect(store.isIncomplete()).toBe(false);
   });
 
-  it('flags an incomplete profile after load', async () => {
-    await store.load();
+  it('flags an incomplete profile after load', () => {
+    store.load();
     expect(store.profile()?.companyName).toBe('Cave Test');
     expect(store.isIncomplete()).toBe(true);
     expect(store.loading()).toBe(false);
   });
 
-  it('clears the incomplete flag once the profile is saved', async () => {
-    await store.load();
-    await store.save(DATA);
+  it('clears the incomplete flag once the profile is saved', () => {
+    store.load();
+    store.save(DATA);
     expect(store.profile()?.iban).toBe('CH5604835012345678009');
     expect(store.isIncomplete()).toBe(false);
     expect(store.saving()).toBe(false);
   });
 
-  it('notifies on a successful save', async () => {
+  it('notifies on a successful save', () => {
     const notify = TestBed.inject(NotificationService);
-    await store.load();
-    await store.save(DATA);
+    store.load();
+    store.save(DATA);
     expect(notify.notifications().some((n) => n.kind === 'success')).toBe(true);
   });
 
-  it('drops the profile on reset so the next tenant starts clean', async () => {
-    await store.load();
+  it('drops the profile on reset so the next tenant starts clean', () => {
+    store.load();
     expect(store.profile()).not.toBeNull();
 
     store.reset();
@@ -110,13 +108,13 @@ describe('CompanyStore', () => {
     expect(store.isIncomplete()).toBe(false);
   });
 
-  it('resets the loading flags when the backend fails', async () => {
+  it('resets the loading flags when the backend fails', () => {
     failNext = true;
-    await store.load();
+    store.load();
     expect(store.profile()).toBeNull();
     expect(store.loading()).toBe(false);
 
-    await store.save(DATA);
+    store.save(DATA);
     expect(store.saving()).toBe(false);
   });
 });

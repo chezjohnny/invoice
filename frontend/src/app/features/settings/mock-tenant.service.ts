@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { ITenantService } from '../../core/tokens/tenant-service.token';
 import { CompanyProfile, CompanyProfileData } from './company.model';
 import { normalizeIban } from './iban';
@@ -25,11 +26,11 @@ const INITIAL: CompanyProfile = {
 export class MockTenantService implements ITenantService {
   private profile = structuredClone(INITIAL);
 
-  getProfile(): Promise<CompanyProfile> {
-    return Promise.resolve(this.profile);
+  getProfile(): Observable<CompanyProfile> {
+    return of(this.profile);
   }
 
-  updateProfile(data: CompanyProfileData): Promise<CompanyProfile> {
+  updateProfile(data: CompanyProfileData): Observable<CompanyProfile> {
     const iban = normalizeIban(data.iban ?? '') || null;
     this.profile = {
       ...this.profile,
@@ -41,6 +42,6 @@ export class MockTenantService implements ITenantService {
         data.companyName && data.addressLine1 && data.postalCode && data.city && iban
       ),
     };
-    return Promise.resolve(this.profile);
+    return of(this.profile);
   }
 }

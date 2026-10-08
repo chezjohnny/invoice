@@ -207,7 +207,8 @@ export class SettingsComponent {
       this.days(path.paymentTermsDays);
       this.days(path.reminderTermsDays);
     },
-    { submission: { action: () => this.save() } }
+    // Signal Forms takes an async action; the save itself runs in the store.
+    { submission: { action: async () => this.save() } }
   );
 
   /** An optional field: empty, or valid once normalized. */
@@ -232,10 +233,10 @@ export class SettingsComponent {
     integer(path, message);
   }
 
-  private async save(): Promise<void> {
+  private save(): void {
     const m = this.model();
     const optional = (text: string) => text.trim() || null;
-    await this.store.save({
+    this.store.save({
       companyName: m.companyName.trim(),
       addressLine1: m.addressLine1.trim(),
       addressLine2: optional(m.addressLine2),

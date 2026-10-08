@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { provideRouter } from '@angular/router';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { App } from './app';
@@ -11,7 +12,7 @@ describe('App', () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: TENANT_SERVICE, useValue: { getProfile: async () => null } },
+        { provide: TENANT_SERVICE, useValue: { getProfile: () => of(null) } },
       ],
     });
   });

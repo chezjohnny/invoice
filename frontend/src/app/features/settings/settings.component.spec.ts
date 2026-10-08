@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TENANT_SERVICE } from '../../core/tokens/tenant-service.token';
 import { CompanyProfile, CompanyProfileData } from './company.model';
@@ -36,10 +37,10 @@ describe('SettingsComponent', () => {
         {
           provide: TENANT_SERVICE,
           useValue: {
-            getProfile: async () => PROFILE,
-            updateProfile: async (data: CompanyProfileData) => {
+            getProfile: () => of(PROFILE),
+            updateProfile: (data: CompanyProfileData) => {
               updates.push(data);
-              return { ...PROFILE, ...data };
+              return of({ ...PROFILE, ...data });
             },
           },
         },

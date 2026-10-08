@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ITenantService } from '../../core/tokens/tenant-service.token';
 import { CompanyProfile, CompanyProfileData } from './company.model';
 
@@ -27,16 +27,12 @@ const PROFILE_URL = '/api/tenant/profile';
 export class HttpTenantService implements ITenantService {
   private readonly http = inject(HttpClient);
 
-  getProfile(): Promise<CompanyProfile> {
-    return firstValueFrom(this.http.get<CompanyProfileDto>(PROFILE_URL)).then((dto) =>
-      this.toProfile(dto)
-    );
+  getProfile(): Observable<CompanyProfile> {
+    return this.http.get<CompanyProfileDto>(PROFILE_URL).pipe(map((dto) => this.toProfile(dto)));
   }
 
-  updateProfile(data: CompanyProfileData): Promise<CompanyProfile> {
-    return firstValueFrom(
-      this.http.put<CompanyProfileDto>(PROFILE_URL, this.toDto(data))
-    ).then((dto) => this.toProfile(dto));
+  updateProfile(data: CompanyProfileData): Observable<CompanyProfile> {
+    return this.http.put<CompanyProfileDto>(PROFILE_URL, this.toDto(data)).pipe(map((dto) => this.toProfile(dto)));
   }
 
   private toProfile(dto: CompanyProfileDto): CompanyProfile {
