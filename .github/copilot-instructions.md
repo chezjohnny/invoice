@@ -69,6 +69,7 @@ invoice/
 - **Invoice numbers** are `<YYMMDD><sequence>` (`2610051`), digits only and no prefix, the sequence restarting at `1` each day, unpadded; there is no stored counter — issuing takes the day's highest number + 1 (`app/services/invoice_numbers.py`). Short on purpose: the customer types it as the TWINT message. Sorting by number compares the day, then the length.
 - **Mock services**: `IXxxService` token injected in Angular; swap via `environment.useMock`
 - **Pagination**: all list endpoints return `PagedResponse[T]`; stores use `withState` + `withMethods` with inner `load()` (not `withEntities`)
+- **Async backend**: FastAPI routes and SQLAlchemy are async by default, not by need: with SQLite (aiosqlite runs each connection in a thread, one writer at a time) and one user per tenant, sync would perform the same. Kept because it works and is tested; any CPU-heavy call (bcrypt) goes through `run_in_threadpool`, relations are loaded eagerly (`selectinload`)
 - **SQLite only** (dev, CI and production; PostgreSQL is overkill at this scale): the default `INVOICE_DATABASE_URL` is `backend/dev.db`, shared by `make dev` and the Docker dev stack; its schema comes from Alembic (`make backend-migrate`), never `create_all`, so dev matches production; `PRAGMA foreign_keys=ON`, WAL journal, `synchronous=NORMAL` and a 5 s `busy_timeout` applied on every connection (`app/core/database.py`)
 
 ## Production
