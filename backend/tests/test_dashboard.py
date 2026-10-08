@@ -111,21 +111,19 @@ def test_dashboard_kpis(
     make_invoice("issue", lines=_line("30.00"))
     paid = make_invoice("issue", "pay", lines=_line("40.00"))
     make_invoice("issue", "cancel", lines=_line("80.00"))
-    archived = (
-        client.post(
-            "/customers",
-            json={
-                "first_name": "Old",
-                "last_name": "Client",
-                "address_line1": "",
-                "postal_code": "",
-                "city": "",
-                "country": "CH",
-                "email": None,
-                "phones": [],
-            },
-            headers=auth_headers,
-        )
+    archived = client.post(
+        "/customers",
+        json={
+            "first_name": "Old",
+            "last_name": "Client",
+            "address_line1": "",
+            "postal_code": "",
+            "city": "",
+            "country": "CH",
+            "email": None,
+            "phones": [],
+        },
+        headers=auth_headers,
     ).json()["id"]
     client.patch(f"/customers/{archived}/archive", headers=auth_headers)
     client.patch(f"/articles/{article_id}/archive", headers=auth_headers)

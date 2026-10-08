@@ -36,8 +36,8 @@ def _load_fixtures(path: Path, reset: bool) -> None:
         if not created:
             return
 
-        tenant = (
-            db.execute(select(Tenant).where(Tenant.subdomain == data["tenant"]["subdomain"]))
+        tenant = db.execute(
+            select(Tenant).where(Tenant.subdomain == data["tenant"]["subdomain"])
         ).scalar_one()
 
         article_map = _load_articles(db, tenant.id, data.get("articles", []))
@@ -76,11 +76,11 @@ def _set_password(email: str, sign_out: bool) -> None:
 
 def _load_tenant(db: Session, spec: dict[str, Any], reset: bool) -> bool:
     """Return True if tenant was created (or reset), False if skipped."""
-    existing_tenant = (
-        db.execute(select(Tenant).where(Tenant.subdomain == spec["subdomain"]))
+    existing_tenant = db.execute(
+        select(Tenant).where(Tenant.subdomain == spec["subdomain"])
     ).scalar_one_or_none()
-    existing_user = (
-        db.execute(select(User).where(User.email == spec["admin_email"]))
+    existing_user = db.execute(
+        select(User).where(User.email == spec["admin_email"])
     ).scalar_one_or_none()
 
     already_exists = existing_tenant is not None or existing_user is not None
@@ -115,8 +115,8 @@ def _load_tenant(db: Session, spec: dict[str, Any], reset: bool) -> bool:
         email=spec["admin_email"],
         password=spec["admin_password"],
     )
-    profile = (
-        db.execute(select(TenantProfile).where(TenantProfile.tenant_id == user.tenant_id))
+    profile = db.execute(
+        select(TenantProfile).where(TenantProfile.tenant_id == user.tenant_id)
     ).scalar_one()
     p = spec["profile"]
     profile.company_name = p["company_name"]
@@ -195,8 +195,8 @@ def _load_invoices(
     article_map: dict[str, Any],
     customer_map: dict[str, Any],
 ) -> None:
-    profile = (
-        db.execute(select(TenantProfile).where(TenantProfile.tenant_id == tenant_id))
+    profile = db.execute(
+        select(TenantProfile).where(TenantProfile.tenant_id == tenant_id)
     ).scalar_one()
     for spec in specs:
         customer_id = customer_map.get(spec["customer_email"])
@@ -229,7 +229,7 @@ def _load_invoices(
                 continue
             from app.models.article import Article
 
-            article = (db.execute(select(Article).where(Article.id == article_id))).scalar_one()
+            article = db.execute(select(Article).where(Article.id == article_id)).scalar_one()
             offered = line_spec.get("offered", False)
             line = InvoiceLine(
                 invoice_id=invoice.id,

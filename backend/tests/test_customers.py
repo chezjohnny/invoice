@@ -117,7 +117,7 @@ def test_export_csv(client: TestClient, auth_headers: dict[str, str]):
 def test_customer_tenant_isolation(
     client: TestClient, auth_headers: dict[str, str], other_headers: dict[str, str]
 ):
-    customer_id = (client.post(CUSTOMERS, json=CUSTOMER_PAYLOAD, headers=auth_headers)).json()["id"]
+    customer_id = client.post(CUSTOMERS, json=CUSTOMER_PAYLOAD, headers=auth_headers).json()["id"]
 
     resp = client.get(CUSTOMERS, headers=other_headers)
     assert resp.json()["total"] == 0
@@ -234,7 +234,7 @@ def test_search_customers(client: TestClient, auth_headers: dict[str, str]):
 
 
 def test_get_customer(client: TestClient, auth_headers: dict[str, str]):
-    customer_id = (client.post(CUSTOMERS, json=CUSTOMER_PAYLOAD, headers=auth_headers)).json()["id"]
+    customer_id = client.post(CUSTOMERS, json=CUSTOMER_PAYLOAD, headers=auth_headers).json()["id"]
     resp = client.get(f"{CUSTOMERS}/{customer_id}", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["last_name"] == "Dupont"

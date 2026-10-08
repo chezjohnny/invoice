@@ -183,8 +183,8 @@ def test_sold_quantity_counts_issued_and_paid_invoices_only(
     make_invoice: MakeInvoice,
 ):
     article_id = client.post(ARTICLES, json=ARTICLE_PAYLOAD, headers=auth_headers).json()["id"]
-    unsold_id = (
-        client.post(ARTICLES, json={**ARTICLE_PAYLOAD, "name": "Chasselas"}, headers=auth_headers)
+    unsold_id = client.post(
+        ARTICLES, json={**ARTICLE_PAYLOAD, "name": "Chasselas"}, headers=auth_headers
     ).json()["id"]
     this_year = date.today().year
     _sell(make_invoice, article_id, 3, "issued")
@@ -203,7 +203,7 @@ def test_sold_quantity_counts_issued_and_paid_invoices_only(
 
     all_time = client.get(ARTICLES, headers=auth_headers).json()
     assert sold(all_time) == {article_id: 7, unsold_id: 0}
-    previous = (client.get(f"{ARTICLES}?sales_year={this_year - 1}", headers=auth_headers)).json()
+    previous = client.get(f"{ARTICLES}?sales_year={this_year - 1}", headers=auth_headers).json()
     assert sold(previous) == {article_id: 4, unsold_id: 0}
     current = client.get(f"{ARTICLES}?sales_year={this_year}", headers=auth_headers).json()
     assert sold(current) == {article_id: 3, unsold_id: 0}

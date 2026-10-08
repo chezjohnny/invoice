@@ -72,15 +72,13 @@ def list_articles(
         }
         ordering = [*sort_clauses(columns[sort], order), Article.id]
 
-    total = (db.scalar(select(func.count(Article.id)).where(*conditions))) or 0
-    rows = (
-        db.execute(
-            select(Article, sold, withdrawn)
-            .where(*conditions)
-            .order_by(*ordering)
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-        )
+    total = db.scalar(select(func.count(Article.id)).where(*conditions)) or 0
+    rows = db.execute(
+        select(Article, sold, withdrawn)
+        .where(*conditions)
+        .order_by(*ordering)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     ).all()
     items = [
         ArticleListItem(
@@ -122,16 +120,14 @@ def export_articles_csv(
 ) -> Response:
     """The active (or archived) articles, with their sales and withdrawals over the period."""
     _check_period(sales_year, sales_quarter)
-    rows = (
-        db.execute(
-            select(
-                Article,
-                _sold_quantity(sales_year, sales_quarter),
-                _withdrawn_quantity(sales_year, sales_quarter),
-            )
-            .where(Article.tenant_id == current_user.tenant_id, Article.is_archived.is_(archived))
-            .order_by(func.lower(Article.name), Article.id)
+    rows = db.execute(
+        select(
+            Article,
+            _sold_quantity(sales_year, sales_quarter),
+            _withdrawn_quantity(sales_year, sales_quarter),
         )
+        .where(Article.tenant_id == current_user.tenant_id, Article.is_archived.is_(archived))
+        .order_by(func.lower(Article.name), Article.id)
     ).all()
 
     name = "articles-archived" if archived else "articles"

@@ -61,16 +61,14 @@ def list_customers(
             )
         )
 
-    total = (db.scalar(select(func.count(Customer.id)).where(*conditions))) or 0
+    total = db.scalar(select(func.count(Customer.id)).where(*conditions)) or 0
     items = list(
-        (
-            db.execute(
-                select(Customer)
-                .where(*conditions)
-                .order_by(*ordering)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-            )
+        db.execute(
+            select(Customer)
+            .where(*conditions)
+            .order_by(*ordering)
+            .offset((page - 1) * per_page)
+            .limit(per_page)
         )
         .scalars()
         .all()

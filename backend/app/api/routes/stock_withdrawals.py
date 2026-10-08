@@ -63,10 +63,8 @@ def list_stock_withdrawals(
         .outerjoin(Invoice, Invoice.id == StockWithdrawal.invoice_id)
         .where(*conditions)
     )
-    total = (db.scalar(select(func.count()).select_from(base.subquery()))) or 0
-    rows = (
-        db.execute(base.order_by(*ordering).offset((page - 1) * per_page).limit(per_page))
-    ).all()
+    total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = db.execute(base.order_by(*ordering).offset((page - 1) * per_page).limit(per_page)).all()
     items = [_response(withdrawal, name, number) for withdrawal, name, number in rows]
     return PagedResponse.build(items, total, page, per_page)
 

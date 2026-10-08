@@ -81,8 +81,8 @@ def test_set_password_ends_open_sessions_only_when_asked(
 ):
     create_tenant(db_session, **TENANT, password=PASSWORD)
     db_session.commit()
-    tokens = (
-        client.post("/auth/login", json={"email": "admin@cave.ch", "password": PASSWORD})
+    tokens = client.post(
+        "/auth/login", json={"email": "admin@cave.ch", "password": PASSWORD}
     ).json()
 
     set_password(db_session, email="admin@cave.ch", password="new-secret-1", sign_out=sign_out)
@@ -143,8 +143,8 @@ def test_refresh_invalid_token_returns_401(client: TestClient):
 
 def test_tokens_are_not_interchangeable(client: TestClient, db_session: Session):
     signed_in(client, db_session, **TENANT)
-    tokens = (
-        client.post("/auth/login", json={"email": "admin@cave.ch", "password": PASSWORD})
+    tokens = client.post(
+        "/auth/login", json={"email": "admin@cave.ch", "password": PASSWORD}
     ).json()
 
     # A refresh token does not open the API…

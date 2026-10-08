@@ -126,7 +126,7 @@ def test_list_withdrawals_filters_and_sort(client: TestClient, auth_headers: dic
     assert quantities(f"article_id={pinot}") == [1, 2]
     assert quantities("search=chass") == [6]
     assert quantities("sort=quantity&order=asc") == [1, 2, 6]
-    by_article = (client.get(f"{WITHDRAWALS}?sort=article&order=desc", headers=auth_headers)).json()
+    by_article = client.get(f"{WITHDRAWALS}?sort=article&order=desc", headers=auth_headers).json()
     assert [i["article_name"] for i in by_article["items"]] == [
         "Pinot Noir",
         "Pinot Noir",
@@ -201,7 +201,7 @@ def test_article_search_ignores_accents(client: TestClient, auth_headers: dict[s
 
     found = client.get(ARTICLES, params={"search": "chateau"}, headers=auth_headers).json()
     assert [a["name"] for a in found["items"]] == ["Château Margaux"]
-    withdrawals = (
-        client.get(WITHDRAWALS, params={"search": "margaux chât"}, headers=auth_headers)
+    withdrawals = client.get(
+        WITHDRAWALS, params={"search": "margaux chât"}, headers=auth_headers
     ).json()
     assert withdrawals["total"] == 1

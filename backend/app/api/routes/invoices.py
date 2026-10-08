@@ -95,15 +95,13 @@ def list_invoices(
         }
         ordering = [*sort_clauses(columns[sort], order), Invoice.id]
 
-    total = (db.scalar(select(func.count(Invoice.id)).where(*conditions))) or 0
+    total = db.scalar(select(func.count(Invoice.id)).where(*conditions)) or 0
     items = list(
-        (
-            db.execute(
-                query.options(selectinload(Invoice.lines), selectinload(Invoice.reminders))
-                .order_by(*ordering)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-            )
+        db.execute(
+            query.options(selectinload(Invoice.lines), selectinload(Invoice.reminders))
+            .order_by(*ordering)
+            .offset((page - 1) * per_page)
+            .limit(per_page)
         )
         .scalars()
         .all()
@@ -393,12 +391,10 @@ def _validate_refs(body: InvoiceCreate | InvoiceUpdate, tenant_id: uuid.UUID, db
     article_ids = {line.article_id for line in body.lines if line.article_id is not None}
     if article_ids:
         found = set(
-            (
-                db.execute(
-                    select(Article.id).where(
-                        Article.id.in_(article_ids),
-                        Article.tenant_id == tenant_id,
-                    )
+            db.execute(
+                select(Article.id).where(
+                    Article.id.in_(article_ids),
+                    Article.tenant_id == tenant_id,
                 )
             )
             .scalars()

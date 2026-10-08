@@ -240,15 +240,13 @@ def test_create_invoice(client: TestClient, auth_headers: dict[str, str], custom
 
 
 def test_get_invoice(client: TestClient, auth_headers: dict[str, str], customer_id: str):
-    invoice_id = (
-        client.post(
-            INVOICES,
-            json={
-                "customer_id": customer_id,
-                "lines": [LINE],
-            },
-            headers=auth_headers,
-        )
+    invoice_id = client.post(
+        INVOICES,
+        json={
+            "customer_id": customer_id,
+            "lines": [LINE],
+        },
+        headers=auth_headers,
     ).json()["id"]
 
     resp = client.get(f"{INVOICES}/{invoice_id}", headers=auth_headers)
@@ -483,12 +481,10 @@ def test_issue_numbers_restart_each_day(
     for _ in range(8):
         issue()
     assert issue()["invoice_number"] == f"{today}11"
-    listed = (
-        client.get(
-            INVOICES,
-            params={"sort": "number", "order": "desc", "per_page": 3},
-            headers=auth_headers,
-        )
+    listed = client.get(
+        INVOICES,
+        params={"sort": "number", "order": "desc", "per_page": 3},
+        headers=auth_headers,
     ).json()["items"]
     assert [i["invoice_number"] for i in listed] == [f"{today}11", f"{today}10", f"{today}9"]
 
@@ -575,16 +571,14 @@ def test_pay_with_date_and_method(
 ):
     def issued(method: str | None) -> str:
         invoice_id = str(
-            (
-                client.post(
-                    INVOICES,
-                    json={
-                        "customer_id": customer_id,
-                        "lines": [LINE],
-                        "payment_method": method,
-                    },
-                    headers=auth_headers,
-                )
+            client.post(
+                INVOICES,
+                json={
+                    "customer_id": customer_id,
+                    "lines": [LINE],
+                    "payment_method": method,
+                },
+                headers=auth_headers,
             ).json()["id"]
         )
         client.post(f"{INVOICES}/{invoice_id}/issue", headers=auth_headers)
@@ -632,16 +626,14 @@ def test_update_payment_method(
         )
         return response
 
-    invoice_id = (
-        client.post(
-            INVOICES,
-            json={
-                "customer_id": customer_id,
-                "lines": [LINE],
-                "payment_method": "cash",
-            },
-            headers=auth_headers,
-        )
+    invoice_id = client.post(
+        INVOICES,
+        json={
+            "customer_id": customer_id,
+            "lines": [LINE],
+            "payment_method": "cash",
+        },
+        headers=auth_headers,
     ).json()["id"]
     assert patch(invoice_id, "twint").status_code == 409  # draft: through PUT
 
@@ -653,15 +645,13 @@ def test_update_payment_method(
     client.post(f"{INVOICES}/{invoice_id}/pay", headers=auth_headers)
     assert patch(invoice_id, "iban").json()["payment_method"] == "iban"
 
-    cancelled_id = (
-        client.post(
-            INVOICES,
-            json={
-                "customer_id": customer_id,
-                "lines": [LINE],
-            },
-            headers=auth_headers,
-        )
+    cancelled_id = client.post(
+        INVOICES,
+        json={
+            "customer_id": customer_id,
+            "lines": [LINE],
+        },
+        headers=auth_headers,
     ).json()["id"]
     client.post(f"{INVOICES}/{cancelled_id}/cancel", headers=auth_headers)
     assert patch(cancelled_id, "cash").status_code == 409
@@ -933,21 +923,19 @@ def test_invoice_tenant_isolation(
         INVOICES, json={"customer_id": customer_id, "lines": []}, headers=other_headers
     )
     assert resp.status_code == 400
-    own_customer = (
-        client.post(
-            CUSTOMERS,
-            json={
-                "first_name": "Ana",
-                "last_name": "Other",
-                "address_line1": "",
-                "postal_code": "",
-                "city": "",
-                "country": "CH",
-                "email": None,
-                "phones": [],
-            },
-            headers=other_headers,
-        )
+    own_customer = client.post(
+        CUSTOMERS,
+        json={
+            "first_name": "Ana",
+            "last_name": "Other",
+            "address_line1": "",
+            "postal_code": "",
+            "city": "",
+            "country": "CH",
+            "email": None,
+            "phones": [],
+        },
+        headers=other_headers,
     ).json()["id"]
     resp = client.post(
         INVOICES, json={"customer_id": own_customer, "lines": [other_line]}, headers=other_headers
@@ -1005,15 +993,13 @@ def test_payment_reminders(
     complete_profile: None,
     db_session: Session,
 ):
-    invoice_id = (
-        client.post(
-            INVOICES,
-            json={
-                "customer_id": customer_id,
-                "lines": [LINE],
-            },
-            headers=auth_headers,
-        )
+    invoice_id = client.post(
+        INVOICES,
+        json={
+            "customer_id": customer_id,
+            "lines": [LINE],
+        },
+        headers=auth_headers,
     ).json()["id"]
     reminders = f"{INVOICES}/{invoice_id}/reminders"
     assert client.post(reminders, headers=auth_headers).status_code == 409  # draft
@@ -1065,15 +1051,13 @@ def test_payment_reminders(
 def test_pdf_prints_the_vat_number_only_when_registered(
     client: TestClient, auth_headers: dict[str, str], customer_id: str, complete_profile: None
 ):
-    invoice_id = (
-        client.post(
-            INVOICES,
-            json={
-                "customer_id": customer_id,
-                "lines": [LINE],
-            },
-            headers=auth_headers,
-        )
+    invoice_id = client.post(
+        INVOICES,
+        json={
+            "customer_id": customer_id,
+            "lines": [LINE],
+        },
+        headers=auth_headers,
     ).json()["id"]
     pdf_url = f"{INVOICES}/{invoice_id}/pdf"
     assert "N° TVA" not in _pdf_text(client.get(pdf_url, headers=auth_headers).content)
