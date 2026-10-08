@@ -1,5 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { CdkDropList } from '@angular/cdk/drag-drop';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import { Article } from '../articles/article.model';
 import { Customer } from '../customers/customer.model';
@@ -140,6 +142,34 @@ describe('InvoiceFormComponent article picker', () => {
     ]);
     // 15 asked of the 10 in stock, sold and offered alike.
     expect(fixture.nativeElement.querySelectorAll('.badge-warning').length).toBe(2);
+  });
+
+  it('moves a line by drag and drop or the arrow keys, its offered bottles along with it', async () => {
+    await type('pinot');
+    await press('Enter');
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[title^="En offrir"], button[title^="Offer"]')!.click();
+    await fixture.whenStable();
+    await type('chass');
+    await press('Enter');
+    const element = fixture.nativeElement as HTMLElement;
+    const handles = () => [...element.querySelectorAll<HTMLButtonElement>('[cdkDragHandle]')];
+    const quantities = () => [...element.querySelectorAll<HTMLInputElement>('input[type="number"]')];
+    const order = async () => (await save()).lines.map((l) => [l.articleId, l.quantity, l.offered]);
+
+    // Two blocks: Pinot and its gift, then Chasselas; the gift has no handle of its own.
+    expect(handles().length).toBe(2);
+    fixture.debugElement.query(By.directive(CdkDropList))
+      .triggerEventHandler('cdkDropListDropped', { previousIndex: 1, currentIndex: 0 });
+    await fixture.whenStable();
+
+    // Its fields follow each line: Pinot's quantity changed after the move is Pinot's.
+    quantities()[1].value = '6';
+    quantities()[1].dispatchEvent(new Event('input'));
+    expect(await order()).toEqual([['a2', 1, false], ['a1', 6, false], ['a1', 1, true]]);
+
+    handles()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    await fixture.whenStable();
+    expect(await order()).toEqual([['a1', 6, false], ['a1', 1, true], ['a2', 1, false]]);
   });
 
   it('edits an invoice: its values shown, a discount over 100 % refused', async () => {

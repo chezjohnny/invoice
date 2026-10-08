@@ -5,7 +5,17 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint, false
+from sqlalchemy import (
+    Boolean,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,7 +63,7 @@ class Invoice(UUIDBase):
 
     lines: Mapped[list[InvoiceLine]] = relationship(
         cascade="all, delete-orphan",
-        order_by="InvoiceLine.created_at",
+        order_by="InvoiceLine.position",
     )
     reminders: Mapped[list[InvoiceReminder]] = relationship(
         cascade="all, delete-orphan",
@@ -63,6 +73,7 @@ class Invoice(UUIDBase):
 
 class InvoiceLine(UUIDBase):
     __tablename__ = "invoice_lines"
+    __table_args__ = (Index("ix_invoice_lines_invoice_id_position", "invoice_id", "position"),)
 
     invoice_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False
@@ -79,6 +90,8 @@ class InvoiceLine(UUIDBase):
     offered: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false()
     )
+    # Where it stands on the invoice, from 0: the order the editor lists them in.
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
 
 class InvoiceReminder(UUIDBase):

@@ -141,7 +141,7 @@ async def create_invoice(
         discount_percent=body.discount_percent,
         notes=body.notes,
         payment_method=body.payment_method,
-        lines=[InvoiceLine(**line.model_dump()) for line in body.lines],
+        lines=_lines(body),
     )
     db.add(invoice)
     await db.commit()
@@ -165,7 +165,7 @@ async def update_invoice(
     invoice.notes = body.notes
     invoice.payment_method = body.payment_method
     # Replaced as a whole: the delete-orphan cascade removes the previous lines.
-    invoice.lines = [InvoiceLine(**line.model_dump()) for line in body.lines]
+    invoice.lines = _lines(body)
 
     await db.commit()
     return await _load_invoice(invoice.id, current_user.tenant_id, db)
@@ -424,6 +424,11 @@ async def _load_invoice(invoice_id: uuid.UUID, tenant_id: uuid.UUID, db: AsyncSe
         selectinload(Invoice.lines),
         selectinload(Invoice.reminders),
     )
+
+
+def _lines(body: InvoiceCreate | InvoiceUpdate) -> list[InvoiceLine]:
+    """The lines in the order they were sent, which is how the invoice lists them."""
+    return [InvoiceLine(**line.model_dump(), position=n) for n, line in enumerate(body.lines)]
 
 
 async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:

@@ -1231,3 +1231,32 @@ async def test_list_invoices_by_status(
     assert await ids("cancelled") == []
     resp = await client.get(INVOICES, params={"status": "sent"}, headers=auth_headers)
     assert resp.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_lines_keep_the_order_they_are_sent_in(
+    client: AsyncClient, auth_headers: dict[str, str], make_invoice: MakeInvoice
+):
+    def line(description: str) -> dict[str, Any]:
+        return {
+            "article_id": None,
+            "description_snapshot": description,
+            "quantity": 1,
+            "unit_price_snapshot": "10.00",
+            "vat_rate_snapshot": None,
+        }
+
+    # Saved in one go, the lines share their created_at: only the position orders them.
+    names = ["Zèbre", "Abricot", "Moka", "Bière", "Yaourt"]
+    invoice = await make_invoice(lines=[line(name) for name in names])
+    assert [line["description_snapshot"] for line in invoice["lines"]] == names
+
+    reordered = names[::-1]
+    resp = await client.put(
+        f"{INVOICES}/{invoice['id']}",
+        json={"customer_id": invoice["customer_id"], "lines": [line(n) for n in reordered]},
+        headers=auth_headers,
+    )
+    assert [line["description_snapshot"] for line in resp.json()["lines"]] == reordered
+    resp = await client.get(f"{INVOICES}/{invoice['id']}", headers=auth_headers)
+    assert [line["description_snapshot"] for line in resp.json()["lines"]] == reordered

@@ -312,6 +312,10 @@ de la commande (par exemple une bouteille par carton de 12).
   offre un de plus. Son prix (0.00) et sa TVA (aucune) ne se modifient pas ; sa
   quantité, si. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
   à 0.00 : le total n'en tient pas compte.
+- Pour changer l'ordre des lignes, on glisse une ligne par sa poignée (à gauche) ;
+  ses lignes offertes juste en dessous la suivent : le cadeau reste sous son
+  article, sur la facture comme sur le PDF. Au clavier, les flèches ↑ ↓ sur la
+  poignée font de même.
 - 4. À l'émission, les articles offerts quittent le stock avec les autres, mais
   ne comptent pas dans *Vendus* : ils deviennent une sortie de stock
   *Promotion / cadeau*, datée du jour, avec un lien vers la facture (colonne

@@ -227,7 +227,7 @@ async def _load_invoices(
         db.add(invoice)
         await db.flush()
 
-        for line_spec in spec.get("lines", []):
+        for position, line_spec in enumerate(spec.get("lines", [])):
             article_id = article_map.get(line_spec["article_name"])
             if article_id is None:
                 print(f"  ⚠ Unknown article '{line_spec['article_name']}' — skipping line")
@@ -246,6 +246,7 @@ async def _load_invoices(
                 unit_price_snapshot=0 if offered else article.unit_price,
                 vat_rate_snapshot=None if offered else effective_vat_rate(article, profile),
                 offered=offered,
+                position=position,
             )
             db.add(line)
             # As issuing records it; the fixture stock is already the current one.

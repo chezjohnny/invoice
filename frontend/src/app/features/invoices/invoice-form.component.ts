@@ -1,3 +1,4 @@
+import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, input, linkedSignal, output, resource } from '@angular/core';
 import { FormField, FormRoot, applyEach, form, min, required, submit, validate } from '@angular/forms/signals';
@@ -50,7 +51,7 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [ArticlePickerComponent, CurrencyPipe, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot, IconComponent],
+  imports: [ArticlePickerComponent, CdkDrag, CdkDragHandle, CdkDropList, CurrencyPipe, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot, IconComponent],
   template: `
     <form [formRoot]="invoiceForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -96,71 +97,91 @@ interface Recommendation {
             <div>
               <!-- Column headers -->
               <div class="grid items-end gap-x-2 px-0.5 mb-1 text-xs text-base-content/50"
-                   style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                   style="grid-template-columns: 1.25rem minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                <span></span>
                 <span>{{ t().invoices.articleLabel }}</span>
                 <span>{{ t().invoices.qtyLabel }}</span>
                 <span>{{ t().invoices.priceLabel }}</span>
                 <span>{{ t().invoices.vatLabel }}</span>
                 <span></span>
               </div>
-              <!-- One row per line -->
-              @for (line of invoiceForm.lines; track $index; let i = $index) {
-                <div class="grid items-center gap-x-2 px-0.5 mb-1"
-                     style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
-                  <!-- An article line shows its article; a free-text line is typed -->
-                  <div class="min-w-0">
-                    @if (line.offered().value()) {
-                      <div class="input input-sm input-secondary w-full">
-                        <span class="badge badge-xs badge-secondary shrink-0">{{ t().invoices.offered }}</span>
-                        <span class="truncate" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+              <!-- A block per sold (or free-text) line, with the offered lines of its
+                   article right below it: dragged by its handle, they move together -->
+              <div cdkDropList cdkDropListLockAxis="y" (cdkDropListDropped)="moveBlock($event.previousIndex, $event.currentIndex)">
+                @for (block of blocks(); track model().lines[block[0]]; let b = $index) {
+                  <div cdkDrag class="rounded-box bg-base-100">
+                    @for (i of block; track model().lines[i]) {
+                      @let line = invoiceForm.lines[i];
+                      <div class="grid items-center gap-x-2 px-0.5 mb-1"
+                           style="grid-template-columns: 1.25rem minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
+                        <div class="flex justify-center">
+                          @if (i === block[0]) {
+                            <button type="button" cdkDragHandle
+                              class="btn btn-ghost btn-xs px-0 cursor-grab touch-none text-base-content/50"
+                              [attr.aria-label]="t().invoices.dragLine" [title]="t().invoices.dragLine"
+                              (keydown.arrowup)="$event.preventDefault(); moveBlock(b, b - 1)"
+                              (keydown.arrowdown)="$event.preventDefault(); moveBlock(b, b + 1)">
+                              <app-icon name="grip" />
+                            </button>
+                          }
+                        </div>
+                        <!-- An article line shows its article; a free-text line is typed -->
+                        <div class="min-w-0">
+                          @if (line.offered().value()) {
+                            <div class="input input-sm input-secondary w-full">
+                              <span class="badge badge-xs badge-secondary shrink-0">{{ t().invoices.offered }}</span>
+                              <span class="truncate" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                            </div>
+                          } @else if (line.articleId().value() !== null) {
+                            <div class="input input-sm input-primary w-full pr-1">
+                              <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
+                              <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                              <button type="button" class="btn btn-ghost btn-xs px-1 shrink-0"
+                                [title]="t().invoices.offer" [attr.aria-label]="t().invoices.offer" (click)="offer(i)">
+                                <app-icon name="gift" />
+                              </button>
+                            </div>
+                          } @else {
+                            <label class="input input-sm w-full" [class.input-error]="showsError(line.descriptionSnapshot)">
+                              <span class="badge badge-xs badge-ghost shrink-0">{{ t().invoices.freeText }}</span>
+                              <input class="grow min-w-0" type="text" autocomplete="off"
+                                [attr.aria-label]="t().invoices.descLabel" [placeholder]="t().invoices.descLabel"
+                                [attr.aria-invalid]="showsError(line.descriptionSnapshot)"
+                                [formField]="line.descriptionSnapshot" />
+                            </label>
+                          }
+                        </div>
+                        <!-- Qty -->
+                        <input class="input input-sm w-full" type="number" step="1" [attr.aria-label]="t().invoices.qtyLabel"
+                          [attr.aria-invalid]="showsError(line.quantity)"
+                          [formField]="line.quantity" />
+                        @if (line.offered().value()) {
+                          <!-- Given away: no price, no VAT -->
+                          <span class="px-3 text-sm tabular-nums text-base-content/60">0.00</span>
+                          <span class="px-3 text-sm text-base-content/60">—</span>
+                        } @else {
+                          <!-- Price -->
+                          <input class="input input-sm w-full" appDecimal [attr.aria-label]="t().invoices.priceLabel"
+                            [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
+                            [formField]="line.unitPriceSnapshot" />
+                          <!-- VAT% -->
+                          <input class="input input-sm w-full" appDecimal placeholder="—" [attr.aria-label]="t().invoices.vatLabel"
+                            [attr.aria-invalid]="showsError(line.vatPercent)"
+                            [formField]="line.vatPercent" />
+                        }
+                        <!-- Delete + warning -->
+                        <div class="flex items-center justify-end gap-0.5">
+                          @if (lineStockWarning(line().value())) {
+                            <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
+                          }
+                          <button type="button" class="btn btn-ghost btn-xs text-error px-1"
+                            (click)="removeLine(i)">✕</button>
+                        </div>
                       </div>
-                    } @else if (line.articleId().value() !== null) {
-                      <div class="input input-sm input-primary w-full pr-1">
-                        <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
-                        <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
-                        <button type="button" class="btn btn-ghost btn-xs px-1 shrink-0"
-                          [title]="t().invoices.offer" [attr.aria-label]="t().invoices.offer" (click)="offer(i)">
-                          <app-icon name="gift" />
-                        </button>
-                      </div>
-                    } @else {
-                      <label class="input input-sm w-full" [class.input-error]="showsError(line.descriptionSnapshot)">
-                        <span class="badge badge-xs badge-ghost shrink-0">{{ t().invoices.freeText }}</span>
-                        <input class="grow min-w-0" type="text" autocomplete="off"
-                          [attr.aria-label]="t().invoices.descLabel" [placeholder]="t().invoices.descLabel"
-                          [attr.aria-invalid]="showsError(line.descriptionSnapshot)"
-                          [formField]="line.descriptionSnapshot" />
-                      </label>
                     }
                   </div>
-                  <!-- Qty -->
-                  <input class="input input-sm w-full" type="number" step="1" [attr.aria-label]="t().invoices.qtyLabel"
-                    [attr.aria-invalid]="showsError(line.quantity)"
-                    [formField]="line.quantity" />
-                  @if (line.offered().value()) {
-                    <!-- Given away: no price, no VAT -->
-                    <span class="px-3 text-sm tabular-nums text-base-content/60">0.00</span>
-                    <span class="px-3 text-sm text-base-content/60">—</span>
-                  } @else {
-                    <!-- Price -->
-                    <input class="input input-sm w-full" appDecimal [attr.aria-label]="t().invoices.priceLabel"
-                      [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
-                      [formField]="line.unitPriceSnapshot" />
-                    <!-- VAT% -->
-                    <input class="input input-sm w-full" appDecimal placeholder="—" [attr.aria-label]="t().invoices.vatLabel"
-                      [attr.aria-invalid]="showsError(line.vatPercent)"
-                      [formField]="line.vatPercent" />
-                  }
-                  <!-- Delete + warning -->
-                  <div class="flex items-center justify-end gap-0.5">
-                    @if (lineStockWarning(line().value())) {
-                      <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
-                    }
-                    <button type="button" class="btn btn-ghost btn-xs text-error px-1"
-                      (click)="removeLine(i)">✕</button>
-                  </div>
-                </div>
-              }
+                }
+              </div>
             </div>
           } @else {
             <p class="text-sm text-base-content/40 mb-2">{{ t().invoices.noLines }}</p>
@@ -226,6 +247,19 @@ interface Recommendation {
         </span>
       </app-form-actions>
     </form>
+  `,
+  // While a block is dragged, the others slide aside, and it settles where it is dropped.
+  styles: `
+    .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder),
+    .cdk-drag-animating {
+      transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+    }
+    .cdk-drag-placeholder {
+      opacity: 0.3;
+    }
+    .cdk-drag-preview {
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
+    }
   `,
 })
 export class InvoiceFormComponent {
@@ -359,6 +393,30 @@ export class InvoiceFormComponent {
       vatPercent: percentOf(this.defaultVatRate()),
       offered: false,
     });
+  }
+
+  /**
+   * The lines as they move: one sold (or free-text) line and the offered lines of
+   * its article right below it, so that a gift stays under what it comes with.
+   */
+  protected readonly blocks = computed(() => {
+    const blocks: number[][] = [];
+    this.model().lines.forEach((line, index) => {
+      const head = blocks.at(-1);
+      const below = head && line.offered && this.model().lines[head[0]].articleId === line.articleId;
+      if (below) head.push(index);
+      else blocks.push([index]);
+    });
+    return blocks;
+  });
+
+  /** Moves a block (dropped, or by the arrow keys on its handle) to another place. */
+  protected moveBlock(from: number, to: number): void {
+    const blocks = [...this.blocks()];
+    if (to < 0 || to >= blocks.length || to === from) return;
+    moveItemInArray(blocks, from, to);
+    // The same line objects, in their new order: their form fields follow them.
+    this.model.update((m) => ({ ...m, lines: blocks.flat().map((i) => m.lines[i]) }));
   }
 
   protected removeLine(index: number): void {
