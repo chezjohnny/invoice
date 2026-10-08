@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { inputValue } from '../../shared/events';
@@ -127,7 +127,7 @@ import { SortHeaderComponent } from '../../shared/components/sort-header.compone
                       @if (store.inventoryMode() && !article.isArchived) {
                         <!-- Saved when leaving the field (Tab, Enter): count article after article -->
                         <div class="flex items-center justify-end gap-1">
-                          @if (counted().has(article.id)) {
+                          @if (store.counted().includes(article.id)) {
                             <span class="text-success text-xs" aria-hidden="true">✓</span>
                           }
                           <input type="number" inputmode="numeric" min="0" step="1"
@@ -199,8 +199,6 @@ export class ArticlesComponent {
   protected readonly store = inject(ArticleStore);
   protected readonly t = inject(I18nService).T;
   protected readonly quarters = [1, 2, 3, 4];
-  /** Articles counted during this inventory, ticked next to their input. */
-  protected readonly counted = signal<ReadonlySet<string>>(new Set());
   /** Sales period shown in the Sold and Withdrawn headers, e.g. "2025 Q2"; null = all time. */
   protected readonly period = computed(() => {
     const year = this.store.salesYear();
@@ -220,15 +218,14 @@ export class ArticlesComponent {
     this.store.setSalesQuarter(value ? Number(value) : null);
   }
 
-  async onCount(article: ArticleListItem, event: Event): Promise<void> {
+  onCount(article: ArticleListItem, event: Event): void {
     const input = event.target as HTMLInputElement;
     const quantity = Number(input.value);
     if (input.value === '' || !Number.isInteger(quantity) || quantity < 0) {
       input.value = String(article.stockQuantity);
       return;
     }
-    await this.store.countStock(article, quantity);
-    this.counted.update((ids) => new Set(ids).add(article.id));
+    this.store.countStock({ article, quantity });
   }
 
   onToggleArchived(event: Event): void {

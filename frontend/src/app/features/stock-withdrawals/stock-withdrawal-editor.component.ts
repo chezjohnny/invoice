@@ -27,7 +27,7 @@ export class StockWithdrawalEditorComponent {
   protected readonly saving = signal(false);
 
   constructor() {
-    inject(ARTICLE_SERVICE).getAll().then((articles) => this.articles.set(articles));
+    inject(ARTICLE_SERVICE).getAll().subscribe((articles) => this.articles.set(articles));
   }
 
   protected onSaved(data: StockWithdrawalCreate): Promise<void> {

@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
@@ -41,7 +42,7 @@ describe('InvoiceEditorStore', () => {
         provideZonelessChangeDetection(),
         InvoiceEditorStore,
         { provide: CUSTOMER_SERVICE, useValue: { getById: async () => CUSTOMER } },
-        { provide: ARTICLE_SERVICE, useValue: { getAll: async () => [] } },
+        { provide: ARTICLE_SERVICE, useValue: { getAll: () => of([]) } },
         {
           provide: INVOICE_SERVICE,
           useValue: {

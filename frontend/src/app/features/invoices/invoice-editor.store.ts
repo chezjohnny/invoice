@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
+import { firstValueFrom } from 'rxjs';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
@@ -49,8 +50,9 @@ export const InvoiceEditorStore = signalStore(
           const customerId = invoice?.customerId ?? ('customerId' in target ? target.customerId : '');
           const [customer, articles, archivedArticles] = await Promise.all([
             customers.getById(customerId),
-            articleService.getAll(),
-            articleService.getAll(true),
+            // The article service returns Observables; this store, not moved yet, awaits them.
+            firstValueFrom(articleService.getAll()),
+            firstValueFrom(articleService.getAll(true)),
           ]);
           patchState(store, { invoice, customer, articles, archivedArticles });
         } finally {

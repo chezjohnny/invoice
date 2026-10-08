@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { ArticleListParams, IArticleService } from '../../core/tokens/article-service.token';
 import { Page } from '../../core/models/page.model';
 import { sortItems } from '../../shared/sort';
@@ -44,7 +45,7 @@ const sum = (values: number[]) => values.reduce((total, n) => total + n, 0);
 export class MockArticleService implements IArticleService {
   private articles = structuredClone(MOCK_ARTICLES);
 
-  list(params: ArticleListParams): Promise<Page<ArticleListItem>> {
+  list(params: ArticleListParams): Observable<Page<ArticleListItem>> {
     const search = (params.search ?? '').toLowerCase();
     const page = params.page ?? 1;
     const perPage = params.perPage ?? 20;
@@ -70,51 +71,51 @@ export class MockArticleService implements IArticleService {
     const total = sorted.length;
     const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
-    return Promise.resolve({ items, total, page, perPage, pages });
+    return of({ items, total, page, perPage, pages });
   }
 
-  exportCsv(archived: boolean): Promise<Blob> {
+  exportCsv(archived: boolean): Observable<Blob> {
     const lines = ['name,description,unit_price,vat_rate,stock_quantity,sold_quantity,withdrawn_quantity'];
     for (const a of this.articles.filter((a) => a.isArchived === archived)) {
       lines.push(`${a.name},${a.description},${a.unitPrice},${a.vatRateOverride ?? ''},${a.stockQuantity},0,0`);
     }
-    return Promise.resolve(new Blob([lines.join('\n')], { type: 'text/csv' }));
+    return of(new Blob([lines.join('\n')], { type: 'text/csv' }));
   }
 
-  salesYears(): Promise<number[]> {
-    return Promise.resolve([2026, 2025]);
+  salesYears(): Observable<number[]> {
+    return of([2026, 2025]);
   }
 
-  getAll(archived = false): Promise<Article[]> {
-    return Promise.resolve(this.articles.filter((a) => a.isArchived === archived).reverse());
+  getAll(archived = false): Observable<Article[]> {
+    return of(this.articles.filter((a) => a.isArchived === archived).reverse());
   }
 
-  getById(id: string): Promise<Article> {
-    return Promise.resolve({ ...this.articles.find((a) => a.id === id)! });
+  getById(id: string): Observable<Article> {
+    return of({ ...this.articles.find((a) => a.id === id)! });
   }
 
-  create(data: ArticleData): Promise<Article> {
+  create(data: ArticleData): Observable<Article> {
     const article: Article = { ...data, id: crypto.randomUUID(), isArchived: false };
     this.articles.push(article);
-    return Promise.resolve({ ...article });
+    return of({ ...article });
   }
 
-  update(id: string, data: ArticleData): Promise<Article> {
+  update(id: string, data: ArticleData): Observable<Article> {
     const index = this.articles.findIndex((a) => a.id === id);
-    if (index === -1) return Promise.reject(new Error(`Article ${id} not found`));
+    if (index === -1) return throwError(() => new Error(`Article ${id} not found`));
     this.articles[index] = { ...this.articles[index], ...data };
-    return Promise.resolve({ ...this.articles[index] });
+    return of({ ...this.articles[index] });
   }
 
-  archive(id: string): Promise<void> {
+  archive(id: string): Observable<void> {
     const article = this.articles.find((a) => a.id === id);
     if (article) article.isArchived = true;
-    return Promise.resolve();
+    return of(undefined);
   }
 
-  restore(id: string): Promise<void> {
+  restore(id: string): Observable<void> {
     const article = this.articles.find((a) => a.id === id);
     if (article) article.isArchived = false;
-    return Promise.resolve();
+    return of(undefined);
   }
 }
