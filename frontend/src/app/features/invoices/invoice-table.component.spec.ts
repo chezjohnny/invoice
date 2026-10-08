@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
@@ -33,8 +34,8 @@ describe('InvoiceTableComponent', () => {
         {
           provide: INVOICE_SERVICE,
           useValue: {
-            list: async ({ page = 1 }: { page?: number }) =>
-              ({ items: pages[page - 1], total: 3, page, perPage: 2, pages: 2 }),
+            list: ({ page = 1 }: { page?: number }) =>
+              of({ items: pages[page - 1], total: 3, page, perPage: 2, pages: 2 }),
           },
         },
       ],
@@ -42,7 +43,7 @@ describe('InvoiceTableComponent', () => {
     store = TestBed.inject(InvoiceStore);
     fixture = TestBed.createComponent(InvoiceTableComponent);
     fixture.componentRef.setInput('expandFirst', true);
-    await store.load();
+    store.load();
     await fixture.whenStable();
   });
 
@@ -53,7 +54,7 @@ describe('InvoiceTableComponent', () => {
     await fixture.whenStable();
     expect(arrows()).toEqual(['▼', '▼']);
 
-    await store.setPage(2);
+    store.setPage(2);
     await fixture.whenStable();
     expect(arrows()).toEqual(['▲']);
   });

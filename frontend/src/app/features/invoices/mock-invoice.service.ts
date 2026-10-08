@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { STOCK_WITHDRAWAL_SERVICE } from '../../core/tokens/stock-withdrawal-service.token';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
@@ -18,7 +18,7 @@ export class MockInvoiceService implements IInvoiceService {
   private invoices: Invoice[] = [];
   private nextNum = 1;
 
-  list(params: InvoiceListParams): Promise<Page<Invoice>> {
+  list(params: InvoiceListParams): Observable<Page<Invoice>> {
     const search = (params.search ?? '').toLowerCase();
     const statusFilter = params.status ?? '';
     const page = params.page ?? 1;
@@ -51,15 +51,18 @@ export class MockInvoiceService implements IInvoiceService {
     const total = sorted.length;
     const items = sorted.slice((page - 1) * perPage, page * perPage);
     const pages = Math.max(1, Math.ceil(total / perPage));
-    return Promise.resolve({ items, total, page, perPage, pages });
+    return of({ items, total, page, perPage, pages });
   }
 
-  getById(id: string): Promise<Invoice> {
-    return Promise.resolve(structuredClone(this.invoices.find((i) => i.id === id)!));
+  getById(id: string): Observable<Invoice> {
+    return of(structuredClone(this.invoices.find((i) => i.id === id)!));
   }
 
-  async create(data: InvoiceCreate): Promise<Invoice> {
-    const customerName = await this.customerName(data.customerId);
+  create(data: InvoiceCreate): Observable<Invoice> {
+    return this.customerName(data.customerId).pipe(map((customerName) => this.created(data, customerName)));
+  }
+
+  private created(data: InvoiceCreate, customerName: string): Invoice {
     const invoice: Invoice = {
       id: String(this.nextNum++),
       customerId: data.customerId,
@@ -79,8 +82,11 @@ export class MockInvoiceService implements IInvoiceService {
     return invoice;
   }
 
-  async update(id: string, data: InvoiceUpdate): Promise<Invoice> {
-    const customerName = await this.customerName(data.customerId);
+  update(id: string, data: InvoiceUpdate): Observable<Invoice> {
+    return this.customerName(data.customerId).pipe(map((customerName) => this.updated(id, data, customerName)));
+  }
+
+  private updated(id: string, data: InvoiceUpdate, customerName: string): Invoice {
     const idx = this.invoices.findIndex((i) => i.id === id);
     this.invoices[idx] = {
       ...this.invoices[idx],
@@ -95,11 +101,11 @@ export class MockInvoiceService implements IInvoiceService {
   }
 
   /** The API joins it in; here, from the customers' mock. */
-  private async customerName(customerId: string): Promise<string> {
-    return customerDisplayName(await firstValueFrom(this.customers.getById(customerId)));
+  private customerName(customerId: string): Observable<string> {
+    return this.customers.getById(customerId).pipe(map(customerDisplayName));
   }
 
-  issue(id: string): Promise<Invoice> {
+  issue(id: string): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     const today = localIsoDate();
     inv.status = 'issued';
@@ -109,42 +115,42 @@ export class MockInvoiceService implements IInvoiceService {
     const sequence = this.invoices.filter((i) => i.invoiceNumber?.startsWith(stem)).length + 1;
     inv.invoiceNumber = `${stem}${sequence}`;
     if (this.withdrawals instanceof MockStockWithdrawalService) this.withdrawals.giveAway(inv);
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  pay(id: string, payment?: Payment): Promise<Invoice> {
+  pay(id: string, payment?: Payment): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     inv.status = 'paid';
     inv.paidAt = payment?.paidAt ?? localIsoDate();
     if (payment) inv.paymentMethod = payment.paymentMethod;
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  updatePaymentDate(id: string, paidAt: string): Promise<Invoice> {
+  updatePaymentDate(id: string, paidAt: string): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     inv.paidAt = paidAt;
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  updatePaymentMethod(id: string, paymentMethod: PaymentMethod): Promise<Invoice> {
+  updatePaymentMethod(id: string, paymentMethod: PaymentMethod): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     inv.paymentMethod = paymentMethod;
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  cancel(id: string): Promise<Invoice> {
+  cancel(id: string): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     if (this.withdrawals instanceof MockStockWithdrawalService) this.withdrawals.takeBack(id);
     inv.status = 'cancelled';
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  delete(id: string): Promise<void> {
+  delete(id: string): Observable<void> {
     this.invoices = this.invoices.filter((i) => i.id !== id);
-    return Promise.resolve();
+    return of(undefined);
   }
 
-  createReminder(id: string): Promise<Invoice> {
+  createReminder(id: string): Observable<Invoice> {
     const inv = this.invoices.find((i) => i.id === id)!;
     const today = new Date();
     const due = new Date(today);
@@ -152,14 +158,14 @@ export class MockInvoiceService implements IInvoiceService {
     inv.reminders.push({
       number: inv.reminders.length + 1, sentOn: localIsoDate(today), dueOn: localIsoDate(due),
     });
-    return Promise.resolve(inv);
+    return of(inv);
   }
 
-  downloadReminderPdf(): Promise<Blob> {
-    return Promise.resolve(new Blob(['mock-pdf'], { type: 'application/pdf' }));
+  downloadReminderPdf(): Observable<Blob> {
+    return of(new Blob(['mock-pdf'], { type: 'application/pdf' }));
   }
 
-  downloadPdf(): Promise<Blob> {
-    return Promise.resolve(new Blob(['mock-pdf'], { type: 'application/pdf' }));
+  downloadPdf(): Observable<Blob> {
+    return of(new Blob(['mock-pdf'], { type: 'application/pdf' }));
   }
 }

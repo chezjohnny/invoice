@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { IDashboardService } from '../../core/tokens/dashboard-service.token';
 import { DashboardStats } from './dashboard.model';
 
 @Injectable()
 export class MockDashboardService implements IDashboardService {
-  getStats(): Promise<DashboardStats> {
-    return Promise.resolve({
+  getStats(): Observable<DashboardStats> {
+    return of({
       draft: { count: 1, total: 150 },
       issued: { count: 2, total: 320 },
       overdue: { count: 1, total: 120 },

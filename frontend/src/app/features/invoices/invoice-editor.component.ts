@@ -1,8 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { tapResponse } from '@ngrx/operators';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { exhaustMap } from 'rxjs';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { EditorPageComponent } from '../../shared/components/editor-page.component';
-import { once } from '../../shared/busy';
 import { injectEditorExit } from '../../shared/editor-exit';
 import { CompanyStore } from '../settings/company.store';
 import { InvoiceFormComponent } from './invoice-form.component';
@@ -32,9 +34,9 @@ import { InvoiceEditorStore } from './invoice-editor.store';
             [canIssue]="!company.isIncomplete()"
             [defaultVatRate]="company.profile()?.defaultVatRate ?? null"
             [busy]="saving()"
-            (saved)="onSaved($event)"
+            (saved)="save({ data: $event, issue: false })"
             (cancelled)="leave()"
-            (issuedAndPrinted)="onIssuedAndPrinted($event)"
+            (issuedAndPrinted)="save({ data: $event, issue: true })"
           />
         }
       }
@@ -65,17 +67,17 @@ export class InvoiceEditorComponent {
     );
   }
 
-  protected onSaved(data: InvoiceCreate): Promise<void> {
-    return once(this.saving, async () => {
-      await this.store.saveDraft(data);
-      this.leave();
-    });
-  }
-
-  protected onIssuedAndPrinted(data: InvoiceCreate): Promise<void> {
-    return once(this.saving, async () => {
-      await this.store.issueAndPrint(data);
-      this.leave();
-    });
-  }
+  /** Saves the draft (and issues it), then leaves; a second click while saving is ignored. */
+  protected readonly save = rxMethod<{ data: InvoiceCreate; issue: boolean }>(
+    exhaustMap(({ data, issue }) => {
+      this.saving.set(true);
+      return (issue ? this.store.issueAndPrint(data) : this.store.saveDraft(data)).pipe(
+        tapResponse({
+          next: () => this.leave(),
+          error: () => undefined, // errorInterceptor already surfaced a toast
+          finalize: () => this.saving.set(false),
+        }),
+      );
+    }),
+  );
 }

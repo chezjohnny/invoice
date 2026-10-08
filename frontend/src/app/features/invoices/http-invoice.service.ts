@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { IInvoiceService, InvoiceListParams } from '../../core/tokens/invoice-service.token';
 import { Page, PageDto, toPage } from '../../core/models/page.model';
 import { withSort } from '../../shared/sort';
@@ -38,7 +38,7 @@ interface InvoiceDto {
 export class HttpInvoiceService implements IInvoiceService {
   private readonly http = inject(HttpClient);
 
-  list(params: InvoiceListParams): Promise<Page<Invoice>> {
+  list(params: InvoiceListParams): Observable<Page<Invoice>> {
     let httpParams = new HttpParams()
       .set('search', params.search ?? '')
       .set('page', String(params.page ?? 1))
@@ -49,86 +49,64 @@ export class HttpInvoiceService implements IInvoiceService {
     if (params.customerId) {
       httpParams = httpParams.set('customer_id', params.customerId);
     }
-    return firstValueFrom(
-      this.http.get<PageDto<InvoiceDto>>('/api/invoices', {
+    return this.http.get<PageDto<InvoiceDto>>('/api/invoices', {
         params: withSort(httpParams, params.sort),
-      })
-    ).then((dto) => toPage(dto, this.toInvoice));
+      }).pipe(map((dto) => toPage(dto, this.toInvoice)));
   }
 
-  getById(id: string): Promise<Invoice> {
-    return firstValueFrom(this.http.get<InvoiceDto>(`/api/invoices/${id}`)).then(this.toInvoice);
+  getById(id: string): Observable<Invoice> {
+    return this.http.get<InvoiceDto>(`/api/invoices/${id}`).pipe(map(this.toInvoice));
   }
 
-  create(data: InvoiceCreate): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.post<InvoiceDto>('/api/invoices', this.toDto(data))
-    ).then(this.toInvoice);
+  create(data: InvoiceCreate): Observable<Invoice> {
+    return this.http.post<InvoiceDto>('/api/invoices', this.toDto(data)).pipe(map(this.toInvoice));
   }
 
-  update(id: string, data: InvoiceUpdate): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.put<InvoiceDto>(`/api/invoices/${id}`, this.toDto(data))
-    ).then(this.toInvoice);
+  update(id: string, data: InvoiceUpdate): Observable<Invoice> {
+    return this.http.put<InvoiceDto>(`/api/invoices/${id}`, this.toDto(data)).pipe(map(this.toInvoice));
   }
 
-  issue(id: string): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.post<InvoiceDto>(`/api/invoices/${id}/issue`, {})
-    ).then(this.toInvoice);
+  issue(id: string): Observable<Invoice> {
+    return this.http.post<InvoiceDto>(`/api/invoices/${id}/issue`, {}).pipe(map(this.toInvoice));
   }
 
-  pay(id: string, payment?: Payment): Promise<Invoice> {
+  pay(id: string, payment?: Payment): Observable<Invoice> {
     const body = payment ? { paid_at: payment.paidAt, payment_method: payment.paymentMethod } : {};
-    return firstValueFrom(
-      this.http.post<InvoiceDto>(`/api/invoices/${id}/pay`, body)
-    ).then(this.toInvoice);
+    return this.http.post<InvoiceDto>(`/api/invoices/${id}/pay`, body).pipe(map(this.toInvoice));
   }
 
-  updatePaymentDate(id: string, paidAt: string): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.patch<InvoiceDto>(`/api/invoices/${id}/payment-date`, { paid_at: paidAt })
-    ).then(this.toInvoice);
+  updatePaymentDate(id: string, paidAt: string): Observable<Invoice> {
+    return this.http.patch<InvoiceDto>(`/api/invoices/${id}/payment-date`, { paid_at: paidAt }).pipe(map(this.toInvoice));
   }
 
-  updatePaymentMethod(id: string, paymentMethod: PaymentMethod): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.patch<InvoiceDto>(`/api/invoices/${id}/payment-method`, { payment_method: paymentMethod })
-    ).then(this.toInvoice);
+  updatePaymentMethod(id: string, paymentMethod: PaymentMethod): Observable<Invoice> {
+    return this.http.patch<InvoiceDto>(`/api/invoices/${id}/payment-method`, { payment_method: paymentMethod }).pipe(map(this.toInvoice));
   }
 
-  cancel(id: string): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.post<InvoiceDto>(`/api/invoices/${id}/cancel`, {})
-    ).then(this.toInvoice);
+  cancel(id: string): Observable<Invoice> {
+    return this.http.post<InvoiceDto>(`/api/invoices/${id}/cancel`, {}).pipe(map(this.toInvoice));
   }
 
-  delete(id: string): Promise<void> {
-    return firstValueFrom(this.http.delete<void>(`/api/invoices/${id}`));
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/invoices/${id}`);
   }
 
-  createReminder(id: string): Promise<Invoice> {
-    return firstValueFrom(
-      this.http.post<InvoiceDto>(`/api/invoices/${id}/reminders`, {})
-    ).then(this.toInvoice);
+  createReminder(id: string): Observable<Invoice> {
+    return this.http.post<InvoiceDto>(`/api/invoices/${id}/reminders`, {}).pipe(map(this.toInvoice));
   }
 
-  downloadReminderPdf(id: string, number: number, locale: Locale): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get(`/api/invoices/${id}/reminders/${number}/pdf`, {
+  downloadReminderPdf(id: string, number: number, locale: Locale): Observable<Blob> {
+    return this.http.get(`/api/invoices/${id}/reminders/${number}/pdf`, {
         params: new HttpParams().set('lang', locale),
         responseType: 'blob',
-      })
-    );
+      });
   }
 
-  downloadPdf(id: string, locale: Locale): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get(`/api/invoices/${id}/pdf`, {
+  downloadPdf(id: string, locale: Locale): Observable<Blob> {
+    return this.http.get(`/api/invoices/${id}/pdf`, {
         params: new HttpParams().set('lang', locale),
         responseType: 'blob',
-      })
-    );
+      });
   }
 
   private toInvoice(dto: InvoiceDto): Invoice {

@@ -1,5 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { of } from 'rxjs';
+import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
@@ -46,21 +46,21 @@ describe('InvoiceEditorStore', () => {
         {
           provide: INVOICE_SERVICE,
           useValue: {
-            getById: async (id: string) => find(id),
-            create: async (data: InvoiceCreate): Promise<Invoice> => {
+            getById: (id: string) => of(find(id)),
+            create: (data: InvoiceCreate): Observable<Invoice> => {
               const inv: Invoice = { ...DRAFT, ...data, id: `new-${++created}`, lines: [] };
               invoices.push(inv);
-              return inv;
+              return of(inv);
             },
-            update: async (id: string, data: InvoiceCreate): Promise<Invoice> =>
-              Object.assign(find(id), { notes: data.notes, paymentMethod: data.paymentMethod }),
-            issue: async (id: string): Promise<Invoice> => {
-              if (failIssue) throw new Error('incomplete company profile');
-              return Object.assign(find(id), { status: 'issued', invoiceNumber: '2610051' });
+            update: (id: string, data: InvoiceCreate): Observable<Invoice> =>
+              of(Object.assign(find(id), { notes: data.notes, paymentMethod: data.paymentMethod })),
+            issue: (id: string): Observable<Invoice> => {
+              if (failIssue) return throwError(() => new Error('incomplete company profile'));
+              return of(Object.assign(find(id), { status: 'issued', invoiceNumber: '2610051' }));
             },
-            pay: async (id: string): Promise<Invoice> =>
-              Object.assign(find(id), { status: 'paid', paidAt: '2026-10-05' }),
-            downloadPdf: async () => new Blob(['%PDF']),
+            pay: (id: string): Observable<Invoice> =>
+              of(Object.assign(find(id), { status: 'paid', paidAt: '2026-10-05' })),
+            downloadPdf: () => of(new Blob(['%PDF'])),
           },
         },
       ],
@@ -69,40 +69,40 @@ describe('InvoiceEditorStore', () => {
   });
 
   it('loads a draft with its customer', async () => {
-    await store.load({ invoiceId: 'inv-1' });
+    store.load({ invoiceId: 'inv-1' });
     expect(store.invoice()?.id).toBe('inv-1');
     expect(store.customer()?.id).toBe('cust-1');
     expect(store.loading()).toBe(false);
   });
 
   it('creates the draft once, then updates it', async () => {
-    await store.load({ customerId: 'cust-1' });
+    store.load({ customerId: 'cust-1' });
     expect(store.invoice()).toBeNull();
-    await store.saveDraft(DATA);
-    await store.saveDraft({ ...DATA, notes: 'Livraison' });
+    await firstValueFrom(store.saveDraft(DATA));
+    await firstValueFrom(store.saveDraft({ ...DATA, notes: 'Livraison' }));
     expect(created).toBe(1);
     expect(store.invoice()?.notes).toBe('Livraison');
   });
 
   it('marks a cash invoice paid before printing it', async () => {
-    await store.load({ invoiceId: 'inv-1' });
-    await store.issueAndPrint(DATA);
+    store.load({ invoiceId: 'inv-1' });
+    await firstValueFrom(store.issueAndPrint(DATA));
     expect(store.invoice()?.status).toBe('paid');
     expect(store.invoice()?.paidAt).toBe('2026-10-05');
   });
 
   it('leaves a non-cash invoice issued', async () => {
-    await store.load({ invoiceId: 'inv-1' });
-    await store.issueAndPrint({ ...DATA, paymentMethod: 'twint' });
+    store.load({ invoiceId: 'inv-1' });
+    await firstValueFrom(store.issueAndPrint({ ...DATA, paymentMethod: 'twint' }));
     expect(store.invoice()?.status).toBe('issued');
   });
 
   it('does not create a second draft when a failed issue is retried', async () => {
-    await store.load({ customerId: 'cust-1' });
+    store.load({ customerId: 'cust-1' });
     failIssue = true;
-    await expect(store.issueAndPrint(DATA)).rejects.toThrow();
+    await expect(firstValueFrom(store.issueAndPrint(DATA))).rejects.toThrow();
     failIssue = false;
-    await store.issueAndPrint(DATA);
+    await firstValueFrom(store.issueAndPrint(DATA));
     expect(created).toBe(1);
   });
 });

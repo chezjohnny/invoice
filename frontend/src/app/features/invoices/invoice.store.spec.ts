@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Locale } from '../../core/i18n/translations';
@@ -56,50 +57,51 @@ describe('InvoiceStore', () => {
         {
           provide: INVOICE_SERVICE,
           useValue: {
-            list: async (params: { status?: string; customerId?: string; page?: number }) => {
+            list: (params: { status?: string; customerId?: string; page?: number }) => {
               lastListParams = params;
-              return makePage(invoices, params);
+              return of(makePage(invoices, params));
             },
-            pay: async (id: string, payment: Payment): Promise<Invoice> => {
-              if (failPay) throw new Error('already paid');
+            pay: (id: string, payment: Payment): Observable<Invoice> => {
+              if (failPay) return throwError(() => new Error('already paid'));
               const inv = invoices.find((i) => i.id === id)!;
               inv.status = 'paid';
               inv.paidAt = payment.paidAt;
               inv.paymentMethod = payment.paymentMethod;
-              return inv;
+              return of(inv);
             },
-            updatePaymentDate: async (id: string, paidAt: string): Promise<Invoice> => {
+            updatePaymentDate: (id: string, paidAt: string): Observable<Invoice> => {
               const inv = invoices.find((i) => i.id === id)!;
               inv.paidAt = paidAt;
-              return inv;
+              return of(inv);
             },
-            updatePaymentMethod: async (id: string, paymentMethod: PaymentMethod): Promise<Invoice> => {
+            updatePaymentMethod: (id: string, paymentMethod: PaymentMethod): Observable<Invoice> => {
               const inv = invoices.find((i) => i.id === id)!;
               inv.paymentMethod = paymentMethod;
-              return inv;
+              return of(inv);
             },
-            cancel: async (id: string): Promise<Invoice> => {
+            cancel: (id: string): Observable<Invoice> => {
               const inv = invoices.find((i) => i.id === id)!;
               inv.status = 'cancelled';
-              return inv;
+              return of(inv);
             },
-            delete: async (id: string): Promise<void> => {
+            delete: (id: string): Observable<void> => {
               invoices = invoices.filter((i) => i.id !== id);
+              return of(undefined);
             },
-            createReminder: async (id: string): Promise<Invoice> => {
+            createReminder: (id: string): Observable<Invoice> => {
               const inv = invoices.find((i) => i.id === id)!;
               inv.reminders = [...inv.reminders, {
                 number: inv.reminders.length + 1, sentOn: '2026-10-05', dueOn: '2026-10-15',
               }];
-              return inv;
+              return of(inv);
             },
-            downloadReminderPdf: async (_id: string, number: number, locale: Locale) => {
+            downloadReminderPdf: (_id: string, number: number, locale: Locale) => {
               reminderPdf = { number, locale };
-              return new Blob(['%PDF'], { type: 'application/pdf' });
+              return of(new Blob(['%PDF'], { type: 'application/pdf' }));
             },
-            downloadPdf: async (_id: string, locale: Locale) => {
+            downloadPdf: (_id: string, locale: Locale) => {
               pdfLocale = locale;
-              return new Blob(['%PDF'], { type: 'application/pdf' });
+              return of(new Blob(['%PDF'], { type: 'application/pdf' }));
             },
           },
         },
@@ -108,39 +110,39 @@ describe('InvoiceStore', () => {
     store = TestBed.inject(InvoiceStore);
   });
 
-  it('loads invoices on init', async () => {
-    await store.load();
+  it('loads invoices on init', () => {
+    store.load();
     expect(store.items().length).toBe(4);
     expect(store.total()).toBe(4);
   });
 
-  it('setStatusFilter resets page and updates filter', async () => {
-    await store.load();
-    await store.setStatusFilter('draft');
+  it('setStatusFilter resets page and updates filter', () => {
+    store.load();
+    store.setStatusFilter('draft');
     expect(store.statusFilter()).toBe('draft');
     expect(store.page()).toBe(1);
     expect(store.items().every((i) => i.status === 'draft')).toBe(true);
   });
 
-  it('setStatusFilter issued returns issued invoices', async () => {
-    await store.load();
+  it('setStatusFilter issued returns issued invoices', () => {
+    store.load();
     store.setStatusFilter('issued');
-    await store.load();
+    store.load();
     expect(store.items().length).toBe(1);
     expect(store.items()[0].invoiceNumber).toBe('2601011');
   });
 
-  it('clears loading when a mutation is rejected', async () => {
-    await store.load();
+  it('clears loading when a mutation is rejected', () => {
+    store.load();
     failPay = true;
-    await expect(store.pay('2', { paidAt: '2026-06-25', paymentMethod: 'cash' })).rejects.toThrow();
+    store.pay({ id: '2', payment: { paidAt: '2026-06-25', paymentMethod: 'cash' }, print: false });
     expect(store.loading()).toBe(false);
     expect(store.items().length).toBe(4);
   });
 
-  it('pays an issued invoice on the given date and by the given method', async () => {
-    await store.load();
-    await store.pay('2', { paidAt: '2026-06-20', paymentMethod: 'twint' });
+  it('pays an issued invoice on the given date and by the given method', () => {
+    store.load();
+    store.pay({ id: '2', payment: { paidAt: '2026-06-20', paymentMethod: 'twint' }, print: false });
     const inv = store.items().find((i) => i.id === '2')!;
     expect(inv.status).toBe('paid');
     expect(inv.paidAt).toBe('2026-06-20');
@@ -148,39 +150,39 @@ describe('InvoiceStore', () => {
     expect(pdfLocale).toBeUndefined();
   });
 
-  it('prints the receipt once paid when asked', async () => {
+  it('prints the receipt once paid when asked', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    await store.pay('2', { paidAt: '2026-06-20', paymentMethod: 'iban' }, true);
+    store.pay({ id: '2', payment: { paidAt: '2026-06-20', paymentMethod: 'iban' }, print: true });
     expect(pdfLocale).toBeDefined();
   });
 
-  it('updates the payment date of a paid invoice', async () => {
-    await store.load();
-    await store.setPaymentDate('3', '2025-06-15');
+  it('updates the payment date of a paid invoice', () => {
+    store.load();
+    store.setPaymentDate({ id: '3', paidAt: '2025-06-15' });
     expect(invoices.find((i) => i.id === '3')?.paidAt).toBe('2025-06-15');
   });
 
-  it('changes the payment method of an issued invoice', async () => {
-    await store.setPaymentMethod('2', 'twint');
+  it('changes the payment method of an issued invoice', () => {
+    store.setPaymentMethod({ id: '2', paymentMethod: 'twint' });
     expect(store.items().find((i) => i.id === '2')!.paymentMethod).toBe('twint');
   });
 
-  it('cancel transitions invoice to cancelled', async () => {
-    await store.load();
-    await store.cancel('1');
+  it('cancel transitions invoice to cancelled', () => {
+    store.load();
+    store.cancel('1');
     expect(invoices.find((i) => i.id === '1')?.status).toBe('cancelled');
   });
 
-  it('delete removes the invoice and reloads the list', async () => {
-    await store.load();
-    await store.cancel('1');
-    await store.delete('1');
+  it('delete removes the invoice and reloads the list', () => {
+    store.load();
+    store.cancel('1');
+    store.delete('1');
     expect(store.items().some((i) => i.id === '1')).toBe(false);
   });
 
-  it('downloads the PDF in the UI language, named after the invoice number', async () => {
+  it('downloads the PDF in the UI language, named after the invoice number', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     let filename = '';
@@ -188,35 +190,35 @@ describe('InvoiceStore', () => {
       filename = this.download;
     });
     TestBed.inject(I18nService).locale.set('fr');
-    await store.downloadPdf(INVOICES[1]);
+    store.downloadPdf(INVOICES[1]);
     expect(pdfLocale).toBe('fr');
     expect(filename).toBe('2601011.pdf');
   });
 
-  it('creates the next reminder and downloads it', async () => {
+  it('creates the next reminder and downloads it', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     let filename = '';
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       filename = this.download;
     });
-    await store.createReminder('2');
-    await store.createReminder('2');
+    store.createReminder('2');
+    store.createReminder('2');
     expect(store.items().find((i) => i.id === '2')!.reminders.map((r) => r.number)).toEqual([1, 2]);
     expect(reminderPdf?.number).toBe(2);
     expect(filename).toBe('2601011-R2.pdf');
   });
 
-  it('shows the invoices of one customer', async () => {
-    await store.showCustomer('cust-1');
+  it('shows the invoices of one customer', () => {
+    store.showCustomer('cust-1');
     expect(store.customerId()).toBe('cust-1');
     expect(lastListParams?.customerId).toBe('cust-1');
   });
 
-  it('steps back a page when deleting its last invoice', async () => {
+  it('steps back a page when deleting its last invoice', () => {
     invoices = invoices.filter((i) => i.id === '4');
-    await store.setPage(2);
-    await store.delete('4');
+    store.setPage(2);
+    store.delete('4');
     expect(store.page()).toBe(1);
   });
 

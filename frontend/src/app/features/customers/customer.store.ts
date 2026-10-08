@@ -6,7 +6,7 @@ import { exhaustMap } from 'rxjs';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
 import { saveFile } from '../../shared/download';
 import {
-  PagedListState, initialPagedList, rxLoadPage, rxMutateThenLoad, rxPagedListMethods,
+  PagedListState, initialPagedList, loadPage, mutateThenLoad, pagedListMethods,
 } from '../../shared/paged-list';
 import { pagedListParams, queryParams, readPagedList, syncWithUrl } from '../../shared/url-state';
 import { Customer } from './customer.model';
@@ -18,7 +18,7 @@ interface CustomerState extends PagedListState<Customer> {
 export const CustomerStore = signalStore(
   withState<CustomerState>({ ...initialPagedList<Customer>(), archived: false }),
   withMethods((store, service = inject(CUSTOMER_SERVICE)) => {
-    const load = rxLoadPage(store, () => service.list({
+    const load = loadPage(store, () => service.list({
       search: store.search(),
       archived: store.archived(),
       sort: store.sort(),
@@ -27,13 +27,13 @@ export const CustomerStore = signalStore(
     }));
     return {
       load,
-      ...rxPagedListMethods(store, load),
+      ...pagedListMethods(store, load),
       setArchived(archived: boolean): void {
         patchState(store, { archived, page: 1 });
         load();
       },
-      archive: rxMutateThenLoad(store, (id: string) => service.archive(id), load),
-      restore: rxMutateThenLoad(store, (id: string) => service.restore(id), load),
+      archive: mutateThenLoad(store, (id: string) => service.archive(id), load),
+      restore: mutateThenLoad(store, (id: string) => service.restore(id), load),
       exportCsv: rxMethod<void>(
         exhaustMap(() => service.exportCsv().pipe(
           tapResponse({ next: (csv) => saveFile(csv, 'customers.csv'), error: () => undefined }),

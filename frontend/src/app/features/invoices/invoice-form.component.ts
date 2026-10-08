@@ -1,6 +1,8 @@
 import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, input, linkedSignal, output, resource } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { FormField, FormRoot, applyEach, form, min, required, submit, validate } from '@angular/forms/signals';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
@@ -339,9 +341,9 @@ export class InvoiceFormComponent {
     { submission: { action: async () => this.saved.emit(this.payload()) } }
   );
 
-  private readonly recentInvoices = resource({
+  private readonly recentInvoices = rxResource({
     params: () => ({ customerId: this.customer().id, perPage: RECENT_INVOICES }),
-    loader: async ({ params }) => (await this.invoiceService.list(params)).items,
+    stream: ({ params }) => this.invoiceService.list(params).pipe(map((page) => page.items)),
   });
 
   // What the customer bought lately. Imported invoices often name an article in a

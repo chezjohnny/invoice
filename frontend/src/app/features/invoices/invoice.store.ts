@@ -1,5 +1,8 @@
 import { inject } from '@angular/core';
+import { tapResponse } from '@ngrx/operators';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { Observable, mergeMap, tap } from 'rxjs';
 import { INVOICE_SERVICE } from '../../core/tokens/invoice-service.token';
 import {
   PagedListState, initialPagedList, loadPage, mutateThenLoad, pagedListMethods,
@@ -15,10 +18,23 @@ interface InvoiceState extends PagedListState<Invoice> {
   customerId: string | null;
 }
 
+/** `print`: download the receipt once paid, the paper copy for the accounts. */
+interface PayRequest {
+  id: string;
+  payment: Payment;
+  print: boolean;
+}
+
+interface ReminderPdf {
+  invoice: Invoice;
+  /** 1 for the first reminder, 2 for the second… */
+  number: number;
+}
+
 export const InvoiceStore = signalStore(
   withState<InvoiceState>({ ...initialPagedList<Invoice>(), statusFilter: 'all', customerId: null }),
   withMethods((store, service = inject(INVOICE_SERVICE), i18n = inject(I18nService)) => {
-    const load = (): Promise<void> => loadPage(store, () => {
+    const load = loadPage(store, () => {
       const status = store.statusFilter();
       return service.list({
         search: store.search(),
@@ -29,59 +45,60 @@ export const InvoiceStore = signalStore(
         perPage: store.perPage(),
       });
     });
-    const mutate = <R>(action: () => Promise<R>): Promise<R> => mutateThenLoad(store, action, load);
 
-    async function printReminder(invoice: Invoice, number: number): Promise<void> {
-      saveFile(
-        await service.downloadReminderPdf(invoice.id, number, i18n.locale()),
-        reminderPdfName(invoice, number),
-      );
-    }
-
-    async function printPdf(invoice: Invoice): Promise<void> {
-      saveFile(await service.downloadPdf(invoice.id, i18n.locale()), invoicePdfName(invoice));
-    }
+    // Downloads run side by side (mergeMap); a failed one leaves the others.
+    const download = <A>(file: (arg: A) => Observable<unknown>) => rxMethod<A>(
+      mergeMap((arg) => file(arg).pipe(tapResponse({ next: () => undefined, error: () => undefined }))),
+    );
+    const downloadPdf = download((invoice: Invoice) =>
+      service.downloadPdf(invoice.id, i18n.locale()).pipe(tap((pdf) => saveFile(pdf, invoicePdfName(invoice)))),
+    );
+    const printReminder = download(({ invoice, number }: ReminderPdf) =>
+      service.downloadReminderPdf(invoice.id, number, i18n.locale()).pipe(
+        tap((pdf) => saveFile(pdf, reminderPdfName(invoice, number))),
+      ),
+    );
 
     return {
       load,
       ...pagedListMethods(store, load),
-      setStatusFilter(value: string): Promise<void> {
+      setStatusFilter(value: string): void {
         patchState(store, { statusFilter: value, page: 1 });
-        return load();
+        load();
       },
-      /** `print`: download the receipt once paid, the paper copy for the accounts. */
-      async pay(id: string, payment: Payment, print = false): Promise<void> {
-        const paid = await mutate(() => service.pay(id, payment));
-        if (print) await printPdf(paid);
-      },
-      async setPaymentDate(id: string, paidAt: string): Promise<void> {
-        await mutate(() => service.updatePaymentDate(id, paidAt));
-      },
-      async setPaymentMethod(id: string, paymentMethod: PaymentMethod): Promise<void> {
-        await mutate(() => service.updatePaymentMethod(id, paymentMethod));
-      },
-      async cancel(id: string): Promise<void> {
-        await mutate(() => service.cancel(id));
-      },
-      async delete(id: string): Promise<void> {
-        await mutate(() => service.delete(id));
+      pay: mutateThenLoad(
+        store,
+        ({ id, payment }: PayRequest) => service.pay(id, payment),
+        load,
+        (paid, { print }) => {
+          if (print) downloadPdf(paid);
+        },
+      ),
+      setPaymentDate: mutateThenLoad(
+        store, ({ id, paidAt }: { id: string; paidAt: string }) => service.updatePaymentDate(id, paidAt), load,
+      ),
+      setPaymentMethod: mutateThenLoad(
+        store,
+        ({ id, paymentMethod }: { id: string; paymentMethod: PaymentMethod }) =>
+          service.updatePaymentMethod(id, paymentMethod),
+        load,
+      ),
+      cancel: mutateThenLoad(store, (id: string) => service.cancel(id), load),
+      delete: mutateThenLoad(store, (id: string) => service.delete(id), load, () => {
         // The last invoice of a page gone: show the previous page rather than an empty one.
-        if (store.items().length === 0 && store.page() > 1) {
-          patchState(store, { page: store.page() - 1 });
-          await load();
-        }
-      },
+        if (store.items().length === 1 && store.page() > 1) patchState(store, { page: store.page() - 1 });
+      }),
       /** The invoices of one customer, for the customer's page. */
-      showCustomer(customerId: string): Promise<void> {
+      showCustomer(customerId: string): void {
         patchState(store, { customerId });
-        return load();
+        load();
       },
-      downloadPdf: printPdf,
+      downloadPdf,
       /** Records the next reminder, then downloads it to print and send. */
-      async createReminder(id: string): Promise<void> {
-        const invoice = await mutate(() => service.createReminder(id));
-        await printReminder(invoice, invoice.reminders.length);
-      },
+      createReminder: mutateThenLoad(
+        store, (id: string) => service.createReminder(id), load,
+        (invoice) => printReminder({ invoice, number: invoice.reminders.length }),
+      ),
       printReminder,
     };
   }),

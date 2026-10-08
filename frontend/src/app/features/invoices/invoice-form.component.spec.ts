@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { of } from 'rxjs';
 import { CdkDropList } from '@angular/cdk/drag-drop';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -26,7 +27,7 @@ describe('InvoiceFormComponent article picker', () => {
       imports: [InvoiceFormComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: INVOICE_SERVICE, useValue: { list: async () => ({ items: [] }) } },
+        { provide: INVOICE_SERVICE, useValue: { list: () => of({ items: [] }) } },
       ],
     });
     fixture = TestBed.createComponent(InvoiceFormComponent);
@@ -250,7 +251,7 @@ describe('InvoiceFormComponent suggestions', () => {
       imports: [InvoiceFormComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: INVOICE_SERVICE, useValue: { list: async () => ({ items: [recent] }) } },
+        { provide: INVOICE_SERVICE, useValue: { list: () => of({ items: [recent] }) } },
       ],
     });
     const fixture = TestBed.createComponent(InvoiceFormComponent);

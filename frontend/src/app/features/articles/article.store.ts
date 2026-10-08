@@ -6,7 +6,7 @@ import { exhaustMap, mergeMap, switchMap } from 'rxjs';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { saveFile } from '../../shared/download';
 import {
-  PagedListState, initialPagedList, rxLoadPage, rxMutateThenLoad, rxPagedListMethods,
+  PagedListState, initialPagedList, loadPage, mutateThenLoad, pagedListMethods,
 } from '../../shared/paged-list';
 import { pagedListParams, queryParams, readPagedList, syncWithUrl } from '../../shared/url-state';
 import { ArticleListItem } from './article.model';
@@ -41,7 +41,7 @@ export const ArticleStore = signalStore(
     counted: [],
   }),
   withMethods((store, service = inject(ARTICLE_SERVICE)) => {
-    const load = rxLoadPage(store, () => service.list({
+    const load = loadPage(store, () => service.list({
       search: store.search(),
       archived: store.archived(),
       salesYear: store.salesYear(),
@@ -53,7 +53,7 @@ export const ArticleStore = signalStore(
 
     return {
       load,
-      ...rxPagedListMethods(store, load),
+      ...pagedListMethods(store, load),
       loadSalesYears: rxMethod<void>(
         switchMap(() => service.salesYears().pipe(
           tapResponse({ next: (salesYears) => patchState(store, { salesYears }), error: () => undefined }),
@@ -110,8 +110,8 @@ export const ArticleStore = signalStore(
           );
         }),
       ),
-      archive: rxMutateThenLoad(store, (id: string) => service.archive(id), load),
-      restore: rxMutateThenLoad(store, (id: string) => service.restore(id), load),
+      archive: mutateThenLoad(store, (id: string) => service.archive(id), load),
+      restore: mutateThenLoad(store, (id: string) => service.restore(id), load),
     };
   }),
   withHooks({

@@ -1,6 +1,8 @@
 import { inject } from '@angular/core';
+import { tapResponse } from '@ngrx/operators';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import { firstValueFrom } from 'rxjs';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ARTICLE_SERVICE } from '../../core/tokens/article-service.token';
 import { CUSTOMER_SERVICE } from '../../core/tokens/customer-service.token';
@@ -34,43 +36,46 @@ export const InvoiceEditorStore = signalStore(
   ) => {
     // Once created, the draft is updated: a retry after a failed issue must
     // not create a second one.
-    async function save(data: InvoiceCreate): Promise<Invoice> {
+    const save = (data: InvoiceCreate): Observable<Invoice> => {
       const current = store.invoice();
-      const invoice = current ? await invoices.update(current.id, data) : await invoices.create(data);
-      patchState(store, { invoice });
-      return invoice;
-    }
+      return (current ? invoices.update(current.id, data) : invoices.create(data)).pipe(
+        tap((invoice) => patchState(store, { invoice })),
+      );
+    };
 
     return {
       /** Edit `invoiceId`, or create a draft for `customerId`. */
-      async load(target: { invoiceId: string } | { customerId: string }): Promise<void> {
-        patchState(store, { loading: true });
-        try {
-          const invoice = 'invoiceId' in target ? await invoices.getById(target.invoiceId) : null;
-          const customerId = invoice?.customerId ?? ('customerId' in target ? target.customerId : '');
-          const [customer, articles, archivedArticles] = await Promise.all([
-            // The customer and article services return Observables; this store,
-            // not moved yet, awaits them.
-            firstValueFrom(customers.getById(customerId)),
-            firstValueFrom(articleService.getAll()),
-            firstValueFrom(articleService.getAll(true)),
-          ]);
-          patchState(store, { invoice, customer, articles, archivedArticles });
-        } finally {
-          patchState(store, { loading: false });
-        }
-      },
-      async saveDraft(data: InvoiceCreate): Promise<void> {
-        await save(data);
-      },
+      load: rxMethod<{ invoiceId: string } | { customerId: string }>(
+        switchMap((target) => {
+          patchState(store, { loading: true });
+          const existing: Observable<Invoice | null> =
+            'invoiceId' in target ? invoices.getById(target.invoiceId) : of(null);
+          return existing.pipe(
+            switchMap((invoice) => forkJoin({
+              customer: customers.getById(invoice?.customerId ?? ('customerId' in target ? target.customerId : '')),
+              articles: articleService.getAll(),
+              archivedArticles: articleService.getAll(true),
+            }).pipe(map((loaded) => ({ invoice, ...loaded })))),
+            tapResponse({
+              next: (loaded) => patchState(store, loaded),
+              error: () => undefined, // errorInterceptor already surfaced a toast
+              finalize: () => patchState(store, { loading: false }),
+            }),
+          );
+        }),
+      ),
+      // These two return what the page chains on (saved, then leave), for its rxMethod.
+      saveDraft: save,
       /** A cash invoice is settled on the spot: its PDF is printed paid today. */
-      async issueAndPrint(data: InvoiceCreate): Promise<void> {
-        const draft = await save(data);
-        let invoice = await invoices.issue(draft.id);
-        if (data.paymentMethod === 'cash') invoice = await invoices.pay(draft.id);
-        patchState(store, { invoice });
-        saveFile(await invoices.downloadPdf(invoice.id, i18n.locale()), invoicePdfName(invoice));
-      },
+      issueAndPrint: (data: InvoiceCreate): Observable<Invoice> => save(data).pipe(
+        switchMap((draft) => invoices.issue(draft.id)),
+        switchMap((issued) => (data.paymentMethod === 'cash' ? invoices.pay(issued.id) : of(issued))),
+        tap((invoice) => patchState(store, { invoice })),
+        switchMap((invoice) => invoices.downloadPdf(invoice.id, i18n.locale()).pipe(
+          tap((pdf) => saveFile(pdf, invoicePdfName(invoice))),
+          map(() => invoice),
+        )),
+      ),
     };
   })
 );

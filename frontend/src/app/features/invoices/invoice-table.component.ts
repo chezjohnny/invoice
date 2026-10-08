@@ -84,9 +84,9 @@ import { PayDialogComponent, PaymentRequest } from './pay-dialog.component';
                   <tr>
                     <td [attr.colspan]="columns()" class="bg-base-200/60 p-0">
                       <app-invoice-lines [invoice]="inv"
-                        (paymentMethodChange)="store.setPaymentMethod(inv.id, $event)"
-                        (paymentDateChange)="store.setPaymentDate(inv.id, $event)"
-                        (reminderPdf)="store.printReminder(inv, $event)" />
+                        (paymentMethodChange)="store.setPaymentMethod({ id: inv.id, paymentMethod: $event })"
+                        (paymentDateChange)="store.setPaymentDate({ id: inv.id, paidAt: $event })"
+                        (reminderPdf)="store.printReminder({ invoice: inv, number: $event })" />
                     </td>
                   </tr>
                 }
@@ -166,23 +166,23 @@ export class InvoiceTableComponent {
     this.router.navigate(['/invoices', invoice.id, 'edit'], { queryParams: { returnTo: this.router.url } });
   }
 
-  protected async onPaymentConfirmed(invoice: Invoice, { print, ...payment }: PaymentRequest): Promise<void> {
+  protected onPaymentConfirmed(invoice: Invoice, { print, ...payment }: PaymentRequest): void {
     this.pendingPayment.set(null);
-    await this.store.pay(invoice.id, payment, print);
+    this.store.pay({ id: invoice.id, payment, print });
   }
 
-  protected async onReminderConfirmed(invoice: Invoice): Promise<void> {
+  protected onReminderConfirmed(invoice: Invoice): void {
     this.pendingReminder.set(null);
-    await this.store.createReminder(invoice.id);
+    this.store.createReminder(invoice.id);
   }
 
   protected reminderMessage(invoice: Invoice): string {
     return nextReminderMessage(this.t().invoices.createReminderConfirm, invoice, invoice.reminders.length);
   }
 
-  protected async onDeleteConfirmed(invoice: Invoice): Promise<void> {
+  protected onDeleteConfirmed(invoice: Invoice): void {
     this.pendingDelete.set(null);
-    await this.store.delete(invoice.id);
+    this.store.delete(invoice.id);
   }
 
   protected deleteMessage(invoice: Invoice): string {

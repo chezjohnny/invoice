@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { IDashboardService } from '../../core/tokens/dashboard-service.token';
 import { DashboardStats } from './dashboard.model';
 import { InvoiceStatus } from '../invoices/invoice.model';
@@ -44,8 +44,8 @@ interface DashboardStatsDto {
 export class HttpDashboardService implements IDashboardService {
   private readonly http = inject(HttpClient);
 
-  getStats(): Promise<DashboardStats> {
-    return firstValueFrom(this.http.get<DashboardStatsDto>('/api/dashboard/stats')).then((dto) => ({
+  getStats(): Observable<DashboardStats> {
+    return this.http.get<DashboardStatsDto>('/api/dashboard/stats').pipe(map((dto) => ({
       draft: dto.draft,
       issued: dto.issued,
       overdue: dto.overdue,
@@ -72,6 +72,6 @@ export class HttpDashboardService implements IDashboardService {
         reminderCount: o.reminder_count,
         lastReminderOn: o.last_reminder_on,
       })),
-    }));
+    })));
   }
 }

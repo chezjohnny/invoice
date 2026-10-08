@@ -1,5 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { tapResponse } from '@ngrx/operators';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { concatMap, mergeMap } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { InvoiceStatusBadgeComponent } from '../invoices/invoice-status-badge.component';
@@ -12,6 +16,19 @@ import { IconComponent } from '../../shared/components/icon.component';
 import { daysSince } from '../../shared/dates';
 import { saveFile } from '../../shared/download';
 import { nextReminderMessage, reminderPdfName } from '../invoices/invoice.model';
+
+/** Shown until the figures arrive. */
+const EMPTY: DashboardStats = {
+  draft: { count: 0, total: 0 },
+  issued: { count: 0, total: 0 },
+  overdue: { count: 0, total: 0 },
+  paid: { count: 0, total: 0 },
+  invoiceCount: 0,
+  customerCount: 0,
+  articleCount: 0,
+  recentInvoices: [],
+  overdueInvoices: [],
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -109,7 +126,7 @@ import { nextReminderMessage, reminderPdfName } from '../invoices/invoice.model'
                             @if (inv.reminderCount > 0) {
                               <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left"
                                 [attr.data-tip]="t().invoices.downloadPdf" [attr.aria-label]="t().invoices.downloadPdf"
-                                (click)="downloadReminder(inv, inv.reminderCount)">
+                                (click)="downloadReminder({ inv, number: inv.reminderCount })">
                                 <app-icon name="pdf" />
                               </button>
                             }
@@ -186,40 +203,38 @@ export class DashboardComponent {
   protected readonly daysSince = daysSince;
   protected readonly pendingReminder = signal<OverdueInvoiceItem | null>(null);
 
-  protected readonly loading = signal(true);
-  protected readonly stats = signal<DashboardStats>({
-    draft: { count: 0, total: 0 },
-    issued: { count: 0, total: 0 },
-    overdue: { count: 0, total: 0 },
-    paid: { count: 0, total: 0 },
-    invoiceCount: 0,
-    customerCount: 0,
-    articleCount: 0,
-    recentInvoices: [],
-    overdueInvoices: [],
-  });
+  private readonly loaded = rxResource({ stream: () => this.dashboardService.getStats() });
+  /** The first load only: a reload after a reminder keeps the figures shown. */
+  protected readonly loading = computed(() => this.loaded.status() === 'loading');
+  protected readonly stats = computed<DashboardStats>(() => (this.loaded.hasValue() ? this.loaded.value() : EMPTY));
 
-  constructor() {
-    this.loadStats();
-  }
+  /** Downloads run side by side (mergeMap); a failed one leaves the others. */
+  protected readonly downloadReminder = rxMethod<{ inv: OverdueInvoiceItem; number: number }>(
+    mergeMap(({ inv, number }) =>
+      this.invoiceService.downloadReminderPdf(inv.id, number, this.i18n.locale()).pipe(
+        tapResponse({ next: (pdf) => saveFile(pdf, reminderPdfName(inv, number)), error: () => undefined }),
+      ),
+    ),
+  );
 
-  private async loadStats(): Promise<void> {
-    this.stats.set(await this.dashboardService.getStats());
-    this.loading.set(false);
-  }
+  /** Records the next reminder, refreshes the figures and downloads it; one at a time. */
+  protected readonly createReminder = rxMethod<OverdueInvoiceItem>(
+    concatMap((inv) =>
+      this.invoiceService.createReminder(inv.id).pipe(
+        tapResponse({
+          next: () => {
+            this.loaded.reload();
+            this.downloadReminder({ inv, number: inv.reminderCount + 1 });
+          },
+          error: () => undefined, // errorInterceptor already surfaced a toast
+        }),
+      ),
+    ),
+  );
 
-  protected async onReminderConfirmed(inv: OverdueInvoiceItem): Promise<void> {
+  protected onReminderConfirmed(inv: OverdueInvoiceItem): void {
     this.pendingReminder.set(null);
-    await this.invoiceService.createReminder(inv.id);
-    await this.loadStats();
-    await this.downloadReminder(inv, inv.reminderCount + 1);
-  }
-
-  protected async downloadReminder(inv: OverdueInvoiceItem, number: number): Promise<void> {
-    saveFile(
-      await this.invoiceService.downloadReminderPdf(inv.id, number, this.i18n.locale()),
-      reminderPdfName(inv, number),
-    );
+    this.createReminder(inv);
   }
 
   protected reminderMessage(inv: OverdueInvoiceItem): string {
