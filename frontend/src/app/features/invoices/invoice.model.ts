@@ -13,6 +13,8 @@ export interface InvoiceLine {
   quantity: number;
   unitPriceSnapshot: number;
   vatRateSnapshot: number | null;
+  /** Given away: at 0, without VAT; issuing records it as a promotion withdrawal. */
+  offered: boolean;
 }
 
 /** A payment reminder sent for an overdue invoice: 1st, 2nd… */
@@ -39,13 +41,7 @@ export interface Invoice {
   reminders: InvoiceReminder[];
 }
 
-interface InvoiceLineCreate {
-  articleId: string | null;
-  descriptionSnapshot: string;
-  quantity: number;
-  unitPriceSnapshot: number;
-  vatRateSnapshot: number | null;
-}
+type InvoiceLineCreate = Omit<InvoiceLine, 'id'>;
 
 export interface InvoiceCreate {
   customerId: string;

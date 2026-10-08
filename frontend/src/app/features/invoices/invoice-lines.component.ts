@@ -80,7 +80,12 @@ import { Invoice, PAYMENT_METHODS, PaymentMethod } from './invoice.model';
             <tbody>
               @for (line of invoice().lines; track line.id) {
                 <tr>
-                  <td>{{ line.descriptionSnapshot }}</td>
+                  <td>
+                    {{ line.descriptionSnapshot }}
+                    @if (line.offered) {
+                      <span class="badge badge-xs badge-secondary ml-1">{{ t().invoices.offered }}</span>
+                    }
+                  </td>
                   <td class="text-right tabular-nums">{{ line.quantity }}</td>
                   <td class="text-right tabular-nums hidden sm:table-cell">
                     {{ line.unitPriceSnapshot | number:'1.2-2' }}

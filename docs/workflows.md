@@ -241,6 +241,10 @@ et une note. Le stock diminue aussitôt ; la sortie apparaît dans la colonne
 Une sortie ne se modifie pas : en cas d'erreur, on la supprime (le stock revient)
 et on la saisit à nouveau.
 
+Les articles offerts sur une facture y apparaissent aussi, en *Promotion /
+cadeau*, avec un lien vers leur facture : ceux-là ne se suppriment pas ici, mais
+en annulant la facture (workflow 12).
+
 **Manques**
 
 Aucun.
@@ -280,6 +284,43 @@ sans confirmation :
   articles reviennent dans le stock ;
 - un **brouillon** annulé peut ensuite être supprimé (*Supprimer le brouillon
   annulé*) : il n'avait pas de numéro. Une facture émise ne se supprime jamais.
+
+**Manques**
+
+Aucun.
+
+## 12. Faire une facture pour un professionnel (Café)
+
+Un café commande par quantité : on lui fait un prix, et on lui offre une partie
+de la commande (par exemple une bouteille par carton de 12).
+
+**Étapes**
+
+1. Ajouter les articles commandés.
+2. Adapter le prix des articles pour le prix de quantité.
+3. Offrir une partie de la commande.
+4. Valider la commande : les articles offerts sortent du stock comme une
+   promotion, pas comme une vente.
+
+**Dans l'application**
+
+- 1. *Clients* → fiche → *Nouvelle facture* → les articles, un après l'autre.
+- 2. Le prix de chaque ligne se modifie dans l'éditeur (virgule ou point) ; il ne
+  vaut que pour cette facture : le prix de l'article ne change pas.
+- 3. Sur la ligne de l'article, l'icône cadeau (*En offrir un de plus*) ajoute
+  juste en dessous une ligne *Offert* du même article, à 1 ; un nouveau clic en
+  offre un de plus. Son prix (0.00) et sa TVA (aucune) ne se modifient pas ; sa
+  quantité, si. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
+  à 0.00 : le total n'en tient pas compte.
+- 4. À l'émission, les articles offerts quittent le stock avec les autres, mais
+  ne comptent pas dans *Vendus* : ils deviennent une sortie de stock
+  *Promotion / cadeau*, datée du jour, avec un lien vers la facture (colonne
+  *Sorties* des articles).
+
+Cette sortie suit sa facture : elle ne se supprime pas depuis *Sorties de stock*
+(le lien *Facture …* remplace le bouton de suppression). Annuler la facture la
+retire, et le stock revient. Un cadeau saisi par erreur sur une facture émise se
+corrige comme toute erreur : annuler la facture et la refaire.
 
 **Manques**
 

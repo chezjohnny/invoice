@@ -34,6 +34,7 @@ _LABELS: dict[Lang, dict[str, str]] = {
         "due": "Due:",
         "bill_to": "Bill to:",
         "description": "Description",
+        "offered": "{description} (free)",
         "qty": "Qty",
         "unit_price": "Unit price",
         "total": "Total",
@@ -74,6 +75,7 @@ _LABELS: dict[Lang, dict[str, str]] = {
         "due": "Échéance :",
         "bill_to": "Facturé à :",
         "description": "Désignation",
+        "offered": "{description} (offert)",
         "qty": "Qté",
         "unit_price": "Prix unit.",
         "total": "Total",
@@ -243,8 +245,9 @@ def _lines_table(pdf: FPDF, lines: list[InvoiceLine], y: float, t: dict[str, str
     pdf.set_font("Helvetica", "", 9)
     for ln in lines:
         price = Decimal(ln.unit_price_snapshot)
+        description = ln.description_snapshot
         cells = [
-            ln.description_snapshot,
+            t["offered"].format(description=description) if ln.offered else description,
             str(ln.quantity),
             _chf(price),
             _chf(ln.quantity * price),

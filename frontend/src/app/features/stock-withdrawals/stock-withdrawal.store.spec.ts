@@ -8,8 +8,8 @@ import { StockWithdrawal } from './stock-withdrawal.model';
 import { StockWithdrawalStore } from './stock-withdrawal.store';
 
 const WITHDRAWALS: StockWithdrawal[] = [
-  { id: '1', articleId: 'a1', articleName: 'Pinot Noir', date: '2026-09-12', quantity: 6, reason: 'tasting', note: '' },
-  { id: '2', articleId: 'a2', articleName: 'Chasselas', date: '2026-09-20', quantity: 1, reason: 'loss', note: 'Cassée' },
+  { id: '1', articleId: 'a1', articleName: 'Pinot Noir', date: '2026-09-12', quantity: 6, reason: 'tasting', note: '', invoiceId: null, invoiceNumber: null },
+  { id: '2', articleId: 'a2', articleName: 'Chasselas', date: '2026-09-20', quantity: 1, reason: 'loss', note: 'Cassée', invoiceId: null, invoiceNumber: null },
 ];
 
 describe('StockWithdrawalStore', () => {

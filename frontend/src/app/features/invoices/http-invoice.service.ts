@@ -14,6 +14,7 @@ interface InvoiceLineDto {
   quantity: number;
   unit_price_snapshot: string;
   vat_rate_snapshot: string | null;
+  offered: boolean;
 }
 
 interface InvoiceDto {
@@ -151,6 +152,7 @@ export class HttpInvoiceService implements IInvoiceService {
           quantity: l.quantity,
           unitPriceSnapshot: parseFloat(l.unit_price_snapshot),
           vatRateSnapshot: l.vat_rate_snapshot != null ? parseFloat(l.vat_rate_snapshot) : null,
+          offered: l.offered,
         })
       ),
       reminders: dto.reminders.map((r) => ({ number: r.number, sentOn: r.sent_on, dueOn: r.due_on })),
@@ -169,6 +171,7 @@ export class HttpInvoiceService implements IInvoiceService {
         quantity: l.quantity,
         unit_price_snapshot: l.unitPriceSnapshot.toFixed(2),
         vat_rate_snapshot: l.vatRateSnapshot,
+        offered: l.offered,
       })),
     };
   }

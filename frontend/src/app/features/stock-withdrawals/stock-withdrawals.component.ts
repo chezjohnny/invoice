@@ -88,11 +88,20 @@ const REASON_BADGE: Record<StockWithdrawalReason, string> = {
                     <td class="text-sm text-base-content/60 hidden md:table-cell">{{ w.note || '—' }}</td>
                     <td class="col-fit">
                       <div class="flex justify-end">
-                        <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
-                          [attr.data-tip]="t().common.delete" [attr.aria-label]="t().common.delete"
-                          (click)="pendingDelete.set(w)">
-                          <app-icon name="delete" />
-                        </button>
+                        @if (w.invoiceNumber) {
+                          <!-- Offered on an invoice: it alone takes the withdrawal back, by being cancelled -->
+                          <a class="link link-primary text-sm whitespace-nowrap tooltip tooltip-left"
+                            [attr.data-tip]="t().stockWithdrawals.fromInvoiceHint"
+                            routerLink="/invoices" [queryParams]="{ q: w.invoiceNumber }">
+                            {{ t().stockWithdrawals.fromInvoice.replace('{number}', w.invoiceNumber) }}
+                          </a>
+                        } @else {
+                          <button class="btn btn-ghost btn-sm btn-square tooltip tooltip-left text-error"
+                            [attr.data-tip]="t().common.delete" [attr.aria-label]="t().common.delete"
+                            (click)="pendingDelete.set(w)">
+                            <app-icon name="delete" />
+                          </button>
+                        }
                       </div>
                     </td>
                   </tr>

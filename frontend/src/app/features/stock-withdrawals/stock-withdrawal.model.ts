@@ -11,6 +11,9 @@ export interface StockWithdrawal {
   quantity: number;
   reason: StockWithdrawalReason;
   note: string;
+  /** Set when an invoice gave the articles away: only cancelling it removes the withdrawal. */
+  invoiceId: string | null;
+  invoiceNumber: string | null;
 }
 
-export type StockWithdrawalCreate = Omit<StockWithdrawal, 'id' | 'articleName'>;
+export type StockWithdrawalCreate = Omit<StockWithdrawal, 'id' | 'articleName' | 'invoiceId' | 'invoiceNumber'>;

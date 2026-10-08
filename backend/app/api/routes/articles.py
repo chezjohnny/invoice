@@ -224,7 +224,11 @@ def _sold_quantity(sales_year: int | None, sales_quarter: int | None) -> ScalarS
     query = (
         select(func.coalesce(func.sum(InvoiceLine.quantity), 0))
         .join(Invoice, Invoice.id == InvoiceLine.invoice_id)
-        .where(InvoiceLine.article_id == Article.id, Invoice.status.in_(_SOLD_STATUSES))
+        .where(
+            InvoiceLine.article_id == Article.id,
+            InvoiceLine.offered.is_(False),  # given away: counted in the withdrawals
+            Invoice.status.in_(_SOLD_STATUSES),
+        )
     )
     if sales_year is not None:
         # A range rather than extract(year) so the comparison stays index-friendly.

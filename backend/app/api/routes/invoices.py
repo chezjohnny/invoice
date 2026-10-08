@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import case, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,6 +15,7 @@ from app.core.search import contains, matches_words
 from app.models.article import Article
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLine, InvoiceReminder, InvoiceStatus
+from app.models.stock_withdrawal import StockWithdrawal, StockWithdrawalReason
 from app.models.tenant import User
 from app.schemas.common import PagedResponse
 from app.schemas.invoice import (
@@ -193,6 +194,7 @@ async def issue_invoice(
     invoice.due_date = today + timedelta(days=profile.payment_terms_days)
     invoice.status = InvoiceStatus.ISSUED
     await _move_stock(db, invoice, -1)
+    _give_away(db, invoice)
 
     await db.commit()
     return await _load_invoice(invoice.id, current_user.tenant_id, db)
@@ -265,6 +267,7 @@ async def cancel_invoice(
 
     if invoice.status == InvoiceStatus.ISSUED:
         await _move_stock(db, invoice, +1)
+        await db.execute(delete(StockWithdrawal).where(StockWithdrawal.invoice_id == invoice.id))
 
     invoice.status = InvoiceStatus.CANCELLED
     await db.commit()
@@ -424,7 +427,8 @@ async def _load_invoice(invoice_id: uuid.UUID, tenant_id: uuid.UUID, db: AsyncSe
 
 
 async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:
-    """Issuing takes the invoiced articles from the stock (-1), cancelling gives them back (+1)."""
+    """Issuing takes the invoiced articles from the stock (-1), cancelling gives them back
+    (+1): sold and offered alike, the offered ones also recorded as withdrawals."""
     quantities: dict[uuid.UUID, int] = {}
     for line in invoice.lines:
         if line.article_id is not None:
@@ -435,3 +439,21 @@ async def _move_stock(db: AsyncSession, invoice: Invoice, sign: int) -> None:
         )
         for article in await db.scalars(articles):
             article.stock_quantity += sign * quantities[article.id]
+
+
+def _give_away(db: AsyncSession, invoice: Invoice) -> None:
+    """The offered lines of an invoice being issued, as promotion withdrawals of its day:
+    what the stock lost to them, outside the sales. _move_stock() already took them."""
+    assert invoice.issue_date is not None
+    db.add_all(
+        StockWithdrawal(
+            tenant_id=invoice.tenant_id,
+            article_id=line.article_id,
+            date=invoice.issue_date,
+            quantity=line.quantity,
+            reason=StockWithdrawalReason.PROMOTION,
+            invoice_id=invoice.id,
+        )
+        for line in invoice.lines
+        if line.offered and line.article_id is not None
+    )

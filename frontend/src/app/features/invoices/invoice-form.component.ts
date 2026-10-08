@@ -5,6 +5,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { FieldErrorComponent } from '../../shared/components/field-error.component';
 import { DecimalInputDirective } from '../../shared/decimal-input.directive';
 import { FormActionsComponent } from '../../shared/components/form-actions.component';
+import { IconComponent } from '../../shared/components/icon.component';
 import { integer, percent, showsError } from '../../shared/form-errors';
 import { searchKey } from '../../shared/search-key';
 import { ArticlePickerComponent } from '../articles/article-picker.component';
@@ -21,6 +22,8 @@ interface LineModel {
   unitPriceSnapshot: number | null;
   /** 8.1 for 8.1 %; null: no VAT. */
   vatPercent: number | null;
+  /** Given away: price 0 and no VAT, neither of them editable. */
+  offered: boolean;
 }
 
 interface InvoiceModel {
@@ -47,7 +50,7 @@ interface Recommendation {
 
 @Component({
   selector: 'app-invoice-form',
-  imports: [ArticlePickerComponent, CurrencyPipe, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot],
+  imports: [ArticlePickerComponent, CurrencyPipe, DecimalInputDirective, FieldErrorComponent, FormActionsComponent, FormField, FormRoot, IconComponent],
   template: `
     <form [formRoot]="invoiceForm">
       <h1 class="text-xl font-bold sm:text-2xl mb-5">
@@ -106,10 +109,19 @@ interface Recommendation {
                      style="grid-template-columns: minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
                   <!-- An article line shows its article; a free-text line is typed -->
                   <div class="min-w-0">
-                    @if (line.articleId().value() !== null) {
-                      <div class="input input-sm input-primary w-full">
-                        <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
+                    @if (line.offered().value()) {
+                      <div class="input input-sm input-secondary w-full">
+                        <span class="badge badge-xs badge-secondary shrink-0">{{ t().invoices.offered }}</span>
                         <span class="truncate" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                      </div>
+                    } @else if (line.articleId().value() !== null) {
+                      <div class="input input-sm input-primary w-full pr-1">
+                        <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
+                        <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                        <button type="button" class="btn btn-ghost btn-xs px-1 shrink-0"
+                          [title]="t().invoices.offer" [attr.aria-label]="t().invoices.offer" (click)="offer(i)">
+                          <app-icon name="gift" />
+                        </button>
                       </div>
                     } @else {
                       <label class="input input-sm w-full" [class.input-error]="showsError(line.descriptionSnapshot)">
@@ -125,14 +137,20 @@ interface Recommendation {
                   <input class="input input-sm w-full" type="number" step="1" [attr.aria-label]="t().invoices.qtyLabel"
                     [attr.aria-invalid]="showsError(line.quantity)"
                     [formField]="line.quantity" />
-                  <!-- Price -->
-                  <input class="input input-sm w-full" appDecimal [attr.aria-label]="t().invoices.priceLabel"
-                    [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
-                    [formField]="line.unitPriceSnapshot" />
-                  <!-- VAT% -->
-                  <input class="input input-sm w-full" appDecimal placeholder="—" [attr.aria-label]="t().invoices.vatLabel"
-                    [attr.aria-invalid]="showsError(line.vatPercent)"
-                    [formField]="line.vatPercent" />
+                  @if (line.offered().value()) {
+                    <!-- Given away: no price, no VAT -->
+                    <span class="px-3 text-sm tabular-nums text-base-content/60">0.00</span>
+                    <span class="px-3 text-sm text-base-content/60">—</span>
+                  } @else {
+                    <!-- Price -->
+                    <input class="input input-sm w-full" appDecimal [attr.aria-label]="t().invoices.priceLabel"
+                      [attr.aria-invalid]="showsError(line.unitPriceSnapshot)"
+                      [formField]="line.unitPriceSnapshot" />
+                    <!-- VAT% -->
+                    <input class="input input-sm w-full" appDecimal placeholder="—" [attr.aria-label]="t().invoices.vatLabel"
+                      [attr.aria-invalid]="showsError(line.vatPercent)"
+                      [formField]="line.vatPercent" />
+                  }
                   <!-- Delete + warning -->
                   <div class="flex items-center justify-end gap-0.5">
                     @if (lineStockWarning(line().value())) {
@@ -243,6 +261,7 @@ export class InvoiceFormComponent {
         quantity: l.quantity,
         unitPriceSnapshot: l.unitPriceSnapshot,
         vatPercent: percentOf(l.vatRateSnapshot),
+        offered: l.offered,
       })) ?? [],
     };
   });
@@ -327,6 +346,7 @@ export class InvoiceFormComponent {
       quantity: 1,
       unitPriceSnapshot: rec.unitPrice,
       vatPercent: percentOf(rec.vatRate),
+      offered: false,
     });
   }
 
@@ -337,6 +357,7 @@ export class InvoiceFormComponent {
       quantity: 1,
       unitPriceSnapshot: null,
       vatPercent: percentOf(this.defaultVatRate()),
+      offered: false,
     });
   }
 
@@ -350,12 +371,11 @@ export class InvoiceFormComponent {
 
   /** Adds the article, or one more of it when it is already on the invoice. */
   protected addArticle(article: Article): void {
-    if (this.model().lines.some((l) => l.articleId === article.id)) {
+    const sold = (l: LineModel) => l.articleId === article.id && !l.offered;
+    if (this.model().lines.some(sold)) {
       this.model.update((m) => ({
         ...m,
-        lines: m.lines.map((l) =>
-          l.articleId === article.id ? { ...l, quantity: Number.isInteger(l.quantity) ? l.quantity! + 1 : 1 } : l
-        ),
+        lines: m.lines.map((l) => (sold(l) ? { ...l, quantity: Number.isInteger(l.quantity) ? l.quantity! + 1 : 1 } : l)),
       }));
     } else {
       this.pushLine({
@@ -364,14 +384,46 @@ export class InvoiceFormComponent {
         quantity: 1,
         unitPriceSnapshot: article.unitPrice,
         vatPercent: percentOf(article.vatRateOverride ?? this.defaultVatRate()),
+        offered: false,
       });
     }
+  }
+
+  /**
+   * One more of this article given away: on the line below it, created at 1.
+   * Sold or offered, the bottles leave the same stock.
+   */
+  protected offer(index: number): void {
+    const sold = this.model().lines[index];
+    const offered = this.model().lines.findIndex((l) => l.offered && l.articleId === sold.articleId);
+    this.model.update((m) => {
+      const lines = [...m.lines];
+      if (offered >= 0) {
+        lines[offered] = { ...lines[offered], quantity: (lines[offered].quantity ?? 0) + 1 };
+      } else {
+        // A new object, not a spread of the sold line: Signal Forms keys each array
+        // item by a symbol stored on it, which a spread would copy, binding both
+        // lines to the same fields.
+        lines.splice(index + 1, 0, {
+          articleId: sold.articleId,
+          descriptionSnapshot: sold.descriptionSnapshot,
+          quantity: 1,
+          unitPriceSnapshot: 0,
+          vatPercent: null,
+          offered: true,
+        });
+      }
+      return { ...m, lines };
+    });
   }
 
   protected lineStockWarning(line: LineModel): boolean {
     if (!line.articleId) return false;
     const article = this.articles().find((a) => a.id === line.articleId);
-    return article != null && article.stockQuantity < (line.quantity ?? 0);
+    const wanted = this.model().lines
+      .filter((l) => l.articleId === line.articleId)
+      .reduce((sum, l) => sum + (l.quantity ?? 0), 0);
+    return article != null && article.stockQuantity < wanted;
   }
 
   // A draft may be saved empty, but an invoice without any article is never issued.
@@ -401,6 +453,7 @@ export class InvoiceFormComponent {
         quantity: Math.trunc(num(l.quantity)),
         unitPriceSnapshot: num(l.unitPriceSnapshot),
         vatRateSnapshot: rateOf(finite(l.vatPercent)),
+        offered: l.offered,
       })),
     };
   }

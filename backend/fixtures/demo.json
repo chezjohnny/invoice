@@ -1422,6 +1422,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 1
         }
@@ -1441,6 +1446,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -1497,6 +1507,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609121",
@@ -1517,6 +1532,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -1560,6 +1580,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 2
         },
@@ -1598,6 +1623,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -1676,6 +1706,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2605231",
@@ -1693,8 +1728,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609041",
@@ -1711,6 +1756,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2511291",
@@ -1747,6 +1797,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 1
         },
@@ -1774,6 +1829,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2603041",
@@ -1793,8 +1853,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2602241",
@@ -1816,6 +1886,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -1830,8 +1905,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -1882,6 +1967,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 1
         },
@@ -1890,8 +1980,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -1908,6 +2008,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -1930,8 +2035,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -1992,12 +2107,27 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609161",
@@ -2024,6 +2154,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 1
         }
@@ -2038,6 +2173,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -2087,6 +2227,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -2121,12 +2266,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 3
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2607301",
@@ -2144,6 +2299,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -2196,12 +2356,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 2
         },
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -2241,6 +2411,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 6
         }
@@ -2278,6 +2453,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 1
         }
@@ -2301,6 +2481,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -2336,6 +2521,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 3
         }
@@ -2354,6 +2544,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -2379,6 +2574,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2604031",
@@ -2396,6 +2596,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2510301",
@@ -2417,6 +2622,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -2460,12 +2670,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 2
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2607121",
@@ -2509,8 +2729,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -2519,6 +2749,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -2553,8 +2788,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -2571,6 +2816,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -2596,6 +2846,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -2625,6 +2880,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -2675,8 +2935,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -2701,6 +2971,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2607141",
@@ -2718,6 +2993,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2511011",
@@ -2767,8 +3047,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609142",
@@ -2829,6 +3119,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2604301",
@@ -2852,12 +3147,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 3
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608061",
@@ -2873,6 +3178,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2511021",
@@ -2909,8 +3219,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -3013,6 +3333,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 2
         }
@@ -3032,6 +3357,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -3058,8 +3388,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -3100,6 +3440,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2510141",
@@ -3142,6 +3487,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609272",
@@ -3160,12 +3510,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 6
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2511241",
@@ -3185,8 +3545,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -3211,6 +3581,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -3282,12 +3657,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 3
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2605201",
@@ -3367,6 +3752,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -3381,12 +3771,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 6
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2602161",
@@ -3404,6 +3804,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2608252",
@@ -3420,6 +3825,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -3442,6 +3852,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 6
         }
@@ -3456,6 +3871,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -3476,6 +3896,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609051",
@@ -3537,8 +3962,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609273",
@@ -3567,6 +4002,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608311",
@@ -3600,6 +4040,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609151",
@@ -3620,6 +4065,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -3645,6 +4095,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2603261",
@@ -3716,8 +4171,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609262",
@@ -3742,6 +4207,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -3778,6 +4248,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -3821,8 +4296,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2511301",
@@ -3840,12 +4325,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 2
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2510241",
@@ -3892,6 +4387,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -3908,6 +4408,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -3957,6 +4462,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609061",
@@ -3977,6 +4487,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -4027,6 +4542,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 6
         },
@@ -4050,6 +4570,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -4079,6 +4604,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608262",
@@ -4186,8 +4716,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -4216,6 +4756,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -4247,8 +4792,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -4334,12 +4889,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 6
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2605121",
@@ -4380,8 +4945,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609221",
@@ -4401,8 +4976,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -4422,6 +5007,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2606181",
@@ -4439,6 +5029,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -4466,6 +5061,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 1
         }
@@ -4484,6 +5084,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -4514,6 +5119,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 1
         },
@@ -4541,6 +5151,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -4599,6 +5214,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2608234",
@@ -4637,8 +5257,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609031",
@@ -4679,6 +5309,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2602112",
@@ -4750,6 +5385,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2603241",
@@ -4767,6 +5407,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2604251",
@@ -4786,8 +5431,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -4841,8 +5496,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -4870,8 +5535,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608012",
@@ -4897,6 +5572,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608201",
@@ -4947,6 +5627,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 2
         }
@@ -4961,6 +5646,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -4981,6 +5671,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -5013,6 +5708,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -5110,6 +5810,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2510101",
@@ -5172,6 +5877,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 2
         },
@@ -5203,6 +5913,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2601201",
@@ -5230,6 +5945,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 1
         }
@@ -5251,12 +5971,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 3
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2510211",
@@ -5274,6 +6004,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -5315,6 +6050,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -5351,6 +6091,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -5398,12 +6143,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 3
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609191",
@@ -5422,8 +6177,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -5450,6 +6215,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 2
         }
@@ -5468,6 +6238,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -5540,6 +6315,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608221",
@@ -5561,6 +6341,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -5591,12 +6376,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 2
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -5619,6 +6414,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 1
         }
@@ -5637,6 +6437,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -5659,6 +6464,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 2
         }
@@ -5675,8 +6485,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -5696,6 +6516,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608302",
@@ -5720,6 +6545,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -5734,8 +6564,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609053",
@@ -5787,12 +6627,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 3
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609112",
@@ -5875,6 +6725,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 6
         }
@@ -5927,8 +6782,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -5980,6 +6845,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 1
         }
@@ -6003,6 +6873,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -6029,6 +6904,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 3
         },
@@ -6051,6 +6931,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2608236",
@@ -6076,6 +6961,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -6128,12 +7018,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 3
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -6150,6 +7050,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -6177,6 +7082,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 2
         }
@@ -6198,8 +7108,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -6223,12 +7143,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 3
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609232",
@@ -6251,8 +7181,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -6285,6 +7225,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -6301,6 +7246,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -6345,8 +7295,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -6375,6 +7335,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608263",
@@ -6398,8 +7363,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -6416,6 +7391,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609252",
@@ -6459,6 +7439,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2510171",
@@ -6478,12 +7463,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 1
         },
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -6511,8 +7506,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -6534,6 +7539,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 6
         }
@@ -6553,6 +7563,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2606251",
@@ -6568,6 +7583,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -6622,6 +7642,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2610041",
@@ -6678,6 +7703,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -6730,6 +7760,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2511263",
@@ -6745,6 +7780,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -6757,6 +7797,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2603152",
@@ -6774,6 +7819,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609222",
@@ -6798,6 +7848,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2606151",
@@ -6841,6 +7896,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 6
         },
@@ -6863,6 +7923,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -6912,6 +7977,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2512022",
@@ -6952,6 +8022,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 3
         },
@@ -6974,6 +8049,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -7006,6 +8086,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2607241",
@@ -7031,6 +8116,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -7062,8 +8152,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609253",
@@ -7109,6 +8209,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 6
         }
@@ -7133,8 +8238,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -7155,6 +8270,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609211",
@@ -7193,8 +8313,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608202",
@@ -7224,6 +8354,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608312",
@@ -7286,8 +8421,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2603242",
@@ -7413,6 +8558,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 1
         },
@@ -7421,8 +8571,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2603231",
@@ -7490,8 +8650,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2608292",
@@ -7535,8 +8705,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -7564,8 +8744,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -7599,6 +8789,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 6
         }
@@ -7618,6 +8813,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2607271",
@@ -7657,12 +8857,27 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609302",
@@ -7681,12 +8896,27 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2604201",
@@ -7771,8 +9001,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -7807,6 +9047,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 2
         }
@@ -7836,8 +9081,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -7858,6 +9113,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -7905,12 +9165,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 2
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2511264",
@@ -7955,6 +9225,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 2
         },
@@ -7990,6 +9265,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2511061",
@@ -8007,6 +9287,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -8038,6 +9323,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 1
         },
@@ -8048,6 +9338,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609025",
@@ -8066,8 +9361,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -8120,12 +9425,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 3
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2512052",
@@ -8143,6 +9458,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 24
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -8170,6 +9490,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2606022",
@@ -8185,6 +9510,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -8218,6 +9548,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -8267,6 +9602,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2610042",
@@ -8318,6 +9658,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -8376,6 +9721,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 1
         }
@@ -8397,8 +9747,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -8411,6 +9771,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -8451,6 +9816,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 1
         },
@@ -8461,6 +9831,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2608293",
@@ -8545,6 +9920,11 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 1
         },
@@ -8574,6 +9954,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 6
         },
@@ -8595,6 +9980,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -8632,6 +10022,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2610033",
@@ -8648,6 +10043,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -8670,12 +10070,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 3
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2609212",
@@ -8699,6 +10109,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -8758,8 +10173,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -8825,8 +10250,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609074",
@@ -8855,6 +10290,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2608272",
@@ -8871,6 +10311,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -8896,6 +10341,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2610011",
@@ -8912,6 +10362,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -8976,6 +10431,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -9091,6 +10551,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2610022",
@@ -9107,6 +10572,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -9138,6 +10608,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 6
         },
@@ -9163,6 +10638,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
@@ -9197,8 +10677,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -9211,6 +10701,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2602031",
@@ -9236,6 +10731,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2610055",
@@ -9264,6 +10764,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ]
     },
@@ -9276,6 +10781,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609143",
@@ -9292,6 +10802,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Caisse bois 6 bouteilles",
@@ -9319,6 +10834,11 @@
         {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -9353,6 +10873,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 2
         }
@@ -9371,6 +10896,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -9412,8 +10942,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -9447,6 +10987,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",
@@ -9531,8 +11076,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2607152",
@@ -9573,8 +11128,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 12
+        },
+        {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -9616,6 +11181,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 3
         }
@@ -9630,6 +11200,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -9721,6 +11296,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2610012",
@@ -9743,12 +11323,22 @@
           "quantity": 12
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 6
         },
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2512171",
@@ -9800,6 +11390,11 @@
           "quantity": 24
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 1
         },
@@ -9827,6 +11422,11 @@
         {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609104",
@@ -9847,6 +11447,11 @@
         {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 12
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -9861,12 +11466,22 @@
           "quantity": 24
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Assemblage Rouge Prestige 2020",
           "quantity": 6
         },
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2602061",
@@ -9936,8 +11551,18 @@
           "quantity": 12
         },
         {
+          "article_name": "Assemblage Rouge Prestige 2020",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 24
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
@@ -9968,8 +11593,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Caisse bois 6 bouteilles",
           "quantity": 12
+        },
+        {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -10052,6 +11687,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ]
     },
@@ -10064,6 +11704,11 @@
         {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Assemblage Rouge Prestige 2020",
@@ -10128,16 +11773,36 @@
           "quantity": 12
         },
         {
+          "article_name": "Caisse bois 6 bouteilles",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Pinot Noir Vieilles Vignes 2021",
           "quantity": 24
+        },
+        {
+          "article_name": "Pinot Noir Vieilles Vignes 2021",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 12
         },
         {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 1,
+          "offered": true
+        },
+        {
           "article_name": "Chasselas Tradition 2023",
           "quantity": 12
+        },
+        {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 1,
+          "offered": true
         }
       ],
       "invoice_number": "2609175",
@@ -10164,8 +11829,18 @@
           "quantity": 24
         },
         {
+          "article_name": "Chasselas Tradition 2023",
+          "quantity": 2,
+          "offered": true
+        },
+        {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         }
       ],
       "invoice_number": "2607021",
@@ -10204,6 +11879,11 @@
         {
           "article_name": "Rosé de Gamay 2023",
           "quantity": 24
+        },
+        {
+          "article_name": "Rosé de Gamay 2023",
+          "quantity": 2,
+          "offered": true
         },
         {
           "article_name": "Chasselas Tradition 2023",

@@ -1,8 +1,9 @@
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.invoice import InvoiceStatus, PaymentMethod
 
@@ -15,6 +16,18 @@ class InvoiceLineBase(BaseModel):
     quantity: int = Field(1, ge=1)
     unit_price_snapshot: Decimal = Field(ge=0)
     vat_rate_snapshot: Decimal | None = Field(None, ge=0, le=1)
+    offered: bool = False
+
+    @model_validator(mode="after")
+    def _offered_article_for_nothing(self) -> Self:
+        # Given away from the stock: an article, at no price, so no VAT row.
+        if self.offered and (
+            self.article_id is None
+            or self.unit_price_snapshot != 0
+            or self.vat_rate_snapshot is not None
+        ):
+            raise ValueError("An offered line is an article at 0, without VAT")
+        return self
 
 
 class InvoiceLineCreate(InvoiceLineBase):

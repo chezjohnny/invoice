@@ -1,7 +1,7 @@
 import uuid
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.api.sorting import SortColumn, SortOrder, sort_clauses
 from app.core.database import get_db
 from app.core.search import contains, matches_words
 from app.models.article import Article
+from app.models.invoice import Invoice
 from app.models.stock_withdrawal import StockWithdrawal, StockWithdrawalReason
 from app.models.tenant import User
 from app.schemas.common import PagedResponse
@@ -57,15 +58,16 @@ async def list_stock_withdrawals(
         conditions.append(StockWithdrawal.article_id == article_id)
 
     base = (
-        select(StockWithdrawal, Article.name)
+        select(StockWithdrawal, Article.name, Invoice.invoice_number)
         .join(Article, Article.id == StockWithdrawal.article_id)
+        .outerjoin(Invoice, Invoice.id == StockWithdrawal.invoice_id)
         .where(*conditions)
     )
     total = (await db.scalar(select(func.count()).select_from(base.subquery()))) or 0
     rows = (
         await db.execute(base.order_by(*ordering).offset((page - 1) * per_page).limit(per_page))
     ).all()
-    items = [_response(withdrawal, name) for withdrawal, name in rows]
+    items = [_response(withdrawal, name, number) for withdrawal, name, number in rows]
     return PagedResponse.build(items, total, page, per_page)
 
 
@@ -92,13 +94,20 @@ async def delete_stock_withdrawal(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     withdrawal = await get_owned(db, StockWithdrawal, withdrawal_id, current_user.tenant_id)
+    if withdrawal.invoice_id is not None:
+        # The invoice still prints the articles as offered: cancelling it removes this.
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Withdrawn by an invoice: cancel the invoice instead"
+        )
     article = await get_owned(db, Article, withdrawal.article_id, current_user.tenant_id)
     article.stock_quantity += withdrawal.quantity
     await db.delete(withdrawal)
     await db.commit()
 
 
-def _response(withdrawal: StockWithdrawal, article_name: str) -> StockWithdrawalResponse:
+def _response(
+    withdrawal: StockWithdrawal, article_name: str, invoice_number: str | None = None
+) -> StockWithdrawalResponse:
     return StockWithdrawalResponse(
         id=withdrawal.id,
         article_id=withdrawal.article_id,
@@ -107,4 +116,6 @@ def _response(withdrawal: StockWithdrawal, article_name: str) -> StockWithdrawal
         quantity=withdrawal.quantity,
         reason=withdrawal.reason,
         note=withdrawal.note,
+        invoice_id=withdrawal.invoice_id,
+        invoice_number=invoice_number,
     )

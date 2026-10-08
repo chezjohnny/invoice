@@ -69,6 +69,8 @@ async def test_withdrawal_takes_stock_and_delete_gives_it_back(
         "quantity": 3,
         "reason": "tasting",
         "note": "Salon des vins",
+        "invoice_id": None,
+        "invoice_number": None,
     }
 
     resp = await client.delete(f"{WITHDRAWALS}/{withdrawal_id}", headers=auth_headers)

@@ -3,7 +3,7 @@ import { InvoiceLine, invoiceAmounts, invoiceTotal, isOverdue } from './invoice.
 function line(quantity: number, unitPriceSnapshot: number, vatRateSnapshot: number | null): InvoiceLine {
   return {
     id: 'l', articleId: null, descriptionSnapshot: '',
-    quantity, unitPriceSnapshot, vatRateSnapshot,
+    quantity, unitPriceSnapshot, vatRateSnapshot, offered: false,
   };
 }
 

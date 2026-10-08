@@ -33,3 +33,8 @@ class StockWithdrawal(UUIDBase):
         SAEnum(StockWithdrawalReason, name="stock_withdrawal_reason"), nullable=False
     )
     note: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    # The invoice that gave these articles away (its offered lines): created by
+    # issuing it, removed by cancelling it, never on their own.
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("invoices.id", ondelete="CASCADE"), nullable=True, index=True
+    )

@@ -68,14 +68,7 @@ export class MockInvoiceService implements IInvoiceService {
       notes: data.notes,
       paymentMethod: data.paymentMethod,
       reminders: [],
-      lines: data.lines.map((l, i) => ({
-        id: `line-${this.nextNum}-${i}`,
-        articleId: l.articleId,
-        descriptionSnapshot: l.descriptionSnapshot,
-        quantity: l.quantity,
-        unitPriceSnapshot: l.unitPriceSnapshot,
-        vatRateSnapshot: l.vatRateSnapshot,
-      })),
+      lines: data.lines.map((l, i) => ({ ...l, id: `line-${this.nextNum}-${i}` })),
     };
     this.invoices.push(invoice);
     return invoice;
@@ -91,14 +84,7 @@ export class MockInvoiceService implements IInvoiceService {
       discountPercent: data.discountPercent,
       notes: data.notes,
       paymentMethod: data.paymentMethod,
-      lines: data.lines.map((l, i) => ({
-        id: `line-${id}-${i}`,
-        articleId: l.articleId,
-        descriptionSnapshot: l.descriptionSnapshot,
-        quantity: l.quantity,
-        unitPriceSnapshot: l.unitPriceSnapshot,
-        vatRateSnapshot: l.vatRateSnapshot,
-      })),
+      lines: data.lines.map((l, i) => ({ ...l, id: `line-${id}-${i}` })),
     };
     return this.invoices[idx];
   }

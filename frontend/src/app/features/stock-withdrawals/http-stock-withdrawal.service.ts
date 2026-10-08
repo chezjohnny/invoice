@@ -16,6 +16,8 @@ interface StockWithdrawalDto {
   quantity: number;
   reason: StockWithdrawalReason;
   note: string;
+  invoice_id: string | null;
+  invoice_number: string | null;
 }
 
 
@@ -61,6 +63,8 @@ export class HttpStockWithdrawalService implements IStockWithdrawalService {
       quantity: dto.quantity,
       reason: dto.reason,
       note: dto.note,
+      invoiceId: dto.invoice_id,
+      invoiceNumber: dto.invoice_number,
     };
   }
 }

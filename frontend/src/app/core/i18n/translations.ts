@@ -55,7 +55,7 @@ const EN = {
     linesLabel: 'Items', noLines: 'No items yet.', addFreeText: '+ Free-text line', addArticle: 'Add an article…',
     notesLabel: 'Internal notes (not on the invoice)', internalNotes: 'Internal notes', saveDraft: 'Save draft',
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qty',
-    freeText: 'Text',
+    freeText: 'Text', offered: 'Free', offer: 'Offer one more for free',
     priceLabel: 'Price', vatLabel: 'VAT %',
     editTitle: 'Edit invoice', newTitle: 'New invoice',
     onlyDraftEditable: 'This invoice is no longer a draft: it cannot be edited.',
@@ -106,6 +106,7 @@ const EN = {
     articleRequired: 'Article is required', dateRequired: 'Date is required',
     quantityPositive: 'Must be a whole number of at least 1',
     deleteTitle: 'Delete the stock withdrawal',
+    fromInvoice: 'Invoice {number}', fromInvoiceHint: 'Offered on this invoice: cancelling it removes the withdrawal',
     deleteConfirm: '{quantity} × {article} will go back into stock.',
   },
   stockWithdrawalReason: {
@@ -193,7 +194,7 @@ const FR: typeof EN = {
     linesLabel: 'Articles', noLines: 'Aucun article.', addFreeText: '+ Ligne de texte libre', addArticle: 'Ajouter un article…',
     notesLabel: 'Notes internes (pas sur la facture)', internalNotes: 'Notes internes', saveDraft: 'Enregistrer',
     articleLabel: 'Article', descLabel: 'Description', qtyLabel: 'Qté',
-    freeText: 'Texte',
+    freeText: 'Texte', offered: 'Offert', offer: 'En offrir un de plus',
     priceLabel: 'Prix', vatLabel: 'TVA %',
     editTitle: 'Modifier la facture', newTitle: 'Nouvelle facture',
     onlyDraftEditable: 'Cette facture n’est plus un brouillon : elle ne peut plus être modifiée.',
@@ -244,6 +245,7 @@ const FR: typeof EN = {
     articleRequired: 'L’article est requis', dateRequired: 'La date est requise',
     quantityPositive: 'Doit être un nombre entier d’au moins 1',
     deleteTitle: 'Supprimer la sortie de stock',
+    fromInvoice: 'Facture {number}', fromInvoiceHint: 'Offert sur cette facture : l’annuler retire la sortie',
     deleteConfirm: '{quantity} × {article} retourneront en stock.',
   },
   stockWithdrawalReason: {

@@ -5,7 +5,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint, false
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,6 +74,11 @@ class InvoiceLine(UUIDBase):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     unit_price_snapshot: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     vat_rate_snapshot: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+    # Given away: printed at 0.00, and on issue a promotion stock withdrawal
+    # rather than a sale.
+    offered: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
 
 
 class InvoiceReminder(UUIDBase):

@@ -17,15 +17,20 @@ const ARTICLE_NAMES: Record<string, string> = {
 const INITIAL: StockWithdrawal[] = [
   {
     id: '1', articleId: '2', articleName: ARTICLE_NAMES['2'], date: '2026-09-12',
-    quantity: 6, reason: 'tasting', note: 'Caves ouvertes',
+    quantity: 6, reason: 'tasting', note: 'Caves ouvertes', invoiceId: null, invoiceNumber: null,
   },
   {
     id: '2', articleId: '3', articleName: ARTICLE_NAMES['3'], date: '2026-09-20',
-    quantity: 1, reason: 'loss', note: 'Bouteille cassée',
+    quantity: 1, reason: 'loss', note: 'Bouteille cassée', invoiceId: null, invoiceNumber: null,
   },
   {
     id: '3', articleId: '1', articleName: ARTICLE_NAMES['1'], date: '2026-10-01',
-    quantity: 2, reason: 'promotion', note: 'Tombola du club',
+    quantity: 2, reason: 'promotion', note: 'Tombola du club', invoiceId: null, invoiceNumber: null,
+  },
+  {
+    // Offered on an invoice (the dashboard mock's 2608011): only cancelling it removes this.
+    id: '4', articleId: '2', articleName: ARTICLE_NAMES['2'], date: '2026-10-02',
+    quantity: 1, reason: 'promotion', note: '', invoiceId: 'inv-2', invoiceNumber: '2608011',
   },
 ];
 
@@ -57,6 +62,7 @@ export class MockStockWithdrawalService implements IStockWithdrawalService {
   create(data: StockWithdrawalCreate): Promise<StockWithdrawal> {
     const withdrawal = {
       ...data, id: String(this.nextId++), articleName: ARTICLE_NAMES[data.articleId] ?? '',
+      invoiceId: null, invoiceNumber: null,
     };
     this.withdrawals.push(withdrawal);
     return Promise.resolve(withdrawal);

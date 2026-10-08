@@ -237,16 +237,29 @@ async def _load_invoices(
             article = (
                 await db.execute(select(Article).where(Article.id == article_id))
             ).scalar_one()
-            vat = effective_vat_rate(article, profile)
+            offered = line_spec.get("offered", False)
             line = InvoiceLine(
                 invoice_id=invoice.id,
                 article_id=article_id,
                 description_snapshot=article.name,
                 quantity=line_spec["quantity"],
-                unit_price_snapshot=article.unit_price,
-                vat_rate_snapshot=vat,
+                unit_price_snapshot=0 if offered else article.unit_price,
+                vat_rate_snapshot=None if offered else effective_vat_rate(article, profile),
+                offered=offered,
             )
             db.add(line)
+            # As issuing records it; the fixture stock is already the current one.
+            if offered and invoice.issue_date and status != InvoiceStatus.CANCELLED:
+                db.add(
+                    StockWithdrawal(
+                        tenant_id=tenant_id,
+                        article_id=article_id,
+                        date=invoice.issue_date,
+                        quantity=line.quantity,
+                        reason=StockWithdrawalReason.PROMOTION,
+                        invoice_id=invoice.id,
+                    )
+                )
         for number, reminder in enumerate(spec.get("reminders", []), start=1):
             db.add(
                 InvoiceReminder(

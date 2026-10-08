@@ -385,13 +385,13 @@ def _invoice(customer_email: str | None) -> dict:
     status = random.choices(STATUSES, STATUS_WEIGHTS)[0]
     n_lines = random.randint(1, 4)
     articles_sample = random.sample(ARTICLES, min(n_lines, len(ARTICLES)))
-    lines = [
-        {
-            "article_name": art,
-            "quantity": random.choice([1, 2, 3, 6, 12, 24]),
-        }
-        for art in articles_sample
-    ]
+    lines: list[dict] = []
+    for art in articles_sample:
+        quantity = random.choice([1, 2, 3, 6, 12, 24])
+        lines.append({"article_name": art, "quantity": quantity})
+        # A café's deal: one bottle offered per dozen.
+        if quantity >= 12:
+            lines.append({"article_name": art, "quantity": quantity // 12, "offered": True})
     discount = random.choice([0, 0, 0, 5, 10])
     inv: dict = {
         "customer_email": customer_email,
