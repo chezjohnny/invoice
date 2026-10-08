@@ -139,14 +139,38 @@ describe('InvoiceFormComponent article picker', () => {
       { articleId: 'a1', descriptionSnapshot: 'Pinot Noir', quantity: 13, unitPriceSnapshot: 20, vatRateSnapshot: 0.081, offered: false },
       { articleId: 'a1', descriptionSnapshot: 'Pinot Noir', quantity: 2, unitPriceSnapshot: 0, vatRateSnapshot: null, offered: true },
     ]);
-    // 15 asked of the 10 in stock, sold and offered alike.
-    expect(element.querySelectorAll('.badge-warning').length).toBe(2);
+    // 15 asked of the 10 in stock, sold and offered alike: said on both lines.
+    const warnings = [...element.querySelectorAll('.tooltip-warning')].map((w) => w.getAttribute('data-tip'));
+    expect(warnings).toEqual(['Stock insuffisant : 10 en stock', 'Stock insuffisant : 10 en stock']);
 
     // The gift again: no longer offered.
     gift().click();
     await fixture.whenStable();
     expect(gift().getAttribute('aria-pressed')).toBe('false');
     expect((await save()).lines.map((l) => [l.quantity, l.offered])).toEqual([[13, false]]);
+  });
+
+  it('removes a sold line with its offered lines, an offered line alone', async () => {
+    await type('pinot');
+    await press('Enter');
+    await type('chass');
+    await press('Enter');
+    const element = fixture.nativeElement as HTMLElement;
+    const gifts = () => [...element.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')];
+    const crosses = () => [...element.querySelectorAll<HTMLButtonElement>('button.text-error')];
+    const lines = async () => (await save()).lines.map((l) => [l.articleId, l.offered]);
+    gifts()[0].click();
+    await fixture.whenStable();
+    gifts()[1].click();
+    await fixture.whenStable();
+    expect(await lines()).toEqual([['a1', false], ['a1', true], ['a2', false], ['a2', true]]);
+
+    crosses()[3].click(); // Chasselas offered: the gift alone
+    await fixture.whenStable();
+    expect(await lines()).toEqual([['a1', false], ['a1', true], ['a2', false]]);
+    crosses()[0].click(); // Pinot sold: its gift along
+    await fixture.whenStable();
+    expect(await lines()).toEqual([['a2', false]]);
   });
 
   it('moves a line by drag and drop or the arrow keys, its offered bottles along with it', async () => {

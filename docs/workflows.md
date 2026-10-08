@@ -310,7 +310,9 @@ de la commande (par exemple une bouteille par carton de 12).
 - 3. Sur la ligne de l'article, l'icône cadeau (*Offrir*) ajoute juste en dessous
   une ligne *Offert* du même article, à 1, et reste enfoncée ; un nouveau clic
   (*Ne plus offrir*) la retire. La quantité offerte se saisit sur la ligne
-  *Offert* ; son prix (0.00) et sa TVA (aucune) ne se modifient pas. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
+  *Offert* ; son prix (0.00) et sa TVA (aucune) ne se modifient pas. Le ✕ d'une
+  ligne offerte ne retire que le cadeau ; celui de l'article vendu retire aussi
+  ses lignes offertes. Le PDF l'imprime sur une ligne à part, « Pinot Noir (offert) »,
   à 0.00 : le total n'en tient pas compte.
 - Pour changer l'ordre des lignes, on glisse une ligne par sa poignée (à gauche) ;
   ses lignes offertes juste en dessous la suivent : le cadeau reste sous son

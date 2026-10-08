@@ -112,6 +112,7 @@ interface Recommendation {
                   <div cdkDrag class="rounded-box bg-base-100">
                     @for (i of block; track model().lines[i]) {
                       @let line = invoiceForm.lines[i];
+                      @let short = shortStock(line().value());
                       <div class="grid items-center gap-x-2 px-0.5 mb-1"
                            style="grid-template-columns: 1.25rem minmax(0,1fr) 3.5rem 5.5rem 3.5rem 1.75rem">
                         <div class="flex justify-center">
@@ -130,12 +131,26 @@ interface Recommendation {
                           @if (line.offered().value()) {
                             <div class="input input-sm input-secondary w-full">
                               <span class="badge badge-xs badge-secondary shrink-0">{{ t().invoices.offered }}</span>
-                              <span class="truncate" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                              <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                              @if (short !== null) {
+                                <span class="tooltip tooltip-warning shrink-0" tabindex="0" role="img"
+                                  [attr.data-tip]="t().invoices.shortStock.replace('{stock}', '' + short)"
+                                  [attr.aria-label]="t().invoices.shortStock.replace('{stock}', '' + short)">
+                                  <span class="badge badge-warning badge-xs">!</span>
+                                </span>
+                              }
                             </div>
                           } @else if (line.articleId().value() !== null) {
                             <div class="input input-sm input-primary w-full pr-1">
                               <span class="badge badge-xs badge-primary shrink-0">{{ t().invoices.articleLabel }}</span>
                               <span class="truncate grow" [title]="line.descriptionSnapshot().value()">{{ line.descriptionSnapshot().value() }}</span>
+                              @if (short !== null) {
+                                <span class="tooltip tooltip-warning shrink-0" tabindex="0" role="img"
+                                  [attr.data-tip]="t().invoices.shortStock.replace('{stock}', '' + short)"
+                                  [attr.aria-label]="t().invoices.shortStock.replace('{stock}', '' + short)">
+                                  <span class="badge badge-warning badge-xs">!</span>
+                                </span>
+                              }
                               <!-- On: the offered lines below; off again: they go -->
                               @let offered = block.length > 1;
                               <button type="button" class="btn btn-ghost btn-xs px-1 shrink-0"
@@ -174,11 +189,8 @@ interface Recommendation {
                             [attr.aria-invalid]="showsError(line.vatPercent)"
                             [formField]="line.vatPercent" />
                         }
-                        <!-- Delete + warning -->
+                        <!-- Delete -->
                         <div class="flex items-center justify-end gap-0.5">
-                          @if (lineStockWarning(line().value())) {
-                            <span class="badge badge-warning badge-xs" [title]="t().articles.lowStockWarning">!</span>
-                          }
                           <button type="button" class="btn btn-ghost btn-xs text-error px-1"
                             (click)="removeLine(i)">✕</button>
                         </div>
@@ -424,8 +436,11 @@ export class InvoiceFormComponent {
     this.model.update((m) => ({ ...m, lines: blocks.flat().map((i) => m.lines[i]) }));
   }
 
+  /** Removes a line; a sold line takes along the offered lines of its article below it. */
   protected removeLine(index: number): void {
-    this.model.update((m) => ({ ...m, lines: m.lines.filter((_, i) => i !== index) }));
+    const block = this.blocks().find((b) => b[0] === index);
+    const gone = block && !this.model().lines[index].offered ? block : [index];
+    this.model.update((m) => ({ ...m, lines: m.lines.filter((_, i) => !gone.includes(i)) }));
   }
 
   private pushLine(line: LineModel): void {
@@ -480,13 +495,14 @@ export class InvoiceFormComponent {
     });
   }
 
-  protected lineStockWarning(line: LineModel): boolean {
-    if (!line.articleId) return false;
+  /** The article's stock when this invoice asks for more of it, sold and offered; else null. */
+  protected shortStock(line: LineModel): number | null {
+    if (!line.articleId) return null;
     const article = this.articles().find((a) => a.id === line.articleId);
     const wanted = this.model().lines
       .filter((l) => l.articleId === line.articleId)
       .reduce((sum, l) => sum + (l.quantity ?? 0), 0);
-    return article != null && article.stockQuantity < wanted;
+    return article != null && article.stockQuantity < wanted ? article.stockQuantity : null;
   }
 
   // A draft may be saved empty, but an invoice without any article is never issued.
