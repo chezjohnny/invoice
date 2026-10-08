@@ -1,8 +1,11 @@
+import asyncio
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password, verify_password
 from app.models.tenant import TenantProfile, User
 from app.services.tenants import TenantError, create_tenant, set_password
 from tests.conftest import PASSWORD, signed_in
@@ -182,3 +185,24 @@ async def test_tokens_are_not_interchangeable(client: AsyncClient, db_session: A
     assert (
         await client.post("/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     ).status_code == 200
+
+
+@pytest.mark.anyio
+async def test_a_password_check_leaves_the_server_free():
+    # bcrypt takes some 0.2 s: run in a thread, the event loop keeps going
+    # meanwhile, as it does for the other requests.
+    hashed = await hash_password("secret123")
+    ticks = 0
+
+    async def tick() -> None:
+        nonlocal ticks
+        while True:
+            ticks += 1
+            await asyncio.sleep(0.005)
+
+    ticker = asyncio.create_task(tick())
+    await asyncio.sleep(0)
+    ticks = 0
+    assert await verify_password("secret123", hashed)
+    ticker.cancel()
+    assert ticks > 5

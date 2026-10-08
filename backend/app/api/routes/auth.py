@@ -29,9 +29,9 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> Token
     user = result.scalar_one_or_none()
 
     if user is None:
-        verify_unknown_user(body.password)
+        await verify_unknown_user(body.password)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
-    if not verify_password(body.password, user.hashed_password):
+    if not await verify_password(body.password, user.hashed_password):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
 
     if not user.is_active:

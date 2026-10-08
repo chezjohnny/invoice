@@ -21,10 +21,10 @@ def _email(value: str) -> str:
         raise TenantError(f"Invalid email: {value}") from exc
 
 
-def _password_hash(password: str) -> str:
+async def _password_hash(password: str) -> str:
     if len(password) < MIN_PASSWORD_LENGTH:
         raise TenantError(f"The password needs at least {MIN_PASSWORD_LENGTH} characters")
-    return hash_password(password)
+    return await hash_password(password)
 
 
 async def create_tenant(
@@ -48,7 +48,7 @@ async def create_tenant(
             tenant_id=tenant.id, company_name=name, address_line1="", postal_code="", city=""
         )
     )
-    user = User(tenant_id=tenant.id, email=email, hashed_password=_password_hash(password))
+    user = User(tenant_id=tenant.id, email=email, hashed_password=await _password_hash(password))
     db.add(user)
     await db.flush()
     return user
@@ -62,7 +62,7 @@ async def set_password(
     user = await db.scalar(select(User).where(User.email == _email(email)))
     if user is None:
         raise TenantError(f"No user with the email {email}")
-    user.hashed_password = _password_hash(password)
+    user.hashed_password = await _password_hash(password)
     if sign_out:
         user.token_version += 1
     await db.flush()
