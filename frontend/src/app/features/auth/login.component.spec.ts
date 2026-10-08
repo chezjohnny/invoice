@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AuthService } from '../../core/auth/auth.service';
@@ -36,16 +37,16 @@ describe('LoginComponent', () => {
   });
 
   it('signs in', async () => {
-    login.mockResolvedValue(undefined);
+    login.mockReturnValue(of(undefined));
     await signIn(' admin@cave.ch ', 'secret123');
     expect(login).toHaveBeenCalledWith('admin@cave.ch', 'secret123');
   });
 
   it('tells a server failure from wrong credentials', async () => {
-    login.mockRejectedValue(new HttpErrorResponse({ status: 503 }));
+    login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
     await signIn('admin@cave.ch', 'secret123');
     expect(element().querySelector('[role="alert"]')?.textContent).not.toContain('mot de passe');
-    login.mockRejectedValue(new HttpErrorResponse({ status: 401 }));
+    login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
     await signIn('admin@cave.ch', 'wrong-password');
     expect(element().querySelector('[role="alert"]')?.textContent).toContain('mot de passe');
   });

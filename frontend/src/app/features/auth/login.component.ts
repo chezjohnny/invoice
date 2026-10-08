@@ -1,6 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
+import { tapResponse } from '@ngrx/operators';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { exhaustMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
@@ -75,20 +78,30 @@ export class LoginComponent {
       email(path.email, { message: () => this.t().login.emailInvalid });
       required(path.password, { message: () => this.t().login.passwordRequired });
     },
-    { submission: { action: () => this.signIn() } }
+    // Signal Forms takes an async action; the sign-in itself runs in signIn.
+    {
+      submission: {
+        action: async () => {
+          this.signIn({ email: this.model().email.trim(), password: this.model().password });
+        },
+      },
+    }
   );
 
-  private async signIn(): Promise<void> {
-    this.error.set('');
-    this.loading.set(true);
-    try {
-      await this.auth.login(this.model().email.trim(), this.model().password);
-    } catch (error) {
-      this.error.set(this.failure(error));
-    } finally {
-      this.loading.set(false);
-    }
-  }
+  /** One attempt at a time: a second submit while signing in is ignored (exhaustMap). */
+  private readonly signIn = rxMethod<{ email: string; password: string }>(
+    exhaustMap(({ email, password }) => {
+      this.error.set('');
+      this.loading.set(true);
+      return this.auth.login(email, password).pipe(
+        tapResponse({
+          next: () => undefined,
+          error: (error) => this.error.set(this.failure(error)),
+          finalize: () => this.loading.set(false),
+        }),
+      );
+    }),
+  );
 
   private failure(error: unknown): string {
     const status = error instanceof HttpErrorResponse ? error.status : 0;

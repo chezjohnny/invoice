@@ -1,6 +1,8 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { EMPTY, catchError, exhaustMap, filter, fromEvent, interval, map, merge } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
 
 const CHECK_EVERY_MS = 5 * 60_000;
 
@@ -26,30 +28,28 @@ export class AppVersionService {
 
   start(): void {
     if (!this.running) return;
-    const timer = setInterval(() => this.check(), CHECK_EVERY_MS);
-    const onVisible = () => document.visibilityState === 'visible' && this.check();
-    document.addEventListener('visibilitychange', onVisible);
-    const navigations = this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(() => this.updateAvailable() && this.reload());
-    this.destroyRef.onDestroy(() => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisible);
-      navigations.unsubscribe();
-    });
+    // Every few minutes, and whenever the tab comes back into view.
+    merge(
+      interval(CHECK_EVERY_MS),
+      fromEvent(document, 'visibilitychange').pipe(filter(() => document.visibilityState === 'visible')),
+    ).pipe(
+      // fetch rather than HttpClient: no token to send, no error toast to show.
+      exhaustMap(() => fromFetch('/index.html', { cache: 'no-store', selector: (response) => response.text() }).pipe(
+        catchError(() => EMPTY), // offline or mid-deployment: try again at the next check
+      )),
+      map(mainBundle),
+      filter((deployed) => deployed !== null && deployed !== this.running),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.updateAvailable.set(true));
+
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      filter(() => this.updateAvailable()),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.reload());
   }
 
   reload(): void {
     location.reload();
-  }
-
-  private async check(): Promise<void> {
-    try {
-      const response = await fetch('/index.html', { cache: 'no-store' });
-      const deployed = mainBundle(await response.text());
-      if (deployed && deployed !== this.running) this.updateAvailable.set(true);
-    } catch {
-      // Offline or mid-deployment: try again at the next check.
-    }
   }
 }

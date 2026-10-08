@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface TokenResponse {
@@ -17,28 +17,33 @@ export class AuthService {
   readonly token = signal<string | null>(localStorage.getItem('access_token'));
   readonly isAuthenticated = computed(() => this.token() !== null);
 
-  async login(email: string, password: string): Promise<void> {
+  /** Signs in, then opens the dashboard; fails with the server's error. */
+  login(email: string, password: string): Observable<void> {
     // Mock mode runs without a backend: any credentials sign in.
-    const resp = environment.useMock
-      ? { access_token: 'mock', refresh_token: 'mock' }
-      : await firstValueFrom(this.http.post<TokenResponse>('/api/auth/login', { email, password }));
-    this._storeTokens(resp);
-    await this.router.navigate(['/dashboard']);
+    const tokens = environment.useMock
+      ? of({ access_token: 'mock', refresh_token: 'mock' })
+      : this.http.post<TokenResponse>('/api/auth/login', { email, password });
+    return tokens.pipe(
+      tap((resp) => {
+        this._storeTokens(resp);
+        this.router.navigate(['/dashboard']);
+      }),
+      map(() => undefined),
+    );
   }
 
-  async refresh(): Promise<boolean> {
+  /** New tokens for the stored refresh token: true, or false and signed out. */
+  refresh(): Observable<boolean> {
     const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return false;
-    try {
-      const resp = await firstValueFrom(
-        this.http.post<TokenResponse>('/api/auth/refresh', { refresh_token: refreshToken })
-      );
-      this._storeTokens(resp);
-      return true;
-    } catch {
-      this.logout();
-      return false;
-    }
+    if (!refreshToken) return of(false);
+    return this.http.post<TokenResponse>('/api/auth/refresh', { refresh_token: refreshToken }).pipe(
+      tap((resp) => this._storeTokens(resp)),
+      map(() => true),
+      catchError(() => {
+        this.logout();
+        return of(false);
+      }),
+    );
   }
 
   logout(): void {
